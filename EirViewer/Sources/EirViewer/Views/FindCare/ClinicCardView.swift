@@ -3,6 +3,7 @@ import SwiftUI
 struct ClinicCardView: View {
     let clinic: Clinic
     let isSelected: Bool
+    var distance: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -14,6 +15,13 @@ struct ClinicCardView: View {
                     .lineLimit(1)
 
                 Spacer()
+
+                if let dist = distance {
+                    Text(dist)
+                        .font(.caption)
+                        .foregroundColor(AppColors.primary)
+                        .fontWeight(.medium)
+                }
 
                 if let type = ClinicType.categorize(clinic.name) {
                     Text(type.rawValue)

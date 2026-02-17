@@ -5,10 +5,26 @@ struct ClinicMapView: View {
     @EnvironmentObject var clinicStore: ClinicStore
 
     @State private var cameraPosition: MapCameraPosition = .region(.sweden)
+    @State private var hasZoomedToUser: Bool = false
 
     var body: some View {
         ZStack {
             Map(position: $cameraPosition) {
+                // User location dot
+                if let loc = clinicStore.userLocation {
+                    Annotation("My Location", coordinate: loc.coordinate) {
+                        ZStack {
+                            Circle()
+                                .fill(AppColors.blue.opacity(0.15))
+                                .frame(width: 28, height: 28)
+                            Circle()
+                                .fill(AppColors.blue)
+                                .frame(width: 12, height: 12)
+                                .overlay(Circle().stroke(.white, lineWidth: 2.5))
+                        }
+                    }
+                }
+
                 ForEach(clinicStore.visibleClinics) { clinic in
                     if let coord = clinic.coordinate {
                         Annotation(clinic.name, coordinate: coord) {
@@ -26,9 +42,38 @@ struct ClinicMapView: View {
             .onMapCameraChange(frequency: .onEnd) { context in
                 clinicStore.mapRegion = context.region
             }
+            .onChange(of: clinicStore.userLocation) {
+                if !hasZoomedToUser, let region = clinicStore.userRegion {
+                    hasZoomedToUser = true
+                    cameraPosition = .region(region)
+                    clinicStore.mapRegion = region
+                }
+            }
 
             // Overlays
             VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        if let region = clinicStore.userRegion {
+                            cameraPosition = .region(region)
+                            clinicStore.mapRegion = region
+                        } else {
+                            clinicStore.requestUserLocation()
+                        }
+                    } label: {
+                        Image(systemName: clinicStore.userLocation != nil ? "location.fill" : "location")
+                            .font(.callout)
+                            .foregroundColor(clinicStore.userLocation != nil ? AppColors.primary : AppColors.text)
+                            .frame(width: 36, height: 36)
+                            .background(.ultraThickMaterial)
+                            .cornerRadius(8)
+                            .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(12)
+                }
+
                 Spacer()
 
                 if !clinicStore.isZoomedIn {

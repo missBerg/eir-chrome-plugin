@@ -12,22 +12,31 @@ struct FindCareView: View {
 
     var body: some View {
         HSplitView {
-            // Left: filter bar + content
             VStack(spacing: 0) {
                 FindCareFilterBar(viewMode: $viewMode)
 
                 Divider()
 
-                switch viewMode {
-                case .map:
-                    ClinicMapView()
-                case .list:
-                    ClinicListView()
+                if clinicStore.isLoading {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                        Text("Loading clinics...")
+                            .font(.callout)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(AppColors.background)
+                } else {
+                    switch viewMode {
+                    case .map:
+                        ClinicMapView()
+                    case .list:
+                        ClinicListView()
+                    }
                 }
             }
             .frame(minWidth: 400, idealWidth: 500)
 
-            // Right: detail panel
             if let clinic = clinicStore.selectedClinic {
                 ClinicDetailView(clinic: clinic)
                     .frame(minWidth: 320, idealWidth: 380)
@@ -57,8 +66,8 @@ struct FindCareFilterBar: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                // Search field
+            HStack(spacing: 8) {
+                // Search
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(AppColors.textSecondary)
@@ -68,6 +77,20 @@ struct FindCareFilterBar: View {
                 .padding(8)
                 .background(AppColors.divider)
                 .cornerRadius(8)
+
+                // Location button
+                Button {
+                    clinicStore.requestUserLocation()
+                } label: {
+                    Image(systemName: clinicStore.userLocation != nil ? "location.fill" : "location")
+                        .font(.callout)
+                        .foregroundColor(clinicStore.userLocation != nil ? AppColors.primary : AppColors.textSecondary)
+                        .frame(width: 32, height: 32)
+                        .background(clinicStore.userLocation != nil ? AppColors.primarySoft : AppColors.divider)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+                .help("Use my location to find nearby clinics")
 
                 // Map/List toggle
                 Picker("", selection: $viewMode) {
@@ -90,29 +113,20 @@ struct FindCareFilterBar: View {
                                 count: count,
                                 isActive: clinicStore.selectedType == type
                             ) {
-                                if clinicStore.selectedType == type {
-                                    clinicStore.selectedType = nil
-                                } else {
-                                    clinicStore.selectedType = type
-                                }
+                                clinicStore.selectedType = clinicStore.selectedType == type ? nil : type
                             }
                         }
                     }
                 }
             }
 
-            // Service filter chips + result count
+            // Service filters
             HStack(spacing: 8) {
                 FilterChip(label: "E-services", isActive: $clinicStore.filterMVK)
                 FilterChip(label: "Video/Chat", isActive: $clinicStore.filterVideoChat)
                 FilterChip(label: "Flu", isActive: $clinicStore.filterFlu)
                 FilterChip(label: "COVID", isActive: $clinicStore.filterCovid)
-
                 Spacer()
-
-                Text("\(clinicStore.filteredClinics.count) clinics")
-                    .font(.caption)
-                    .foregroundColor(AppColors.textSecondary)
             }
         }
         .padding(12)
