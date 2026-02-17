@@ -607,37 +607,33 @@ using the Eir Chrome Extension.
   import into health apps
 - **README.md** - This file
 
+## View your records with Eir Viewer (Recommended)
+
+Download the **Eir Viewer** desktop app for macOS to view your records privately on your computer:
+
+1. Download from **https://github.com/BirgerMoell/eir-chrome-plugin/releases/latest**
+2. Unzip and move **Eir Viewer.app** to your Applications folder
+3. Double-click any \`.eir\` file to open it — or drag it onto the app window
+
+Eir Viewer gives you a timeline view, search/filter, and AI chat — all running locally on your Mac.
+
 ## View your records on Eir.Space
 
-You can upload your \`.eir\` file to **https://eir.space** to:
-
-- **Get a visual overview** of your health history on an interactive timeline
-- **Search and filter** your records by date, category, provider, or diagnosis
-- **Talk to an AI** about your health data - ask questions about your medical history,
-  get explanations of diagnoses and treatments in plain language, and identify patterns
-  across your records
-- **Analyze lab results** and track how values change over time
-
-### How to use Eir.Space
+You can also upload your \`.eir\` file to **https://eir.space** to view records in your browser.
 
 1. Go to **https://eir.space**
-2. Click **"Load EIR File"** and select the \`journal-content.eir\` file from this download
+2. Click **"Load EIR File"** and select the \`journal-content.eir\` file
 3. Your records will be loaded locally in your browser - no data is uploaded to any server
-4. Use the chat to ask questions like:
-   - "What vaccinations have I had?"
-   - "Summarize my dental history"
-   - "What diagnoses do I have?"
-   - "Explain what perikoronit means"
 
 ## Privacy
 
-Your health data is yours. Eir.Space processes everything locally in your browser.
+Your health data is yours. Both Eir Viewer and Eir.Space process everything locally.
 No medical data is stored on any server. The AI chat sends only the specific context
 you're asking about, and nothing is retained after your session.
 
 ## Learn more
 
-- Extension source code: https://github.com/BirgerMoell/eir-chrome-plugin
+- Source code: https://github.com/BirgerMoell/eir-chrome-plugin
 - Eir.Space: https://eir.space
 `;
 }

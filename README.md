@@ -73,6 +73,8 @@ See [eir-format-specification.md](eir-format-specification.md) for the full spec
 | `styles.css` | Floating button styling |
 | `popup.html` | Extension popup UI |
 | `privacy-policy.html` | Privacy policy |
+| `EirViewer/` | Native macOS desktop app (Swift/SwiftUI) |
+| `releases/` | Pre-built app bundle (.zip) |
 
 ## Permissions
 
@@ -92,6 +94,50 @@ See [eir-format-specification.md](eir-format-specification.md) for the full spec
 - GDPR compliant
 
 See the full [Privacy Policy](privacy-policy.html).
+
+## Eir Viewer — Desktop App for macOS
+
+A native Swift/SwiftUI app that opens `.eir` files locally on your Mac. No server, no cloud — your records stay on your device.
+
+**[Download latest release](https://github.com/BirgerMoell/eir-chrome-plugin/releases/latest)**
+
+### Features
+
+- **Timeline view** — entries grouped by month with colored category badges
+- **Search & filter** — by category (Vårdkontakter, Diagnoser, Vaccinationer, Anteckningar), provider, or free text
+- **Entry detail** — full view with provider info, responsible person, notes, and tags
+- **AI chat** — ask questions about your records using OpenAI, Anthropic, Groq, or any OpenAI-compatible provider
+- **Drag & drop** — drop `.eir` or `.yaml` files onto the window
+- **Default file handler** — double-click `.eir` files in Finder to open them
+
+### Install
+
+1. Download `EirViewer-macOS.zip` from [Releases](https://github.com/BirgerMoell/eir-chrome-plugin/releases/latest)
+2. Unzip and move `Eir Viewer.app` to `/Applications`
+3. On first launch, right-click → Open (to bypass Gatekeeper for unsigned apps)
+
+### Build from Source
+
+```bash
+cd EirViewer
+swift build -c release
+# Binary at .build/release/EirViewer
+```
+
+Requires macOS 14 (Sonoma) and Xcode Command Line Tools.
+
+### Configure AI Chat
+
+Open **Settings** (Cmd+,) to add your API key:
+
+| Provider | Default Model | Endpoint |
+|----------|---------------|----------|
+| OpenAI | gpt-4o | api.openai.com |
+| Anthropic | claude-sonnet-4-5 | api.anthropic.com |
+| Groq | llama-3.3-70b | api.groq.com |
+| Custom | (your choice) | (your URL) |
+
+API keys are stored in macOS Keychain.
 
 ## Browser Compatibility
 
