@@ -59,30 +59,12 @@ function createFloatingButton() {
       </svg>
       <span class="button-text">Download Journals</span>
     </div>
-    <div class="button-actions" style="display: none;">
-      <button class="action-btn download-btn" title="Download Files">📥</button>
-      <button class="action-btn view-btn" title="View on eir.space">👁️</button>
-    </div>
   `;
 
   // Add click event for main button
   button.addEventListener('click', function(e) {
     e.stopPropagation();
     downloadAllJournalContent();
-  });
-
-  // Add click events for action buttons
-  const downloadBtn = button.querySelector('.download-btn');
-  const viewBtn = button.querySelector('.view-btn');
-
-  downloadBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    downloadFilesOnly();
-  });
-
-  viewBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    viewOnEirSpace();
   });
 
   // Make button draggable
@@ -198,19 +180,23 @@ async function downloadAllJournalContent() {
     const eirData = generateEIRContent(journalEntries);
     const eirYAML = convertToYAML(eirData);
     
-    // Download both files
+    // Generate README
+    const readmeContent = generateReadme();
+
+    // Download all files
     downloadTextFile(formattedContent, 'journal-content.txt');
     downloadTextFile(eirYAML, 'journal-content.eir');
-    
+    downloadTextFile(readmeContent, 'README.md');
+
     console.log('Journal download completed successfully!');
-    
-    // Show action buttons
-    showActionButtons(button);
-    
+
     // Reset button state
     if (button) {
       button.style.opacity = '1';
-      button.querySelector('.button-text').textContent = 'Ready!';
+      button.querySelector('.button-text').textContent = 'Downloaded!';
+      setTimeout(() => {
+        button.querySelector('.button-text').textContent = 'Download Journals';
+      }, 3000);
     }
     
   } catch (error) {
@@ -351,17 +337,6 @@ async function getAllJournalEntries() {
   
   console.log(`Total extracted ${entries.length} journal entries`);
   return entries;
-}
-
-// Show action buttons after successful download
-function showActionButtons(button) {
-  const actionsDiv = button.querySelector('.button-actions');
-  if (actionsDiv) {
-    actionsDiv.style.display = 'flex';
-    actionsDiv.style.flexDirection = 'column';
-    actionsDiv.style.gap = '5px';
-    actionsDiv.style.marginTop = '10px';
-  }
 }
 
 // Download files only (without transferring to eir.space)
@@ -616,6 +591,55 @@ Total Entries: ${entries.length}
   content += `User Agent: ${navigator.userAgent}\n`;
   
   return content;
+}
+
+// Generate README explaining eir.space
+function generateReadme() {
+  return `# Your Medical Records from 1177.se
+
+These files were downloaded from your Swedish medical journal at journalen.1177.se
+using the Eir Chrome Extension.
+
+## What's in this download
+
+- **journal-content.txt** - A plain text version of your medical records, easy to read
+- **journal-content.eir** - Your records in the structured EIR format (YAML), designed for
+  import into health apps
+- **README.md** - This file
+
+## View your records on Eir.Space
+
+You can upload your \`.eir\` file to **https://eir.space** to:
+
+- **Get a visual overview** of your health history on an interactive timeline
+- **Search and filter** your records by date, category, provider, or diagnosis
+- **Talk to an AI** about your health data - ask questions about your medical history,
+  get explanations of diagnoses and treatments in plain language, and identify patterns
+  across your records
+- **Analyze lab results** and track how values change over time
+
+### How to use Eir.Space
+
+1. Go to **https://eir.space**
+2. Click **"Load EIR File"** and select the \`journal-content.eir\` file from this download
+3. Your records will be loaded locally in your browser - no data is uploaded to any server
+4. Use the chat to ask questions like:
+   - "What vaccinations have I had?"
+   - "Summarize my dental history"
+   - "What diagnoses do I have?"
+   - "Explain what perikoronit means"
+
+## Privacy
+
+Your health data is yours. Eir.Space processes everything locally in your browser.
+No medical data is stored on any server. The AI chat sends only the specific context
+you're asking about, and nothing is retained after your session.
+
+## Learn more
+
+- Extension source code: https://github.com/BirgerMoell/eir-chrome-plugin
+- Eir.Space: https://eir.space
+`;
 }
 
 // Download content as text file
