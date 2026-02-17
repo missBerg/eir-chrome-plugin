@@ -3,7 +3,10 @@ import UniformTypeIdentifiers
 
 struct WelcomeView: View {
     @EnvironmentObject var documentVM: DocumentViewModel
+    @EnvironmentObject var profileStore: ProfileStore
     @State private var isDragging = false
+    @State private var showingAddPerson = false
+    @State private var pendingFileURL: URL?
 
     var body: some View {
         VStack(spacing: 24) {
@@ -47,7 +50,10 @@ struct WelcomeView: View {
                         .foregroundColor(AppColors.textSecondary)
 
                     Button("Choose File...") {
-                        documentVM.openFilePicker()
+                        documentVM.openFilePicker { url in
+                            pendingFileURL = url
+                            showingAddPerson = true
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(AppColors.primary)
@@ -57,7 +63,7 @@ struct WelcomeView: View {
                 handleDrop(providers)
             }
 
-            if let error = documentVM.errorMessage {
+            if let error = documentVM.errorMessage ?? profileStore.errorMessage {
                 Text(error)
                     .foregroundColor(AppColors.red)
                     .font(.callout)
@@ -73,6 +79,9 @@ struct WelcomeView: View {
         }
         .frame(minWidth: 600, minHeight: 400)
         .background(AppColors.background)
+        .sheet(isPresented: $showingAddPerson) {
+            AddPersonSheet(initialURL: pendingFileURL)
+        }
     }
 
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
@@ -86,7 +95,8 @@ struct WelcomeView: View {
             guard ext == "eir" || ext == "yaml" || ext == "yml" else { return }
 
             Task { @MainActor in
-                documentVM.loadFile(url: url)
+                pendingFileURL = url
+                showingAddPerson = true
             }
         }
         return true

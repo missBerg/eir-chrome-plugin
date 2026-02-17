@@ -18,7 +18,7 @@ class DocumentViewModel: ObservableObject {
                 entry.content?.summary?.localizedCaseInsensitiveContains(searchText) == true ||
                 entry.content?.details?.localizedCaseInsensitiveContains(searchText) == true ||
                 entry.content?.notes?.contains(where: { $0.localizedCaseInsensitiveContains(searchText) }) == true ||
-                entry.category.localizedCaseInsensitiveContains(searchText) ||
+                entry.category?.localizedCaseInsensitiveContains(searchText) == true ||
                 entry.provider?.name?.localizedCaseInsensitiveContains(searchText) == true
 
             let matchesCategory = selectedCategory == nil || entry.category == selectedCategory
@@ -41,7 +41,7 @@ class DocumentViewModel: ObservableObject {
 
     var categories: [String] {
         guard let entries = document?.entries else { return [] }
-        return Array(Set(entries.map(\.category))).sorted()
+        return Array(Set(entries.compactMap(\.category))).sorted()
     }
 
     var providers: [String] {
@@ -53,7 +53,7 @@ class DocumentViewModel: ObservableObject {
         document?.entries.first(where: { $0.id == selectedEntryID })
     }
 
-    func openFilePicker() {
+    func openFilePicker(onFileSelected: ((URL) -> Void)? = nil) {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [
             UTType(filenameExtension: "eir") ?? .yaml,
@@ -64,7 +64,11 @@ class DocumentViewModel: ObservableObject {
         panel.message = "Select an EIR file (.eir or .yaml)"
 
         if panel.runModal() == .OK, let url = panel.url {
-            loadFile(url: url)
+            if let callback = onFileSelected {
+                callback(url)
+            } else {
+                loadFile(url: url)
+            }
         }
     }
 

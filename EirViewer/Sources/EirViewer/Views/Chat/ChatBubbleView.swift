@@ -10,16 +10,26 @@ struct ChatBubbleView: View {
             if isUser { Spacer(minLength: 60) }
 
             VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
-                Text(message.content)
-                    .textSelection(.enabled)
-                    .padding(12)
-                    .background(isUser ? AppColors.primary : AppColors.card)
-                    .foregroundColor(isUser ? .white : AppColors.text)
-                    .cornerRadius(16)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(isUser ? Color.clear : AppColors.border, lineWidth: 1)
-                    )
+                VStack(alignment: .leading, spacing: 6) {
+                    let parts = parseJournalEntryTags(message.content)
+                    ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
+                        switch part {
+                        case .text(let text):
+                            Text(markdownAttributed(text))
+                                .textSelection(.enabled)
+                        case .journalRef(let entryID):
+                            JournalEntryLink(entryID: entryID)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(isUser ? AppColors.primary : AppColors.card)
+                .foregroundColor(isUser ? .white : AppColors.text)
+                .cornerRadius(16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(isUser ? Color.clear : AppColors.border, lineWidth: 1)
+                )
 
                 Text(formattedTime)
                     .font(.caption2)
@@ -28,6 +38,10 @@ struct ChatBubbleView: View {
 
             if !isUser { Spacer(minLength: 60) }
         }
+    }
+
+    private func markdownAttributed(_ text: String) -> AttributedString {
+        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
     }
 
     private var formattedTime: String {

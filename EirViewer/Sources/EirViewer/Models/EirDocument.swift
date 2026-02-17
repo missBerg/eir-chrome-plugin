@@ -52,9 +52,9 @@ struct EirDateRange: Codable {
 
 struct EirEntry: Codable, Identifiable {
     let id: String
-    let date: String
+    let date: String?
     let time: String?
-    let category: String
+    let category: String?
     let type: String?
     let provider: EirProvider?
     let status: String?
@@ -69,14 +69,19 @@ struct EirEntry: Codable, Identifiable {
         case content, attachments, tags
     }
 
+    var displayDate: String {
+        date ?? ""
+    }
+
     var parsedDate: Date? {
+        guard let date = date else { return nil }
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: date)
     }
 
     var dateGroupKey: String {
-        guard let parsed = parsedDate else { return date }
+        guard let parsed = parsedDate else { return date ?? "Okänt datum" }
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
         formatter.locale = Locale(identifier: "sv_SE")

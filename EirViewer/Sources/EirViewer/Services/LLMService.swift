@@ -25,6 +25,16 @@ actor LLMService {
         self.apiKey = apiKey
     }
 
+    func completeChat(
+        messages: [(role: String, content: String)]
+    ) async throws -> String {
+        nonisolated(unsafe) var result = ""
+        try await streamChat(messages: messages) { token in
+            result += token
+        }
+        return result
+    }
+
     func streamChat(
         messages: [(role: String, content: String)],
         onToken: @Sendable @escaping (String) -> Void

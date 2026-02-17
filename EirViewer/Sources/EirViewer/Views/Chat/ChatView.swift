@@ -4,15 +4,18 @@ struct ChatView: View {
     @EnvironmentObject var chatVM: ChatViewModel
     @EnvironmentObject var documentVM: DocumentViewModel
     @EnvironmentObject var settingsVM: SettingsViewModel
+    @EnvironmentObject var chatThreadStore: ChatThreadStore
+    @EnvironmentObject var profileStore: ProfileStore
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Chat")
+                Text(chatThreadStore.selectedThread?.title ?? "New Conversation")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.text)
+                    .lineLimit(1)
 
                 Spacer()
 
@@ -27,14 +30,18 @@ struct ChatView: View {
                 }
 
                 Button {
-                    chatVM.clearChat()
+                    if let profileID = profileStore.selectedProfileID {
+                        chatVM.newConversation(
+                            chatThreadStore: chatThreadStore,
+                            profileID: profileID
+                        )
+                    }
                 } label: {
-                    Image(systemName: "trash")
+                    Image(systemName: "plus.bubble")
                         .foregroundColor(AppColors.textSecondary)
                 }
                 .buttonStyle(.plain)
-                .help("Clear chat")
-                .disabled(chatVM.messages.isEmpty)
+                .help("New conversation")
             }
             .padding()
             .background(AppColors.card)
@@ -42,7 +49,7 @@ struct ChatView: View {
             Divider()
 
             // Messages
-            if chatVM.messages.isEmpty {
+            if chatThreadStore.messages.isEmpty {
                 Spacer()
                 VStack(spacing: 12) {
                     Image(systemName: "bubble.left.and.bubble.right")
@@ -61,15 +68,15 @@ struct ChatView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            ForEach(chatVM.messages) { message in
+                            ForEach(chatThreadStore.messages) { message in
                                 ChatBubbleView(message: message)
                                     .id(message.id)
                             }
                         }
                         .padding()
                     }
-                    .onChange(of: chatVM.messages.count) { _, _ in
-                        if let last = chatVM.messages.last {
+                    .onChange(of: chatThreadStore.messages.count) { _, _ in
+                        if let last = chatThreadStore.messages.last {
                             proxy.scrollTo(last.id, anchor: .bottom)
                         }
                     }
@@ -102,10 +109,7 @@ struct ChatView: View {
                     .lineLimit(1...5)
                     .onSubmit {
                         if !NSEvent.modifierFlags.contains(.shift) {
-                            chatVM.sendMessage(
-                                document: documentVM.document,
-                                settingsVM: settingsVM
-                            )
+                            sendMessage()
                         }
                     }
 
@@ -120,10 +124,7 @@ struct ChatView: View {
                     .buttonStyle(.plain)
                 } else {
                     Button {
-                        chatVM.sendMessage(
-                            document: documentVM.document,
-                            settingsVM: settingsVM
-                        )
+                        sendMessage()
                     } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.title2)
@@ -141,5 +142,15 @@ struct ChatView: View {
             .background(AppColors.card)
         }
         .background(AppColors.background)
+    }
+
+    private func sendMessage() {
+        guard let profileID = profileStore.selectedProfileID else { return }
+        chatVM.sendMessage(
+            document: documentVM.document,
+            settingsVM: settingsVM,
+            chatThreadStore: chatThreadStore,
+            profileID: profileID
+        )
     }
 }

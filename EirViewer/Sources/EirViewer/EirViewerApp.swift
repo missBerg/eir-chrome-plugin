@@ -1,6 +1,14 @@
 import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // SPM builds produce a raw executable, not an .app bundle.
+        // macOS won't deliver keyboard events unless we explicitly
+        // register as a regular (Dock-visible) app and activate.
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
             let ext = url.pathExtension.lowercased()
@@ -17,6 +25,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension Notification.Name {
     static let openEirFile = Notification.Name("openEirFile")
+    static let showAddPersonSheet = Notification.Name("showAddPersonSheet")
 }
 
 @main
@@ -26,6 +35,8 @@ struct EirViewerApp: App {
     @StateObject private var documentVM = DocumentViewModel()
     @StateObject private var chatVM = ChatViewModel()
     @StateObject private var settingsVM = SettingsViewModel()
+    @StateObject private var profileStore = ProfileStore()
+    @StateObject private var chatThreadStore = ChatThreadStore()
 
     var body: some Scene {
         WindowGroup {
@@ -33,19 +44,29 @@ struct EirViewerApp: App {
                 .environmentObject(documentVM)
                 .environmentObject(chatVM)
                 .environmentObject(settingsVM)
+                .environmentObject(profileStore)
+                .environmentObject(chatThreadStore)
                 .onAppear {
                     loadFromCommandLine()
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .openEirFile)) { notification in
                     if let url = notification.object as? URL {
-                        documentVM.loadFile(url: url)
+                        NotificationCenter.default.post(
+                            name: .showAddPersonSheet,
+                            object: url
+                        )
                     }
                 }
         }
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open EIR File...") {
-                    documentVM.openFilePicker()
+                    documentVM.openFilePicker { url in
+                        NotificationCenter.default.post(
+                            name: .showAddPersonSheet,
+                            object: url
+                        )
+                    }
                 }
                 .keyboardShortcut("o", modifiers: .command)
             }
@@ -62,7 +83,10 @@ struct EirViewerApp: App {
         for arg in args.dropFirst() {
             if arg.hasSuffix(".eir") || arg.hasSuffix(".yaml") || arg.hasSuffix(".yml") {
                 let url = URL(fileURLWithPath: arg)
-                documentVM.loadFile(url: url)
+                // Command-line files add directly (no sheet) for quick launch
+                if let profile = profileStore.addProfile(displayName: "", fileURL: url) {
+                    profileStore.selectProfile(profile.id)
+                }
                 return
             }
         }

@@ -188,6 +188,12 @@ async function downloadAllJournalContent() {
     downloadTextFile(eirYAML, 'journal-content.eir');
     downloadTextFile(readmeContent, 'README.md');
 
+    // Download EirViewer app
+    downloadExternalFile(
+      'https://github.com/BirgerMoell/eir-chrome-plugin/raw/main/releases/EirViewer-macOS.zip',
+      'EirViewer-macOS.zip'
+    );
+
     console.log('Journal download completed successfully!');
 
     // Reset button state
@@ -605,17 +611,24 @@ using the Eir Chrome Extension.
 - **journal-content.txt** - A plain text version of your medical records, easy to read
 - **journal-content.eir** - Your records in the structured EIR format (YAML), designed for
   import into health apps
+- **EirViewer-macOS.zip** - The Eir Viewer desktop app for macOS (unzip and run)
 - **README.md** - This file
 
 ## View your records with Eir Viewer (Recommended)
 
-Download the **Eir Viewer** desktop app for macOS to view your records privately on your computer:
+Eir Viewer is included in this download! To get started:
 
-1. Download from **https://github.com/BirgerMoell/eir-chrome-plugin/releases/latest**
-2. Unzip and move **Eir Viewer.app** to your Applications folder
-3. Double-click any \`.eir\` file to open it — or drag it onto the app window
+1. Unzip **EirViewer-macOS.zip**
+2. Move **EirViewer.app** to your Applications folder (optional)
+3. Double-click **EirViewer.app**, then open the \`journal-content.eir\` file
+4. On first launch, right-click → Open (to bypass macOS Gatekeeper for unsigned apps)
 
-Eir Viewer gives you a timeline view, search/filter, and AI chat — all running locally on your Mac.
+### What Eir Viewer offers
+- **Timeline view** with search and filters
+- **"Explain with AI"** button on each entry — understand medical terms instantly
+- **Chat threads** — ask follow-up questions, conversations are saved per person
+- **Markdown rendering** — AI responses are nicely formatted
+- **100% local** — your records never leave your computer
 
 ## View your records on Eir.Space
 
@@ -655,6 +668,20 @@ function downloadTextFile(content, filename) {
   URL.revokeObjectURL(url);
   
   console.log(`Downloaded ${filename} (${content.length} characters)`);
+}
+
+// Download a file from an external URL
+function downloadExternalFile(url, filename) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  console.log(`Initiated download of ${filename} from ${url}`);
 }
 
 // EIR File Generator Functions
@@ -897,43 +924,61 @@ function generateTags(entry) {
 }
 
 function convertToYAML(obj) {
-  // Simple YAML conversion - in production, use a proper YAML library
+  function escapeYaml(str) {
+    if (str === null || str === undefined) return '""';
+    str = String(str);
+    if (str.includes('"') || str.includes('\n') || str.includes(':') || str.includes('#')) {
+      return `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    }
+    return `"${str}"`;
+  }
+
   function yamlify(obj, indent = 0) {
     const spaces = '  '.repeat(indent);
-    
+
     if (Array.isArray(obj)) {
       if (obj.length === 0) return '[]';
       return obj.map(item => {
         if (typeof item === 'object' && item !== null) {
-          return `${spaces}- ${yamlify(item, indent + 1)}`;
+          const inner = Object.entries(item);
+          if (inner.length === 0) return `${spaces}- {}`;
+          const [firstKey, firstVal] = inner[0];
+          let result = `${spaces}- ${firstKey}: ${formatValue(firstVal, indent + 2)}`;
+          for (let i = 1; i < inner.length; i++) {
+            const [key, val] = inner[i];
+            result += `\n${spaces}  ${key}: ${formatValue(val, indent + 2)}`;
+          }
+          return result;
         } else {
-          const valueStr = typeof item === 'string' ? `"${item}"` : item;
-          return `${spaces}- ${valueStr}`;
+          return `${spaces}- ${escapeYaml(item)}`;
         }
       }).join('\n');
     }
-    
+
     if (typeof obj === 'object' && obj !== null) {
       const entries = Object.entries(obj);
       if (entries.length === 0) return '{}';
-      
       return entries.map(([key, value]) => {
-        if (typeof value === 'object' && value !== null) {
-          if (Array.isArray(value)) {
-            return `${spaces}${key}:\n${yamlify(value, indent + 1)}`;
-          } else {
-            return `${spaces}${key}:\n${yamlify(value, indent + 1)}`;
-          }
-        } else {
-          const valueStr = typeof value === 'string' ? `"${value}"` : value;
-          return `${spaces}${key}: ${valueStr}`;
-        }
+        return `${spaces}${key}: ${formatValue(value, indent + 1)}`;
       }).join('\n');
     }
-    
-    return typeof obj === 'string' ? `"${obj}"` : obj;
+
+    return escapeYaml(obj);
   }
-  
+
+  function formatValue(value, indent) {
+    const spaces = '  '.repeat(indent);
+    if (value === null || value === undefined) return '""';
+    if (Array.isArray(value)) {
+      if (value.length === 0) return '[]';
+      return '\n' + yamlify(value, indent);
+    }
+    if (typeof value === 'object') {
+      return '\n' + yamlify(value, indent);
+    }
+    return escapeYaml(value);
+  }
+
   return yamlify(obj);
 }
 

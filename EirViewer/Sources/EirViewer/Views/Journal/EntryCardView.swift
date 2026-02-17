@@ -7,7 +7,7 @@ struct EntryCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                CategoryBadge(category: entry.category)
+                CategoryBadge(category: entry.category ?? "Övrigt")
 
                 Spacer()
 

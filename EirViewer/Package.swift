@@ -13,5 +13,10 @@ let package = Package(
             dependencies: ["Yams"],
             path: "Sources/EirViewer"
         ),
+        .testTarget(
+            name: "EirViewerTests",
+            dependencies: ["EirViewer", "Yams"],
+            path: "Tests/EirViewerTests"
+        ),
     ]
 )

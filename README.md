@@ -106,6 +106,11 @@ A native Swift/SwiftUI app that opens `.eir` files locally on your Mac. No serve
 - **Timeline view** — entries grouped by month with colored category badges
 - **Search & filter** — by category (Vårdkontakter, Diagnoser, Vaccinationer, Anteckningar), provider, or free text
 - **Entry detail** — full view with provider info, responsible person, notes, and tags
+- **"Explain with AI"** — one-click button on each journal entry to get an AI explanation of medical terms and what happened
+- **Chat threads** — persistent per-person conversations with auto-generated titles, shown in the sidebar
+- **Markdown rendering** — AI responses render bold, italic, code, and other formatting
+- **Journal references** — AI can link to specific journal entries; click to jump to that entry
+- **Multi-profile** — manage records for multiple people, each with their own chat history
 - **AI chat** — ask questions about your records using OpenAI, Anthropic, Groq, or any OpenAI-compatible provider
 - **Drag & drop** — drop `.eir` or `.yaml` files onto the window
 - **Default file handler** — double-click `.eir` files in Finder to open them

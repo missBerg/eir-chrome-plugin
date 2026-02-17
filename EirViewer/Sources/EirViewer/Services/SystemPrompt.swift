@@ -8,6 +8,10 @@ enum SystemPrompt {
         You can explain medical terms, summarize visits, and answer health-related questions. \
         Always be accurate and note when something requires professional medical advice. \
         Respond in the same language the user writes in.
+
+        When referencing specific medical record entries, use the format <JOURNAL_ENTRY id="ENTRY_ID"/> \
+        where ENTRY_ID is the exact id from the records. This will render as a clickable link. \
+        Use this whenever you cite or reference a specific entry.
         """
 
         guard let doc = document else { return prompt }
@@ -33,9 +37,10 @@ enum SystemPrompt {
             prompt += "\n\nRecent medical records:\n"
             for entry in entries {
                 prompt += "\n---\n"
-                prompt += "Date: \(entry.date)"
+                prompt += "ID: \(entry.id)\n"
+                prompt += "Date: \(entry.date ?? "Unknown")"
                 if let time = entry.time { prompt += " \(time)" }
-                prompt += "\nCategory: \(entry.category)"
+                prompt += "\nCategory: \(entry.category ?? "Unknown")"
                 if let type = entry.type { prompt += "\nType: \(type)" }
                 if let provider = entry.provider?.name { prompt += "\nProvider: \(provider)" }
                 if let person = entry.responsiblePerson {

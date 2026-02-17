@@ -8,7 +8,7 @@ struct EntryDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Header
                 HStack {
-                    CategoryBadge(category: entry.category)
+                    CategoryBadge(category: entry.category ?? "Övrigt")
 
                     if let status = entry.status {
                         Text(status)
@@ -22,7 +22,7 @@ struct EntryDetailView: View {
 
                     Spacer()
 
-                    Text(entry.date)
+                    Text(entry.displayDate)
                         .font(.callout)
                         .foregroundColor(AppColors.textSecondary)
                     if let time = entry.time {
@@ -117,6 +117,27 @@ struct EntryDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
+
+                // Explain with AI
+                Button {
+                    NotificationCenter.default.post(
+                        name: .explainEntryWithAI,
+                        object: entry
+                    )
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles")
+                        Text("Explain with AI")
+                    }
+                    .font(.callout)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(AppColors.primary)
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
 
                 // Tags
                 if let tags = entry.tags, !tags.isEmpty {
