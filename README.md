@@ -117,8 +117,8 @@ A native Swift/SwiftUI app that opens `.eir` files locally on your Mac. No serve
 
 ### Install
 
-1. Download `EirViewer-macOS.zip` from [Releases](https://github.com/BirgerMoell/eir-chrome-plugin/releases/latest)
-2. Unzip and move `Eir Viewer.app` to `/Applications`
+1. Download `EirViewer-macOS.dmg` from [Releases](https://github.com/BirgerMoell/eir-chrome-plugin/releases/latest)
+2. Open the `.dmg` and drag **EirViewer** to the **Applications** folder
 3. If macOS says the app is "damaged", open Terminal and run: `xattr -cr /Applications/EirViewer.app`
 4. Double-click to open
 

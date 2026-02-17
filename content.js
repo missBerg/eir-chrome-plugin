@@ -190,8 +190,8 @@ async function downloadAllJournalContent() {
 
     // Download EirViewer app
     downloadExternalFile(
-      'https://github.com/BirgerMoell/eir-chrome-plugin/raw/main/releases/EirViewer-macOS.zip',
-      'EirViewer-macOS.zip'
+      'https://github.com/BirgerMoell/eir-chrome-plugin/raw/main/releases/EirViewer-macOS.dmg',
+      'EirViewer-macOS.dmg'
     );
 
     console.log('Journal download completed successfully!');
@@ -611,16 +611,16 @@ using the Eir Chrome Extension.
 - **journal-content.txt** - A plain text version of your medical records, easy to read
 - **journal-content.eir** - Your records in the structured EIR format (YAML), designed for
   import into health apps
-- **EirViewer-macOS.zip** - The Eir Viewer desktop app for macOS (unzip and run)
+- **EirViewer-macOS.dmg** - The Eir Viewer desktop app for macOS (unzip and run)
 - **README.md** - This file
 
 ## View your records with Eir Viewer (Recommended)
 
 Eir Viewer is included in this download! To get started:
 
-1. Unzip **EirViewer-macOS.zip**
-2. Move **EirViewer.app** to your Applications folder (optional)
-3. Double-click **EirViewer.app**, then open the \`journal-content.eir\` file
+1. Open **EirViewer-macOS.dmg**
+2. Drag **EirViewer** to the **Applications** folder
+3. Open **EirViewer** from Applications, then open the \`journal-content.eir\` file
 4. If macOS says the app is "damaged", open Terminal and run:
    \`\`\`
    xattr -cr /path/to/EirViewer.app
