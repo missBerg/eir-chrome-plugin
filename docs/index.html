@@ -295,6 +295,160 @@
             color: #1C1917;
         }
 
+        /* Native App */
+        .native-app {
+            padding: 60px 0;
+            border-top: 1px solid #E7E5E4;
+        }
+
+        .native-app h2 {
+            font-size: 28px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .native-app > .container > p {
+            text-align: center;
+            color: #57534E;
+            margin-bottom: 32px;
+        }
+
+        .app-showcase {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+            max-width: 840px;
+            margin: 0 auto;
+        }
+
+        .app-preview {
+            background: #1C1917;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        }
+
+        .app-window-bar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .app-window-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .app-window-dot.red { background: #EF4444; }
+        .app-window-dot.yellow { background: #F59E0B; }
+        .app-window-dot.green { background: #22C55E; }
+
+        .app-mock {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 12px;
+            min-height: 200px;
+        }
+
+        .app-mock-sidebar {
+            background: #292524;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .app-mock-sidebar-item {
+            background: #44403C;
+            border-radius: 4px;
+            height: 10px;
+            margin-bottom: 8px;
+        }
+
+        .app-mock-sidebar-item.active {
+            background: #6366F1;
+        }
+
+        .app-mock-main {
+            background: #292524;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .app-mock-bubble {
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 11px;
+            line-height: 1.4;
+            max-width: 80%;
+        }
+
+        .app-mock-bubble.user {
+            background: #6366F1;
+            color: #fff;
+            align-self: flex-end;
+        }
+
+        .app-mock-bubble.assistant {
+            background: #44403C;
+            color: #E7E5E4;
+            align-self: flex-start;
+        }
+
+        .app-features {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .app-feature {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .app-feature-icon {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            background: #EEF2FF;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .app-feature h4 {
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        .app-feature p {
+            font-size: 14px;
+            color: #57534E;
+        }
+
+        .app-download-cta {
+            text-align: center;
+            margin-top: 36px;
+        }
+
+        .app-download-cta p {
+            font-size: 13px;
+            color: #78716C;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .app-showcase {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* EIR format */
         .eir-format {
             padding: 60px 0;
@@ -437,8 +591,8 @@
             </div>
             <div class="step">
                 <div class="step-number">4</div>
-                <h3>Get Your Files</h3>
-                <p>Receive a .txt and .eir file with your complete structured medical records.</p>
+                <h3>Get Your Files + App</h3>
+                <p>Receive your records as .txt and .eir files, plus the Eir Viewer app to explore them with AI.</p>
             </div>
         </div>
     </div>
@@ -473,6 +627,86 @@
                 <span class="privacy-point">GDPR compliant</span>
                 <span class="privacy-point">Open source</span>
             </div>
+        </div>
+    </div>
+</section>
+
+<section class="native-app">
+    <div class="container">
+        <span class="badge" style="display:block;text-align:center;">New: Native macOS App</span>
+        <h2>Eir Viewer for Mac</h2>
+        <p>A desktop app that opens your <code>.eir</code> files locally. No server, no cloud &mdash; your records stay on your Mac.</p>
+
+        <div class="app-showcase">
+            <div class="app-preview">
+                <div class="app-window-bar">
+                    <div class="app-window-dot red"></div>
+                    <div class="app-window-dot yellow"></div>
+                    <div class="app-window-dot green"></div>
+                </div>
+                <div class="app-mock">
+                    <div class="app-mock-sidebar">
+                        <div class="app-mock-sidebar-item" style="width:70%"></div>
+                        <div class="app-mock-sidebar-item" style="width:85%"></div>
+                        <div style="height:12px"></div>
+                        <div class="app-mock-sidebar-item active" style="width:60%"></div>
+                        <div class="app-mock-sidebar-item" style="width:80%"></div>
+                        <div class="app-mock-sidebar-item" style="width:50%"></div>
+                    </div>
+                    <div class="app-mock-main">
+                        <div class="app-mock-bubble user">What does this diagnosis mean?</div>
+                        <div class="app-mock-bubble assistant"><strong>J06.9</strong> is an upper respiratory infection. This is a common cold or flu-like illness...</div>
+                        <div class="app-mock-bubble user">Any follow-up needed?</div>
+                        <div class="app-mock-bubble assistant">Based on your records, no follow-up was scheduled. The condition typically resolves on its own.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-features">
+                <div class="app-feature">
+                    <div class="app-feature-icon">&#10024;</div>
+                    <div>
+                        <h4>Explain with AI</h4>
+                        <p>One-click button on each journal entry. Understand medical terms, what happened, and what to watch for.</p>
+                    </div>
+                </div>
+                <div class="app-feature">
+                    <div class="app-feature-icon">&#128172;</div>
+                    <div>
+                        <h4>Chat Threads</h4>
+                        <p>Persistent conversations per person with auto-generated titles. Pick up where you left off.</p>
+                    </div>
+                </div>
+                <div class="app-feature">
+                    <div class="app-feature-icon">&#128269;</div>
+                    <div>
+                        <h4>Timeline &amp; Search</h4>
+                        <p>Browse entries by month, filter by category or provider, search across all your records.</p>
+                    </div>
+                </div>
+                <div class="app-feature">
+                    <div class="app-feature-icon">&#128101;</div>
+                    <div>
+                        <h4>Multi-Profile</h4>
+                        <p>Manage records for multiple family members. Each person gets their own chat history.</p>
+                    </div>
+                </div>
+                <div class="app-feature">
+                    <div class="app-feature-icon">&#128274;</div>
+                    <div>
+                        <h4>Fully Local</h4>
+                        <p>Runs entirely on your Mac. API keys stored in Keychain. No data leaves your device.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-download-cta">
+            <a href="https://github.com/BirgerMoell/eir-chrome-plugin/raw/main/releases/EirViewer-macOS.zip" class="btn btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Eir Viewer for macOS
+            </a>
+            <p>Requires macOS 14 (Sonoma) or later. Also included with every journal download.</p>
         </div>
     </div>
 </section>
