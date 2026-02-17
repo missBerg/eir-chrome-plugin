@@ -11,7 +11,16 @@ let package = Package(
         .executableTarget(
             name: "EirViewer",
             dependencies: ["Yams"],
-            path: "Sources/EirViewer"
+            path: "Sources/EirViewer",
+            resources: [.process("Resources/")],
+            linkerSettings: [
+                .unsafeFlags([
+                    "-Xlinker", "-sectcreate",
+                    "-Xlinker", "__TEXT",
+                    "-Xlinker", "__info_plist",
+                    "-Xlinker", "Info.plist"
+                ])
+            ]
         ),
         .testTarget(
             name: "EirViewerTests",

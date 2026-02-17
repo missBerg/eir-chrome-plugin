@@ -37,6 +37,7 @@ struct EirViewerApp: App {
     @StateObject private var settingsVM = SettingsViewModel()
     @StateObject private var profileStore = ProfileStore()
     @StateObject private var chatThreadStore = ChatThreadStore()
+    @StateObject private var clinicStore = ClinicStore()
 
     var body: some Scene {
         WindowGroup {
@@ -46,6 +47,7 @@ struct EirViewerApp: App {
                 .environmentObject(settingsVM)
                 .environmentObject(profileStore)
                 .environmentObject(chatThreadStore)
+                .environmentObject(clinicStore)
                 .onAppear {
                     loadFromCommandLine()
                 }

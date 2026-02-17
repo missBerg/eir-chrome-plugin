@@ -3,6 +3,7 @@ import SwiftUI
 enum NavTab: String, CaseIterable, Identifiable {
     case journal = "Journal"
     case chat = "Chat"
+    case findCare = "Find Care"
 
     var id: String { rawValue }
 
@@ -10,6 +11,7 @@ enum NavTab: String, CaseIterable, Identifiable {
         switch self {
         case .journal: return "doc.text"
         case .chat: return "bubble.left.and.bubble.right"
+        case .findCare: return "map"
         }
     }
 }
@@ -38,6 +40,8 @@ struct ContentView: View {
                         JournalTimelineView()
                     case .chat:
                         ChatView()
+                    case .findCare:
+                        FindCareView()
                     }
                 }
                 .navigationSplitViewStyle(.balanced)
