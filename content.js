@@ -621,7 +621,10 @@ Eir Viewer is included in this download! To get started:
 1. Unzip **EirViewer-macOS.zip**
 2. Move **EirViewer.app** to your Applications folder (optional)
 3. Double-click **EirViewer.app**, then open the \`journal-content.eir\` file
-4. On first launch, right-click → Open (to bypass macOS Gatekeeper for unsigned apps)
+4. If macOS says the app is "damaged", open Terminal and run:
+   \`\`\`
+   xattr -cr /path/to/EirViewer.app
+   \`\`\`
 
 ### What Eir Viewer offers
 - **Timeline view** with search and filters
