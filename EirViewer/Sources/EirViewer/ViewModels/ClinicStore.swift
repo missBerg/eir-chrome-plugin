@@ -183,10 +183,19 @@ final class ClinicStore: ObservableObject {
         return Array(base.prefix(maxListResults))
     }
 
-    /// Clinics for the map — region-bound + capped
+    /// Clinics for the map — nearest to user OR region-bound + capped
     var visibleClinics: [Clinic] {
-        guard isZoomedIn else { return [] }
         let base = applyFilters(to: allClinics)
+
+        // When user has location, always show nearest clinics regardless of zoom
+        if let loc = userLocation {
+            return Array(base.sorted { a, b in
+                (a.distance(from: loc) ?? .greatestFiniteMagnitude) < (b.distance(from: loc) ?? .greatestFiniteMagnitude)
+            }.prefix(maxVisiblePins))
+        }
+
+        // No location — require zoom-in
+        guard isZoomedIn else { return [] }
         let inRegion = clinicsInRegion(from: base)
         if inRegion.count <= maxVisiblePins { return inRegion }
         let center = CLLocation(latitude: mapRegion.center.latitude, longitude: mapRegion.center.longitude)
@@ -245,7 +254,7 @@ final class ClinicStore: ObservableObject {
         guard let loc = userLocation else { return nil }
         return MKCoordinateRegion(
             center: loc.coordinate,
-            span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
+            span: MKCoordinateSpan(latitudeDelta: 0.3, longitudeDelta: 0.3)
         )
     }
 

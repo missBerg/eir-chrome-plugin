@@ -76,8 +76,8 @@ struct ClinicMapView: View {
 
                 Spacer()
 
-                if !clinicStore.isZoomedIn {
-                    Text("Zoom in to see clinics")
+                if !clinicStore.isZoomedIn && clinicStore.userLocation == nil {
+                    Text("Zoom in or use location to see clinics")
                         .font(.callout)
                         .fontWeight(.medium)
                         .foregroundColor(AppColors.text)
