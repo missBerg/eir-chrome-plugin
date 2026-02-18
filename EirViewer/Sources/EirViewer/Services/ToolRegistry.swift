@@ -25,6 +25,18 @@ actor ToolRegistry {
             )
         ),
         ToolDefinition(
+            name: "get_records_request_guide",
+            description: "Get provider-specific instructions for obtaining medical records (download + HIPAA request workflow). Use this whenever the user asks how to request, download, transfer, or collect records from a provider like Kaiser Georgia.",
+            parameters: ToolParameters(
+                type: "object",
+                properties: [
+                    "provider": ToolProperty(type: "string", description: "Healthcare provider name (for example: 'Kaiser Permanente Georgia')"),
+                    "state": ToolProperty(type: "string", description: "US state abbreviation or name (for example: 'GA' or 'Georgia')"),
+                ],
+                required: ["provider"]
+            )
+        ),
+        ToolDefinition(
             name: "find_clinics",
             description: "Search for nearby healthcare clinics in Sweden by name or type.",
             parameters: ToolParameters(
@@ -91,6 +103,8 @@ actor ToolRegistry {
         switch call.name {
         case "get_medical_records":
             return getMedicalRecords(args: args, allDocuments: context.allDocuments, callId: call.id)
+        case "get_records_request_guide":
+            return getRecordsRequestGuide(args: args, callId: call.id)
         case "find_clinics":
             return await findClinics(args: args, clinicStore: context.clinicStore, callId: call.id)
         case "name_agent":
@@ -175,6 +189,30 @@ actor ToolRegistry {
         }
 
         return ToolResult(toolCallId: callId, content: output)
+    }
+
+    private func getRecordsRequestGuide(args: [String: Any], callId: String) -> ToolResult {
+        guard let providerRaw = args["provider"] as? String else {
+            return ToolResult(toolCallId: callId, content: "Error: provider is required")
+        }
+        let provider = providerRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !provider.isEmpty else {
+            return ToolResult(toolCallId: callId, content: "Error: provider is required")
+        }
+
+        let state = (args["state"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if isKaiserGeorgia(provider: provider, state: state) {
+            return ToolResult(
+                toolCallId: callId,
+                content: buildKaiserGeorgiaRecordsGuide(provider: provider)
+            )
+        }
+
+        return ToolResult(
+            toolCallId: callId,
+            content: buildGenericUSRecordsGuide(provider: provider, state: state)
+        )
     }
 
     private func findClinics(args: [String: Any], clinicStore: ClinicStore?, callId: String) async -> ToolResult {
@@ -296,5 +334,132 @@ actor ToolRegistry {
             return nil
         }
         return obj
+    }
+
+    private func isKaiserGeorgia(provider: String, state: String?) -> Bool {
+        let normalizedProvider = provider.lowercased()
+        let normalizedState = state?.lowercased()
+
+        let mentionsKaiser = normalizedProvider.contains("kaiser")
+            || normalizedProvider.contains("kp.org")
+            || normalizedProvider.contains("kp ")
+        let mentionsGeorgiaInProvider = normalizedProvider.contains("georgia")
+        let mentionsGeorgiaInState = normalizedState == "ga" || normalizedState == "georgia"
+
+        return mentionsKaiser && (mentionsGeorgiaInProvider || mentionsGeorgiaInState)
+    }
+
+    private func buildKaiserGeorgiaRecordsGuide(provider: String) -> String {
+        """
+        # Medical Records Request Guide — Kaiser Permanente Georgia
+
+        This workflow helps you get your records from **\(provider)** as quickly as possible.
+
+        ## 1) Fastest path: download what is already available in the portal
+        1. Sign in to your Kaiser account at https://healthy.kaiserpermanente.org/
+        2. Open your medical record/download area (labels vary by screen, often under My Health Manager/Medical Record).
+        3. Download available sections first (visit summaries, labs, medications, immunizations, after-visit summaries).
+        4. Save files with clear names by date range.
+
+        ## 2) Request your full chart when portal data is incomplete
+        Ask Kaiser Georgia Release of Information/Health Information Management for your **designated record set** (or clearly list what you need: encounters, labs, imaging reports, operative notes, billing records, etc.).
+
+        Include:
+        - Full legal name (and prior names if relevant)
+        - Date of birth
+        - Member/medical record number (if known)
+        - Date range requested
+        - Exact record types needed
+        - Delivery format (PDF, portal release, secure email, mail)
+        - Where records should be sent (you, another doctor, attorney, insurer)
+
+        ## 3) Copy/paste request template
+        Subject: Medical records request (HIPAA right of access)
+
+        Hello Kaiser Permanente Georgia Release of Information team,
+
+        I am requesting a copy of my medical records under my HIPAA right of access.
+
+        Name: [FULL NAME]
+        Date of birth: [MM/DD/YYYY]
+        Member/Medical record number: [IF KNOWN]
+        Date range requested: [START] to [END]
+
+        Please provide:
+        [LIST RECORD TYPES YOU WANT]
+
+        Delivery preference:
+        [PORTAL DOWNLOAD / SECURE EMAIL / MAILED COPY]
+
+        Send to:
+        [YOUR EMAIL/ADDRESS OR RECEIVING PROVIDER DETAILS]
+
+        Please confirm receipt and let me know if you need an authorization form or identity verification.
+
+        Thank you,
+        [YOUR NAME]
+        [PHONE]
+
+        ## 4) Timeline and follow-up
+        - HIPAA access requests are generally fulfilled within **30 days** (with a possible extension in some cases).
+        - If you do not receive confirmation, follow up in writing and keep timestamps/screenshots.
+        - If a specific item is denied or missing, ask for the denial reason and how to appeal/correct the request scope.
+
+        ## 5) Important edge cases
+        - For minors/dependents, include guardian documents if required.
+        - Behavioral health/substance-use records can require extra authorization language.
+        - Imaging may need a separate request channel from standard chart notes.
+
+        Note: Contact paths can change by facility. Use the current Kaiser Georgia Release of Information channel listed in your portal or facility contact page.
+        """
+    }
+
+    private func buildGenericUSRecordsGuide(provider: String, state: String?) -> String {
+        let stateLine: String
+        if let state, !state.isEmpty {
+            stateLine = " (\(state))"
+        } else {
+            stateLine = ""
+        }
+
+        return """
+        # Medical Records Request Guide — \(provider)\(stateLine)
+
+        ## 1) Check portal download first
+        1. Sign in to the provider portal.
+        2. Export available records (visit summaries, labs, medications, immunizations, imaging reports).
+        3. Save copies before requesting additional documents.
+
+        ## 2) Request full records (HIPAA right of access)
+        Contact the provider's Release of Information/Health Information Management office and request your records in writing.
+
+        Include:
+        - Full name and date of birth
+        - Patient/member/medical record number (if known)
+        - Date range
+        - Exact record categories
+        - Delivery format and destination
+
+        ## 3) Copy/paste template
+        Subject: Medical records request (HIPAA right of access)
+
+        Hello \(provider) Release of Information team,
+
+        I am requesting a copy of my medical records under my HIPAA right of access.
+        Name: [FULL NAME]
+        DOB: [MM/DD/YYYY]
+        Date range: [START] to [END]
+        Records requested: [LIST]
+        Delivery method: [PORTAL / EMAIL / MAIL]
+
+        Please confirm receipt and let me know if you require identity verification or an authorization form.
+
+        Thank you,
+        [YOUR NAME]
+        [PHONE]
+
+        ## 4) Timing
+        HIPAA requests are generally fulfilled within 30 days (extensions are sometimes allowed).
+        """
     }
 }

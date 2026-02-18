@@ -151,6 +151,21 @@ API keys are stored in macOS Keychain.
 - Edge (Chromium-based)
 - Other Chromium-based browsers (Brave, Arc, Opera, etc.)
 
+## Getting Records from Kaiser Permanente Georgia
+
+This repo currently automates downloads from **1177.se** only.  
+For **Kaiser Georgia**, use Eir Viewer as a records-request assistant:
+
+1. Open Eir Viewer chat
+2. Ask: **"Help me request my medical records from Kaiser Georgia"**
+3. The assistant can now provide:
+   - A step-by-step Kaiser Georgia request workflow
+   - A HIPAA right-of-access request template you can copy/paste
+   - A checklist of what details to include (date range, record types, delivery method)
+
+If you request records from a different provider, ask with provider + state (for example:  
+"Help me request records from Emory in Georgia"), and Eir Viewer will fall back to a generic HIPAA workflow.
+
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests.
