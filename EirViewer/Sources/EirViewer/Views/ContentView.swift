@@ -22,10 +22,15 @@ struct ContentView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
     @EnvironmentObject var profileStore: ProfileStore
     @EnvironmentObject var chatThreadStore: ChatThreadStore
+    @EnvironmentObject var agentMemoryStore: AgentMemoryStore
+    @EnvironmentObject var clinicStore: ClinicStore
+    @EnvironmentObject var embeddingStore: EmbeddingStore
+    @EnvironmentObject var modelManager: ModelManager
 
     @State private var selectedTab: NavTab = .journal
     @State private var showingAddPerson = false
     @State private var pendingFileURL: URL?
+    @State private var pendingEntryID: String?
 
     var body: some View {
         Group {
@@ -59,7 +64,17 @@ struct ContentView: View {
             showingAddPerson = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .navigateToJournalEntry)) { notification in
-            if let entryID = notification.object as? String {
+            if let nav = notification.object as? NavigateToEntry {
+                if nav.profileID != profileStore.selectedProfileID {
+                    // Switching profiles — store entry ID as pending since
+                    // loadSelectedProfile() will reset selectedEntryID
+                    pendingEntryID = nav.entryID
+                    profileStore.selectProfile(nav.profileID)
+                } else {
+                    documentVM.selectedEntryID = nav.entryID
+                }
+                selectedTab = .journal
+            } else if let entryID = notification.object as? String {
                 documentVM.selectedEntryID = entryID
                 selectedTab = .journal
             }
@@ -85,7 +100,11 @@ struct ContentView: View {
                     document: documentVM.document,
                     settingsVM: settingsVM,
                     chatThreadStore: chatThreadStore,
-                    profileID: profileID
+                    profileID: profileID,
+                    agentMemoryStore: agentMemoryStore,
+                    clinicStore: clinicStore,
+                    profileStore: profileStore,
+                    embeddingStore: embeddingStore
                 )
             }
         }
@@ -98,5 +117,26 @@ struct ContentView: View {
         guard let profile = profileStore.selectedProfile else { return }
         documentVM.loadFile(url: profile.fileURL)
         chatThreadStore.loadThreads(for: profile.id)
+        agentMemoryStore.load(profileID: profile.id)
+
+        // Apply pending entry navigation after profile document is loaded
+        if let entryID = pendingEntryID {
+            pendingEntryID = nil
+            documentVM.selectedEntryID = entryID
+        }
+
+        // Open vector store and auto-index if embeddings are enabled
+        embeddingStore.openStore(profileID: profile.id)
+        if embeddingStore.isEnabled, modelManager.isModelAvailable(embeddingStore.selectedModelID) {
+            var allDocs: [(personName: String, document: EirDocument)] = []
+            for p in profileStore.profiles {
+                if let doc = try? EirParser.parse(url: p.fileURL) {
+                    allDocs.append((personName: p.displayName, document: doc))
+                }
+            }
+            if !allDocs.isEmpty {
+                embeddingStore.indexDocuments(allDocuments: allDocs, modelManager: modelManager)
+            }
+        }
     }
 }

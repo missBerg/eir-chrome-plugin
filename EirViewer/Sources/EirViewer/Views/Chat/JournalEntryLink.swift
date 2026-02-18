@@ -48,17 +48,61 @@ func parseJournalEntryTags(_ text: String) -> [ChatContentPart] {
 struct JournalEntryLink: View {
     let entryID: String
     @EnvironmentObject var documentVM: DocumentViewModel
+    @EnvironmentObject var profileStore: ProfileStore
 
-    var entry: EirEntry? {
-        documentVM.document?.entries.first { $0.id == entryID }
+    /// Parse composite ID "PersonName::entry_id", "UUID::entry_id", or plain "entry_id"
+    private var parsed: (personHint: String?, rawID: String) {
+        let parts = entryID.components(separatedBy: "::")
+        if parts.count == 2 {
+            return (parts[0], parts[1])
+        }
+        return (nil, entryID)
+    }
+
+    /// Search profiles for the entry, using person name or UUID hint from composite ID
+    var match: (entry: EirEntry, profileID: UUID)? {
+        let (personHint, rawID) = parsed
+
+        if let personHint {
+            // Try UUID match first
+            if let uuid = UUID(uuidString: personHint),
+               let profile = profileStore.profiles.first(where: { $0.id == uuid }),
+               let doc = try? EirParser.parse(url: profile.fileURL),
+               let entry = doc.entries.first(where: { $0.id == rawID }) {
+                return (entry, profile.id)
+            }
+
+            // Try person name match — check both directions for partial matches
+            for profile in profileStore.profiles {
+                let name = profile.displayName
+                if name.localizedCaseInsensitiveContains(personHint)
+                    || personHint.localizedCaseInsensitiveContains(name) {
+                    if let doc = try? EirParser.parse(url: profile.fileURL),
+                       let entry = doc.entries.first(where: { $0.id == rawID }) {
+                        return (entry, profile.id)
+                    }
+                }
+            }
+        }
+
+        // Fallback: search all profiles
+        for profile in profileStore.profiles {
+            if let doc = try? EirParser.parse(url: profile.fileURL),
+               let entry = doc.entries.first(where: { $0.id == rawID }) {
+                return (entry, profile.id)
+            }
+        }
+        return nil
     }
 
     var body: some View {
-        if let entry = entry {
+        if let match = match {
+            let entry = match.entry
+            let isOtherProfile = match.profileID != profileStore.selectedProfileID
             Button {
                 NotificationCenter.default.post(
                     name: .navigateToJournalEntry,
-                    object: entry.id
+                    object: NavigateToEntry(entryID: entry.id, profileID: match.profileID)
                 )
             } label: {
                 HStack(spacing: 8) {
@@ -67,10 +111,18 @@ struct JournalEntryLink: View {
                         .font(.caption)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.category ?? "Journal Entry")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(AppColors.text)
+                        HStack(spacing: 4) {
+                            Text(entry.category ?? "Journal Entry")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(AppColors.text)
+                            if isOtherProfile,
+                               let name = profileStore.profiles.first(where: { $0.id == match.profileID })?.displayName {
+                                Text("(\(name))")
+                                    .font(.caption2)
+                                    .foregroundColor(AppColors.primary)
+                            }
+                        }
                         Text(entry.date ?? "")
                             .font(.caption2)
                             .foregroundColor(AppColors.textSecondary)
@@ -103,6 +155,12 @@ struct JournalEntryLink: View {
                 .foregroundColor(AppColors.textSecondary)
         }
     }
+}
+
+/// Payload for journal entry navigation (includes which profile owns the entry)
+struct NavigateToEntry {
+    let entryID: String
+    let profileID: UUID
 }
 
 // MARK: - Notification

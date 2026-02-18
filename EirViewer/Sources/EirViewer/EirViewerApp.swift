@@ -1,4 +1,5 @@
 import SwiftUI
+import SQLiteVec
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -7,6 +8,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // register as a regular (Dock-visible) app and activate.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+
+        // Initialize sqlite-vec extension
+        try? SQLiteVec.initialize()
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -38,6 +42,9 @@ struct EirViewerApp: App {
     @StateObject private var profileStore = ProfileStore()
     @StateObject private var chatThreadStore = ChatThreadStore()
     @StateObject private var clinicStore = ClinicStore()
+    @StateObject private var agentMemoryStore = AgentMemoryStore()
+    @StateObject private var embeddingStore = EmbeddingStore()
+    @StateObject private var modelManager = ModelManager()
 
     var body: some Scene {
         WindowGroup {
@@ -48,6 +55,9 @@ struct EirViewerApp: App {
                 .environmentObject(profileStore)
                 .environmentObject(chatThreadStore)
                 .environmentObject(clinicStore)
+                .environmentObject(agentMemoryStore)
+                .environmentObject(embeddingStore)
+                .environmentObject(modelManager)
                 .onAppear {
                     loadFromCommandLine()
                 }
@@ -77,6 +87,10 @@ struct EirViewerApp: App {
         Settings {
             SettingsView()
                 .environmentObject(settingsVM)
+                .environmentObject(agentMemoryStore)
+                .environmentObject(embeddingStore)
+                .environmentObject(modelManager)
+                .environmentObject(profileStore)
         }
     }
 

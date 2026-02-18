@@ -6,11 +6,15 @@ let package = Package(
     platforms: [.macOS(.v14)],
     dependencies: [
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.0"),
+        .package(url: "https://github.com/jkrukowski/SQLiteVec", from: "0.0.9"),
     ],
     targets: [
         .executableTarget(
             name: "EirViewer",
-            dependencies: ["Yams"],
+            dependencies: [
+                "Yams",
+                .product(name: "SQLiteVec", package: "SQLiteVec"),
+            ],
             path: "Sources/EirViewer",
             resources: [.process("Resources/")],
             linkerSettings: [
@@ -24,7 +28,11 @@ let package = Package(
         ),
         .testTarget(
             name: "EirViewerTests",
-            dependencies: ["EirViewer", "Yams"],
+            dependencies: [
+                "EirViewer",
+                "Yams",
+                .product(name: "SQLiteVec", package: "SQLiteVec"),
+            ],
             path: "Tests/EirViewerTests"
         ),
     ]

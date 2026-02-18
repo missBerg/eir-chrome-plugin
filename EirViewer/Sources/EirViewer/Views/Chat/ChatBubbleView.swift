@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ChatBubbleView: View {
     let message: ChatMessage
+    var userName: String?
+    var agentName: String?
 
     var isUser: Bool { message.role == .user }
 
@@ -10,6 +12,11 @@ struct ChatBubbleView: View {
             if isUser { Spacer(minLength: 60) }
 
             VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
+                Text(isUser ? (userName ?? "You") : (agentName ?? "Assistant"))
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(AppColors.textSecondary)
+
                 VStack(alignment: .leading, spacing: 6) {
                     let parts = parseJournalEntryTags(message.content)
                     ForEach(Array(parts.enumerated()), id: \.offset) { _, part in

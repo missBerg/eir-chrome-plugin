@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "sqlitevec",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jkrukowski/SQLiteVec",
+      "state" : {
+        "revision" : "1504246d0900db950a5065f43fce964bf4adceda",
+        "version" : "0.0.14"
+      }
+    },
+    {
       "identity" : "yams",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/jpsim/Yams.git",

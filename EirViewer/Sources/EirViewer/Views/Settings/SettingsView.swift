@@ -3,17 +3,27 @@ import SwiftUI
 // macOS Settings window (Cmd+,)
 struct SettingsView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
+    @EnvironmentObject var agentMemoryStore: AgentMemoryStore
+    @EnvironmentObject var embeddingStore: EmbeddingStore
+    @EnvironmentObject var modelManager: ModelManager
 
     var body: some View {
         InlineSettingsView()
             .environmentObject(settingsVM)
-            .frame(width: 600, height: 500)
+            .environmentObject(agentMemoryStore)
+            .environmentObject(embeddingStore)
+            .environmentObject(modelManager)
+            .frame(width: 600, height: 750)
     }
 }
 
 // Full in-app settings view (used in sidebar navigation and Settings window)
 struct InlineSettingsView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
+    @EnvironmentObject var agentMemoryStore: AgentMemoryStore
+    @EnvironmentObject var embeddingStore: EmbeddingStore
+    @EnvironmentObject var modelManager: ModelManager
+    @State private var showResetConfirmation = false
 
     var body: some View {
         ScrollView {
@@ -54,6 +64,77 @@ struct InlineSettingsView: View {
                 ForEach(settingsVM.providers) { config in
                     ProviderCard(config: config)
                         .environmentObject(settingsVM)
+                }
+
+                // Smart Search (Embeddings)
+                EmbeddingSettingsView()
+
+                // Agent Configuration
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Agent Configuration")
+                            .font(.headline)
+                            .foregroundColor(AppColors.text)
+                        Text("Customize the AI agent's identity, memory, and capabilities")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+
+                        AgentConfigCard(
+                            title: "Identity (SOUL.md)",
+                            defaultContent: AgentDefaults.defaultSoul,
+                            content: $agentMemoryStore.memory.soul
+                        )
+                        AgentConfigCard(
+                            title: "User Profile (USER.md)",
+                            defaultContent: AgentDefaults.defaultUser,
+                            content: $agentMemoryStore.memory.user
+                        )
+                        AgentConfigCard(
+                            title: "Memory (MEMORY.md)",
+                            defaultContent: AgentDefaults.defaultMemory,
+                            content: $agentMemoryStore.memory.memory
+                        )
+                        AgentConfigCard(
+                            title: "Skills (AGENTS.md)",
+                            defaultContent: AgentDefaults.defaultAgents,
+                            content: $agentMemoryStore.memory.agents
+                        )
+                        // Reset Agent button
+                        Divider()
+                            .padding(.vertical, 4)
+
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Reset Agent")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(AppColors.text)
+                                Text("Resets all files to defaults — the agent will re-introduce itself on next chat")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                            Spacer()
+                            Button("Reset") {
+                                showResetConfirmation = true
+                            }
+                            .foregroundColor(AppColors.red)
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                    }
+                    .padding(4)
+                }
+                .onChange(of: agentMemoryStore.memory.soul) { _, _ in agentMemoryStore.save() }
+                .onChange(of: agentMemoryStore.memory.user) { _, _ in agentMemoryStore.save() }
+                .onChange(of: agentMemoryStore.memory.memory) { _, _ in agentMemoryStore.save() }
+                .onChange(of: agentMemoryStore.memory.agents) { _, _ in agentMemoryStore.save() }
+                .alert("Reset Agent?", isPresented: $showResetConfirmation) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Reset", role: .destructive) {
+                        agentMemoryStore.resetToDefaults()
+                    }
+                } message: {
+                    Text("This will reset the agent's identity, user profile, memory, and skills to defaults. The agent will re-introduce itself on the next chat.")
                 }
 
                 // Info
@@ -163,6 +244,21 @@ struct ProviderCard: View {
                         }
                         .buttonStyle(.plain)
                         .help(showKey ? "Hide key" : "Show key")
+                    }
+
+                    // Hint for providers that need API keys
+                    if config.type == .anthropic, !hasKey {
+                        Text("Get a key at console.anthropic.com")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                    } else if config.type == .minimax, !hasKey {
+                        Text("Get a key at platform.minimax.io — uses Anthropic format")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                    } else if config.type == .groq, !hasKey {
+                        Text("Free API key at console.groq.com")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
                     }
                 }
 

@@ -1,59 +1,160 @@
 import Foundation
 
 enum SystemPrompt {
+
+    /// Build the full system prompt from agent memory files + medical records
+    static func build(
+        memory: AgentMemory,
+        document: EirDocument?,
+        allDocuments: [(personName: String, document: EirDocument)] = [],
+        includeToolInstructions: Bool = true
+    ) -> String {
+        var sections: [String] = []
+
+        // 1. Identity (SOUL.md) — includes tools, vibe, boundaries
+        sections.append(memory.soul)
+
+        // 2. User Profile (USER.md)
+        sections.append(memory.user)
+
+        // 3. Session Memory (MEMORY.md)
+        if !memory.memory.contains("Nothing recorded yet") {
+            sections.append(memory.memory)
+        }
+
+        // 4. Available Skills (AGENTS.md)
+        sections.append(memory.agents)
+
+        // 5. Medical Records — metadata overview, use get_medical_records tool for full data
+        if !allDocuments.isEmpty {
+            sections.append(buildAllRecordsMetadata(from: allDocuments))
+        } else if let doc = document {
+            sections.append(buildRecordsMetadata(from: doc))
+        }
+
+        return sections.joined(separator: "\n\n---\n\n")
+    }
+
+    /// Legacy build method for backward compatibility (title generation etc.)
     static func build(from document: EirDocument?) -> String {
-        var prompt = """
-        You are a helpful medical assistant for Eir, a Swedish healthcare records viewer. \
-        You help users understand their medical records written in Swedish. \
-        You can explain medical terms, summarize visits, and answer health-related questions. \
-        Always be accurate and note when something requires professional medical advice. \
-        Respond in the same language the user writes in.
+        let defaultMemory = AgentMemory(
+            soul: AgentDefaults.defaultSoul,
+            user: AgentDefaults.defaultUser,
+            memory: AgentDefaults.defaultMemory,
+            agents: AgentDefaults.defaultAgents
+        )
+        return build(memory: defaultMemory, document: document, includeToolInstructions: false)
+    }
 
-        When referencing specific medical record entries, use the format <JOURNAL_ENTRY id="ENTRY_ID"/> \
-        where ENTRY_ID is the exact id from the records. This will render as a clickable link. \
-        Use this whenever you cite or reference a specific entry.
-        """
+    // MARK: - Records Metadata (lightweight — details via tools)
 
-        guard let doc = document else { return prompt }
+    private static func buildAllRecordsMetadata(from allDocuments: [(personName: String, document: EirDocument)]) -> String {
+        var context = "# Medical Records Available\n\n"
+        context += "Records are loaded for **\(allDocuments.count) \(allDocuments.count == 1 ? "person" : "people")**. "
+        context += "Use the `get_medical_records` tool to retrieve ALL records with full details (optionally filtered by person).\n\n"
+
+        for (personName, doc) in allDocuments {
+            context += "### \(personName)\n"
+            if let patient = doc.metadata.patient {
+                if let dob = patient.birthDate { context += "- Born: \(dob)\n" }
+            }
+            context += "- Entries: \(doc.entries.count)\n"
+            if let info = doc.metadata.exportInfo, let range = info.dateRange {
+                context += "- Date range: \(range.start ?? "?") to \(range.end ?? "?")\n"
+            }
+            // Category breakdown
+            if !doc.entries.isEmpty {
+                var categoryCounts: [String: Int] = [:]
+                for entry in doc.entries {
+                    categoryCounts[entry.category ?? "Other", default: 0] += 1
+                }
+                let topCategories = categoryCounts.sorted(by: { $0.value > $1.value }).prefix(5)
+                context += "- Top categories: \(topCategories.map { "\($0.key) (\($0.value))" }.joined(separator: ", "))\n"
+            }
+            context += "\n"
+        }
+
+        return context
+    }
+
+    private static func buildRecordsMetadata(from doc: EirDocument) -> String {
+        var context = "# Medical Records Available\n\n"
+        context += "Records are loaded. Use the `get_medical_records` tool to retrieve ALL records with full details.\n\n"
 
         if let patient = doc.metadata.patient {
-            prompt += "\n\nPatient: \(patient.name ?? "Unknown")"
-            if let dob = patient.birthDate {
-                prompt += ", born \(dob)"
-            }
+            context += "**Patient**: \(patient.name ?? "Unknown")"
+            if let dob = patient.birthDate { context += ", born \(dob)" }
+            context += "\n"
         }
+
+        let entries = doc.entries
+        context += "**Total entries**: \(entries.count)\n"
 
         if let info = doc.metadata.exportInfo {
-            if let total = info.totalEntries {
-                prompt += "\nTotal entries: \(total)"
-            }
             if let range = info.dateRange {
-                prompt += "\nDate range: \(range.start ?? "?") to \(range.end ?? "?")"
+                context += "**Date range**: \(range.start ?? "?") to \(range.end ?? "?")\n"
+            }
+            if let providers = info.healthcareProviders, !providers.isEmpty {
+                context += "**Providers**: \(providers.joined(separator: ", "))\n"
             }
         }
 
-        let entries = doc.entries.prefix(50)
+        // Category breakdown so the agent knows what's there
         if !entries.isEmpty {
-            prompt += "\n\nRecent medical records:\n"
+            var categoryCounts: [String: Int] = [:]
             for entry in entries {
-                prompt += "\n---\n"
-                prompt += "ID: \(entry.id)\n"
-                prompt += "Date: \(entry.date ?? "Unknown")"
-                if let time = entry.time { prompt += " \(time)" }
-                prompt += "\nCategory: \(entry.category ?? "Unknown")"
-                if let type = entry.type { prompt += "\nType: \(type)" }
-                if let provider = entry.provider?.name { prompt += "\nProvider: \(provider)" }
-                if let person = entry.responsiblePerson {
-                    prompt += "\nResponsible: \(person.name ?? "?") (\(person.role ?? "?"))"
-                }
-                if let summary = entry.content?.summary { prompt += "\nSummary: \(summary)" }
-                if let details = entry.content?.details { prompt += "\nDetails: \(details)" }
-                if let notes = entry.content?.notes, !notes.isEmpty {
-                    prompt += "\nNotes: \(notes.joined(separator: "; "))"
-                }
+                categoryCounts[entry.category ?? "Other", default: 0] += 1
+            }
+            context += "\n**Categories**:\n"
+            for (cat, count) in categoryCounts.sorted(by: { $0.value > $1.value }) {
+                context += "- \(cat): \(count)\n"
             }
         }
 
-        return prompt
+        return context
+    }
+
+    // MARK: - Token Estimation
+
+    struct ContextBreakdown {
+        var identity: Int = 0
+        var userProfile: Int = 0
+        var memory: Int = 0
+        var skills: Int = 0
+        var records: Int = 0
+        var toolDefinitions: Int = 0
+        var conversation: Int = 0
+
+        var total: Int { identity + userProfile + memory + skills + records + toolDefinitions + conversation }
+    }
+
+    /// Approximate token count (~4 chars per token)
+    static func estimateTokens(_ text: String) -> Int {
+        max(1, text.count / 4)
+    }
+
+    /// Break down token usage across context components
+    static func estimateContext(
+        memory: AgentMemory,
+        document: EirDocument?,
+        conversationMessages: [ChatMessage] = [],
+        tools: [ToolDefinition] = ToolRegistry.tools
+    ) -> ContextBreakdown {
+        var b = ContextBreakdown()
+        b.identity = estimateTokens(memory.soul)
+        b.userProfile = estimateTokens(memory.user)
+        if !memory.memory.contains("Nothing recorded yet") {
+            b.memory = estimateTokens(memory.memory)
+        }
+        b.skills = estimateTokens(memory.agents)
+        if let doc = document {
+            b.records = estimateTokens(buildRecordsMetadata(from: doc))
+        }
+        // Tool definitions JSON ~150 tokens per tool
+        b.toolDefinitions = tools.count * 150
+        // Conversation history
+        let convText = conversationMessages.map { $0.content }.joined()
+        b.conversation = estimateTokens(convText)
+        return b
     }
 }
