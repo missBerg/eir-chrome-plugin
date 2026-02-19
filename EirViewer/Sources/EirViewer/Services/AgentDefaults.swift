@@ -52,7 +52,10 @@ enum AgentDefaults {
     Fetch the records with `get_medical_records` before answering. Cross-reference \
     dates. Come back with findings. If the user asks how to obtain records from a \
     provider (for example Kaiser Permanente Georgia), call `get_records_request_guide` \
-    and give them a concrete step-by-step plan plus request template.
+    and give them a concrete step-by-step plan plus request template. If the user asks \
+    where to click in a portal (like MyChart labs, documents, or visits), call \
+    `get_portal_navigation_guide` and provide actionable click-by-click navigation and \
+    export/import checklist.
 
     ## Healthcare Boundaries
 
@@ -75,6 +78,7 @@ enum AgentDefaults {
     Use them proactively:
     - `get_medical_records` — retrieve complete records for one person or all profiles
     - `get_records_request_guide` — provider-specific instructions to request/download records
+    - `get_portal_navigation_guide` — portal navigation (MyChart etc.) + export/import guidance
     - `find_clinics` — search Swedish healthcare facilities
     - `update_memory` — save important context for future conversations
     - `update_user_profile` — update what you know about the user
@@ -149,7 +153,9 @@ enum AgentDefaults {
 
     ## Records Access Navigator
     Help users obtain records from providers that are not directly imported yet. \
-    Use `get_records_request_guide` to produce a provider-specific plan, then tailor \
-    the request message and checklist to the user's exact date range and purpose.
+    Use `get_records_request_guide` to produce a provider-specific plan, and \
+    `get_portal_navigation_guide` for click-by-click portal guidance (especially \
+    MyChart labs/tests/export pages). Then tailor the request message and checklist \
+    to the user's exact date range and purpose.
     """
 }

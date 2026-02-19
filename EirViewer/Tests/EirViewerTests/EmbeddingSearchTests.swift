@@ -626,6 +626,34 @@ final class ToolRegistrySearchTests: XCTestCase {
         XCTAssertTrue(result.content.contains("HIPAA right of access"), "Should return generic HIPAA guidance")
         XCTAssertFalse(result.content.contains("Kaiser Permanente Georgia"), "Generic provider should not return Kaiser-specific section")
     }
+
+    func testGetPortalNavigationGuideForMyChartLabs() async {
+        let call = ToolCall(
+            id: "pg1",
+            name: "get_portal_navigation_guide",
+            arguments: #"{"portal":"MyChart","topic":"labs","provider":"Kaiser Permanente Georgia"}"#
+        )
+        let context = ToolContext(document: nil, allDocuments: [], agentMemoryStore: nil, clinicStore: nil, embeddingStore: nil)
+        let result = await ToolRegistry().execute(call: call, context: context)
+
+        XCTAssertTrue(result.content.contains("MyChart Navigation + Extraction Guide"), "Should return MyChart-specific title")
+        XCTAssertTrue(result.content.contains("Test Results"), "Should include labs navigation to Test Results")
+        XCTAssertTrue(result.content.contains("Import note for Eir Viewer"), "Should include import prep guidance")
+    }
+
+    func testGetPortalNavigationGuideFallsBackToGenericPortal() async {
+        let call = ToolCall(
+            id: "pg2",
+            name: "get_portal_navigation_guide",
+            arguments: #"{"portal":"Cerner Portal","topic":"full_export","provider":"Example Health"}"#
+        )
+        let context = ToolContext(document: nil, allDocuments: [], agentMemoryStore: nil, clinicStore: nil, embeddingStore: nil)
+        let result = await ToolRegistry().execute(call: call, context: context)
+
+        XCTAssertTrue(result.content.contains("Portal Navigation Guide — Cerner Portal"), "Should include generic portal title")
+        XCTAssertTrue(result.content.contains("Standard extraction path"), "Should include extraction checklist")
+        XCTAssertFalse(result.content.contains("MyChart Navigation + Extraction Guide"), "Generic portal should not return MyChart-specific guide")
+    }
 }
 
 

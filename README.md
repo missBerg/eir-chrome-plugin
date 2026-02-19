@@ -166,6 +166,22 @@ For **Kaiser Georgia**, use Eir Viewer as a records-request assistant:
 If you request records from a different provider, ask with provider + state (for example:  
 "Help me request records from Emory in Georgia"), and Eir Viewer will fall back to a generic HIPAA workflow.
 
+## Extracting Data from MyChart
+
+Eir Viewer can now guide users through **MyChart page navigation** and export prep.
+
+Ask in chat:
+- **"Guide me to MyChart lab results and how to download them"**
+- **"Help me export MyChart records for labs, visits, meds, immunizations, and documents"**
+- **"Create a checklist to prepare MyChart exports for .eir import"**
+
+The assistant provides:
+- Click-by-click page paths (for example `Menu -> Test Results` for labs)
+- A full export checklist by section
+- Import prep guidance for Eir (`.eir` / `.yaml`)
+
+Note: Eir Viewer currently imports structured EIR/YAML files. If your MyChart exports are PDF/HTML, convert/map them to EIR before importing.
+
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests.

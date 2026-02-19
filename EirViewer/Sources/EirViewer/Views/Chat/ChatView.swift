@@ -21,6 +21,12 @@ struct ChatView: View {
         )
     }
 
+    private let quickPrompts: [(title: String, prompt: String)] = [
+        ("Find MyChart lab results", "Guide me to the right MyChart pages to download my lab test results."),
+        ("Export MyChart records", "Help me export MyChart records for labs, visits, medications, immunizations, and documents."),
+        ("Prepare import to EIR", "Create a step-by-step checklist to extract data from MyChart and prepare it for .eir import."),
+    ]
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -99,6 +105,22 @@ struct ChatView: View {
                             .font(.caption)
                             .foregroundColor(AppColors.textSecondary.opacity(0.7))
                     }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Quick starts")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(AppColors.textSecondary)
+                        ForEach(Array(quickPrompts.enumerated()), id: \.offset) { _, item in
+                            Button(item.title) {
+                                sendQuickPrompt(item.prompt)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .tint(AppColors.primary)
+                        }
+                    }
+                    .padding(.top, 6)
                 }
                 Spacer()
             } else {
@@ -226,6 +248,12 @@ struct ChatView: View {
             profileStore: profileStore,
             embeddingStore: embeddingStore
         )
+    }
+
+    private func sendQuickPrompt(_ prompt: String) {
+        guard !chatVM.isStreaming else { return }
+        chatVM.inputText = prompt
+        sendMessage()
     }
 
     private func triggerOnboardingIfNeeded() {

@@ -37,6 +37,23 @@ actor ToolRegistry {
             )
         ),
         ToolDefinition(
+            name: "get_portal_navigation_guide",
+            description: "Get click-by-click instructions for navigating patient portals (especially MyChart) to find pages like lab results and export records for import workflows.",
+            parameters: ToolParameters(
+                type: "object",
+                properties: [
+                    "portal": ToolProperty(type: "string", description: "Portal name, for example 'MyChart'"),
+                    "topic": ToolProperty(
+                        type: "string",
+                        description: "Which section the user needs help with",
+                        enum: ["labs", "medications", "immunizations", "visits", "documents", "full_export", "import_to_eir"]
+                    ),
+                    "provider": ToolProperty(type: "string", description: "Optional provider/health system name tied to this portal"),
+                ],
+                required: ["portal"]
+            )
+        ),
+        ToolDefinition(
             name: "find_clinics",
             description: "Search for nearby healthcare clinics in Sweden by name or type.",
             parameters: ToolParameters(
@@ -105,6 +122,8 @@ actor ToolRegistry {
             return getMedicalRecords(args: args, allDocuments: context.allDocuments, callId: call.id)
         case "get_records_request_guide":
             return getRecordsRequestGuide(args: args, callId: call.id)
+        case "get_portal_navigation_guide":
+            return getPortalNavigationGuide(args: args, callId: call.id)
         case "find_clinics":
             return await findClinics(args: args, clinicStore: context.clinicStore, callId: call.id)
         case "name_agent":
@@ -212,6 +231,32 @@ actor ToolRegistry {
         return ToolResult(
             toolCallId: callId,
             content: buildGenericUSRecordsGuide(provider: provider, state: state)
+        )
+    }
+
+    private func getPortalNavigationGuide(args: [String: Any], callId: String) -> ToolResult {
+        guard let portalRaw = args["portal"] as? String else {
+            return ToolResult(toolCallId: callId, content: "Error: portal is required")
+        }
+
+        let portal = portalRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !portal.isEmpty else {
+            return ToolResult(toolCallId: callId, content: "Error: portal is required")
+        }
+
+        let topic = (args["topic"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let provider = (args["provider"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if isMyChartPortal(portal: portal, provider: provider) {
+            return ToolResult(
+                toolCallId: callId,
+                content: buildMyChartNavigationGuide(topic: topic, provider: provider)
+            )
+        }
+
+        return ToolResult(
+            toolCallId: callId,
+            content: buildGenericPortalNavigationGuide(portal: portal, topic: topic, provider: provider)
         )
     }
 
@@ -349,6 +394,14 @@ actor ToolRegistry {
         return mentionsKaiser && (mentionsGeorgiaInProvider || mentionsGeorgiaInState)
     }
 
+    private func isMyChartPortal(portal: String, provider: String?) -> Bool {
+        let normalizedPortal = portal.lowercased()
+        let normalizedProvider = provider?.lowercased() ?? ""
+        return normalizedPortal.contains("mychart")
+            || normalizedPortal.contains("epic")
+            || normalizedProvider.contains("mychart")
+    }
+
     private func buildKaiserGeorgiaRecordsGuide(provider: String) -> String {
         """
         # Medical Records Request Guide — Kaiser Permanente Georgia
@@ -460,6 +513,119 @@ actor ToolRegistry {
 
         ## 4) Timing
         HIPAA requests are generally fulfilled within 30 days (extensions are sometimes allowed).
+        """
+    }
+
+    private func buildMyChartNavigationGuide(topic: String?, provider: String?) -> String {
+        let providerLine = if let provider, !provider.isEmpty {
+            "Provider: \(provider)\n"
+        } else {
+            ""
+        }
+
+        let topicSpecific: String
+        switch topic?.lowercased() {
+        case "labs":
+            topicSpecific = """
+            ## Find lab tests in MyChart
+            1. Open **Menu** (or **Your Menu**).
+            2. Select **Test Results**.
+            3. Filter by date range.
+            4. Open each result for details and reference ranges.
+            5. Use **Download/Print** on each result page when available.
+            """
+        case "medications":
+            topicSpecific = """
+            ## Find medications in MyChart
+            1. Open **Menu**.
+            2. Go to **Medications**.
+            3. Review active + historical medications.
+            4. Export/print the list if your site provides it.
+            """
+        case "immunizations":
+            topicSpecific = """
+            ## Find immunizations in MyChart
+            1. Open **Menu**.
+            2. Go to **Immunizations** (sometimes under **My Record**).
+            3. Export/print your vaccine history.
+            """
+        case "visits":
+            topicSpecific = """
+            ## Find visit summaries in MyChart
+            1. Open **Menu**.
+            2. Go to **Visits** > **Past Visits**.
+            3. Open each visit and download the **After Visit Summary**.
+            """
+        case "documents":
+            topicSpecific = """
+            ## Find downloadable documents in MyChart
+            1. Open **Menu**.
+            2. Go to **Document Center** or **My Record** > **Documents**.
+            3. Download available clinical documents, letters, and summaries.
+            """
+        case "import_to_eir":
+            topicSpecific = """
+            ## Prepare MyChart exports for Eir import
+            1. Export records from MyChart by section (labs, meds, immunizations, visits, documents).
+            2. Keep files in a single folder with date-stamped filenames.
+            3. Normalize into EIR YAML (this app imports `.eir`/`.yaml` today).
+            4. In Eir Viewer, use **Choose File...** or drag-drop to import the generated `.eir` file.
+            """
+        default:
+            topicSpecific = """
+            ## Core MyChart navigation
+            - **Labs**: Menu > Test Results
+            - **Visits**: Menu > Visits > Past Visits > After Visit Summary
+            - **Medications**: Menu > Medications
+            - **Immunizations**: Menu > Immunizations
+            - **Documents**: Menu > Document Center (or My Record > Documents)
+            """
+        }
+
+        return """
+        # MyChart Navigation + Extraction Guide
+        \(providerLine)
+        \(topicSpecific)
+
+        ## Full export checklist
+        1. Capture date range needed (for example last 5 years).
+        2. Download core sections: labs, medications, immunizations, visit summaries, documents.
+        3. If data is missing, submit a Release of Information request for the full chart.
+        4. Keep an inventory list of downloaded files to avoid gaps.
+
+        ## Import note for Eir Viewer
+        Eir Viewer currently imports `.eir` / `.yaml` files.  
+        If MyChart exports are PDF/HTML, convert/map them into EIR format before importing.
+
+        ## Quick prompt you can send next
+        "Build me a MyChart export plan for labs + visits from 2021-01-01 to today, and map it to EIR fields."
+        """
+    }
+
+    private func buildGenericPortalNavigationGuide(portal: String, topic: String?, provider: String?) -> String {
+        let providerLine = if let provider, !provider.isEmpty {
+            "Provider: \(provider)\n"
+        } else {
+            ""
+        }
+        let topicLine = if let topic, !topic.isEmpty {
+            "Focus topic: \(topic)\n"
+        } else {
+            ""
+        }
+
+        return """
+        # Portal Navigation Guide — \(portal)
+        \(providerLine)\(topicLine)
+        ## Standard extraction path
+        1. Open the portal menu/record center.
+        2. Export these sections first: labs, medications, immunizations, visit summaries, documents.
+        3. Use date filters and download by range.
+        4. If sections are missing, submit a Release of Information request for full records.
+
+        ## Import prep
+        - Organize files by date + category.
+        - Convert to EIR YAML for import into Eir Viewer (`.eir`/`.yaml`).
         """
     }
 }
