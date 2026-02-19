@@ -170,6 +170,11 @@ If you request records from a different provider, ask with provider + state (for
 
 Eir Viewer can now guide users through **MyChart page navigation** and export prep.
 
+Use the native app's **Portal Assist** tab to open an embedded browser with:
+- Back/forward/reload controls + URL bar
+- Quick links (MyChart + Kaiser portal)
+- Step-by-step navigation checklists for labs, visits, documents, full export, and EIR import prep
+
 Ask in chat:
 - **"Guide me to MyChart lab results and how to download them"**
 - **"Help me export MyChart records for labs, visits, meds, immunizations, and documents"**

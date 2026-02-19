@@ -3,6 +3,7 @@ import SwiftUI
 enum NavTab: String, CaseIterable, Identifiable {
     case journal = "Journal"
     case chat = "Chat"
+    case portalAssist = "Portal Assist"
     case findCare = "Find Care"
 
     var id: String { rawValue }
@@ -11,6 +12,7 @@ enum NavTab: String, CaseIterable, Identifiable {
         switch self {
         case .journal: return "doc.text"
         case .chat: return "bubble.left.and.bubble.right"
+        case .portalAssist: return "safari"
         case .findCare: return "map"
         }
     }
@@ -45,6 +47,8 @@ struct ContentView: View {
                         JournalTimelineView()
                     case .chat:
                         ChatView()
+                    case .portalAssist:
+                        PortalAssistView()
                     case .findCare:
                         FindCareView()
                     }
