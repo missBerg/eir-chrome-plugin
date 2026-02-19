@@ -36,31 +36,46 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if profileStore.profiles.isEmpty {
-                WelcomeView()
-            } else {
-                NavigationSplitView {
-                    SidebarView(selectedTab: $selectedTab)
-                } detail: {
-                    switch selectedTab {
-                    case .journal:
+            NavigationSplitView {
+                SidebarView(selectedTab: $selectedTab)
+            } detail: {
+                switch selectedTab {
+                case .journal:
+                    if profileStore.profiles.isEmpty {
+                        WelcomeView()
+                    } else {
                         JournalTimelineView()
-                    case .chat:
-                        ChatView()
-                    case .portalAssist:
-                        PortalAssistView()
-                    case .findCare:
-                        FindCareView()
                     }
+                case .chat:
+                    if profileStore.profiles.isEmpty {
+                        VStack(spacing: 10) {
+                            Image(systemName: "bubble.left.and.bubble.right")
+                                .font(.system(size: 44))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                            Text("Add a profile or use Portal Assist first")
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(AppColors.background)
+                    } else {
+                        ChatView()
+                    }
+                case .portalAssist:
+                    PortalAssistView()
+                case .findCare:
+                    FindCareView()
                 }
-                .navigationSplitViewStyle(.balanced)
-                .frame(minWidth: 800, minHeight: 500)
-                .onAppear {
-                    loadSelectedProfile()
+            }
+            .navigationSplitViewStyle(.balanced)
+            .frame(minWidth: 800, minHeight: 500)
+            .onAppear {
+                if profileStore.profiles.isEmpty {
+                    selectedTab = .portalAssist
                 }
-                .onChange(of: profileStore.selectedProfileID) {
-                    loadSelectedProfile()
-                }
+                loadSelectedProfile()
+            }
+            .onChange(of: profileStore.selectedProfileID) {
+                loadSelectedProfile()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showAddPersonSheet)) { notification in
@@ -114,6 +129,11 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingAddPerson) {
             AddPersonSheet(initialURL: pendingFileURL)
+        }
+        .onChange(of: profileStore.profiles.count) { _, count in
+            if count == 0 {
+                selectedTab = .portalAssist
+            }
         }
     }
 

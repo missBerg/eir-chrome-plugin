@@ -174,6 +174,9 @@ Use the native app's **Portal Assist** tab to open an embedded browser with:
 - Back/forward/reload controls + URL bar
 - Quick links (MyChart + Kaiser portal)
 - Step-by-step navigation checklists for labs, visits, documents, full export, and EIR import prep
+- **Auto-open helper** that attempts to click likely section buttons (labs/visits/documents)
+- **Capture this view** to save page content + screenshot locally
+- **Create EIR profile from captures** so users can import directly without manual file upload
 
 Ask in chat:
 - **"Guide me to MyChart lab results and how to download them"**
