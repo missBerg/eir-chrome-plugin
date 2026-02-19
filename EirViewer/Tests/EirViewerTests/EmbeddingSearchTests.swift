@@ -598,6 +598,62 @@ final class ToolRegistrySearchTests: XCTestCase {
 
         XCTAssertTrue(result.content.contains("No records found"), "Unknown person should return no records")
     }
+
+    func testGetRecordsRequestGuideForKaiserGeorgia() async {
+        let call = ToolCall(
+            id: "rg1",
+            name: "get_records_request_guide",
+            arguments: #"{"provider": "Kaiser Permanente", "state": "GA"}"#
+        )
+        let context = ToolContext(document: nil, allDocuments: [], agentMemoryStore: nil, clinicStore: nil, embeddingStore: nil)
+        let result = await ToolRegistry().execute(call: call, context: context)
+
+        XCTAssertTrue(result.content.contains("Kaiser Permanente Georgia"), "Should return Kaiser Georgia-specific guide")
+        XCTAssertTrue(result.content.contains("healthy.kaiserpermanente.org"), "Should include portal URL")
+        XCTAssertTrue(result.content.localizedCaseInsensitiveContains("hipaa"), "Should mention HIPAA access workflow")
+    }
+
+    func testGetRecordsRequestGuideFallsBackToGeneric() async {
+        let call = ToolCall(
+            id: "rg2",
+            name: "get_records_request_guide",
+            arguments: #"{"provider": "Example Health System", "state": "TX"}"#
+        )
+        let context = ToolContext(document: nil, allDocuments: [], agentMemoryStore: nil, clinicStore: nil, embeddingStore: nil)
+        let result = await ToolRegistry().execute(call: call, context: context)
+
+        XCTAssertTrue(result.content.contains("Example Health System"), "Should include requested provider name")
+        XCTAssertTrue(result.content.contains("HIPAA right of access"), "Should return generic HIPAA guidance")
+        XCTAssertFalse(result.content.contains("Kaiser Permanente Georgia"), "Generic provider should not return Kaiser-specific section")
+    }
+
+    func testGetPortalNavigationGuideForMyChartLabs() async {
+        let call = ToolCall(
+            id: "pg1",
+            name: "get_portal_navigation_guide",
+            arguments: #"{"portal":"MyChart","topic":"labs","provider":"Kaiser Permanente Georgia"}"#
+        )
+        let context = ToolContext(document: nil, allDocuments: [], agentMemoryStore: nil, clinicStore: nil, embeddingStore: nil)
+        let result = await ToolRegistry().execute(call: call, context: context)
+
+        XCTAssertTrue(result.content.contains("MyChart Navigation + Extraction Guide"), "Should return MyChart-specific title")
+        XCTAssertTrue(result.content.contains("Test Results"), "Should include labs navigation to Test Results")
+        XCTAssertTrue(result.content.contains("Import note for Eir Viewer"), "Should include import prep guidance")
+    }
+
+    func testGetPortalNavigationGuideFallsBackToGenericPortal() async {
+        let call = ToolCall(
+            id: "pg2",
+            name: "get_portal_navigation_guide",
+            arguments: #"{"portal":"Cerner Portal","topic":"full_export","provider":"Example Health"}"#
+        )
+        let context = ToolContext(document: nil, allDocuments: [], agentMemoryStore: nil, clinicStore: nil, embeddingStore: nil)
+        let result = await ToolRegistry().execute(call: call, context: context)
+
+        XCTAssertTrue(result.content.contains("Portal Navigation Guide — Cerner Portal"), "Should include generic portal title")
+        XCTAssertTrue(result.content.contains("Standard extraction path"), "Should include extraction checklist")
+        XCTAssertFalse(result.content.contains("MyChart Navigation + Extraction Guide"), "Generic portal should not return MyChart-specific guide")
+    }
 }
 
 

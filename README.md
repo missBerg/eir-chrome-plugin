@@ -151,6 +151,42 @@ API keys are stored in macOS Keychain.
 - Edge (Chromium-based)
 - Other Chromium-based browsers (Brave, Arc, Opera, etc.)
 
+## Getting Records from Kaiser Permanente Georgia
+
+This repo currently automates downloads from **1177.se** only.  
+For **Kaiser Georgia**, use Eir Viewer as a records-request assistant:
+
+1. Open Eir Viewer chat
+2. Ask: **"Help me request my medical records from Kaiser Georgia"**
+3. The assistant can now provide:
+   - A step-by-step Kaiser Georgia request workflow
+   - A HIPAA right-of-access request template you can copy/paste
+   - A checklist of what details to include (date range, record types, delivery method)
+
+If you request records from a different provider, ask with provider + state (for example:  
+"Help me request records from Emory in Georgia"), and Eir Viewer will fall back to a generic HIPAA workflow.
+
+## Extracting Data from MyChart
+
+Eir Viewer can now guide users through **MyChart page navigation** and export prep.
+
+Use the native app's **Portal Assist** tab to open an embedded browser with:
+- Back/forward/reload controls + URL bar
+- Quick links (MyChart + Kaiser portal)
+- Step-by-step navigation checklists for labs, visits, documents, full export, and EIR import prep
+
+Ask in chat:
+- **"Guide me to MyChart lab results and how to download them"**
+- **"Help me export MyChart records for labs, visits, meds, immunizations, and documents"**
+- **"Create a checklist to prepare MyChart exports for .eir import"**
+
+The assistant provides:
+- Click-by-click page paths (for example `Menu -> Test Results` for labs)
+- A full export checklist by section
+- Import prep guidance for Eir (`.eir` / `.yaml`)
+
+Note: Eir Viewer currently imports structured EIR/YAML files. If your MyChart exports are PDF/HTML, convert/map them to EIR before importing.
+
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests.
