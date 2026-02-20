@@ -25,7 +25,15 @@ enum SystemPrompt {
         // 4. Available Skills (AGENTS.md)
         sections.append(memory.agents)
 
-        // 5. Medical Records — metadata overview, use get_medical_records tool for full data
+        // 5. Current date/time in user's timezone
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd HH:mm"
+        df.timeZone = TimeZone.current
+        let tz = TimeZone.current
+        let tzName = tz.localizedName(for: .standard, locale: Locale.current) ?? tz.identifier
+        sections.append("# Current Date & Time\n\nToday is **\(df.string(from: Date()))** (\(tzName), UTC\(tz.secondsFromGMT() >= 0 ? "+" : "")\(tz.secondsFromGMT() / 3600))")
+
+        // 6. Medical Records — metadata overview, use get_medical_records tool for full data
         if !allDocuments.isEmpty {
             sections.append(buildAllRecordsMetadata(from: allDocuments))
         } else if let doc = document {
@@ -50,8 +58,13 @@ enum SystemPrompt {
 
     private static func buildAllRecordsMetadata(from allDocuments: [(personName: String, document: EirDocument)]) -> String {
         var context = "# Medical Records Available\n\n"
-        context += "Records are loaded for **\(allDocuments.count) \(allDocuments.count == 1 ? "person" : "people")**. "
-        context += "Use the `get_medical_records` tool to retrieve ALL records with full details (optionally filtered by person).\n\n"
+        let totalEntries = allDocuments.reduce(0) { $0 + $1.document.entries.count }
+        context += "Records are loaded for **\(allDocuments.count) \(allDocuments.count == 1 ? "person" : "people")** (\(totalEntries) total entries). "
+        if totalEntries > 100 {
+            context += "Use `get_medical_records` to get a summary index, then `get_entry_details` with specific entry IDs to read full content. You can also filter by `category` or `search` keyword.\n\n"
+        } else {
+            context += "Use `get_medical_records` to retrieve records with full details (optionally filtered by person).\n\n"
+        }
 
         for (personName, doc) in allDocuments {
             context += "### \(personName)\n"

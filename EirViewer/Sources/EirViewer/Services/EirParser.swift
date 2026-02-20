@@ -176,6 +176,7 @@ struct EirParser {
 
     /// Fixes unescaped double quotes inside double-quoted YAML strings.
     /// Example: `- "text with "word" inside"` → `- "text with \"word\" inside"`
+    /// Skips lines where quotes are already properly escaped (contain `\"`).
     private static func escapeEmbeddedQuotes(in line: String) -> String {
         let stripped = line.trimmingCharacters(in: .whitespaces)
         let leading = String(line.prefix(while: { $0 == " " }))
@@ -183,6 +184,8 @@ struct EirParser {
         // Array item: `- "content with "embedded" quotes"`
         if stripped.hasPrefix("- \"") && stripped.hasSuffix("\"") && stripped.count > 4 {
             let content = String(stripped.dropFirst(3).dropLast(1))
+            // Skip if quotes are already escaped (content contains \")
+            if content.contains("\\\"") { return line }
             if content.contains("\"") {
                 let escaped = content.replacingOccurrences(of: "\"", with: "\\\"")
                 return "\(leading)- \"\(escaped)\""
@@ -198,6 +201,8 @@ struct EirParser {
             let valueEnd = stripped.index(before: stripped.endIndex)
             guard valueStart < valueEnd else { return line }
             let content = String(stripped[valueStart..<valueEnd])
+            // Skip if quotes are already escaped (content contains \")
+            if content.contains("\\\"") { return line }
             if content.contains("\"") {
                 let escaped = content.replacingOccurrences(of: "\"", with: "\\\"")
                 return "\(leading)\(key): \"\(escaped)\""

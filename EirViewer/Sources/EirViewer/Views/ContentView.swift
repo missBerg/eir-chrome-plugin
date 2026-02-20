@@ -4,6 +4,7 @@ enum NavTab: String, CaseIterable, Identifiable {
     case journal = "Journal"
     case chat = "Chat"
     case findCare = "Find Care"
+    case healthData = "My Health Data"
 
     var id: String { rawValue }
 
@@ -12,6 +13,7 @@ enum NavTab: String, CaseIterable, Identifiable {
         case .journal: return "doc.text"
         case .chat: return "bubble.left.and.bubble.right"
         case .findCare: return "map"
+        case .healthData: return "arrow.down.doc"
         }
     }
 }
@@ -47,6 +49,8 @@ struct ContentView: View {
                         ChatView()
                     case .findCare:
                         FindCareView()
+                    case .healthData:
+                        HealthDataBrowserView()
                     }
                 }
                 .navigationSplitViewStyle(.balanced)
@@ -85,13 +89,17 @@ struct ContentView: View {
             chatVM.newConversation(chatThreadStore: chatThreadStore, profileID: profileID)
             selectedTab = .chat
 
-            var prompt = "Explain this journal entry. Help me understand what happened during this visit, what the medical terms mean, and if there's anything important I should be aware of:\n\n"
+            var prompt = "Explain this journal entry in plain language. Help me understand what happened during this visit, what the medical terms mean, and if there's anything important I should be aware of:\n\n"
+            prompt += "Entry ID: \(entry.id)\n"
             prompt += "Date: \(entry.date ?? "Unknown")\n"
             prompt += "Category: \(entry.category ?? "Unknown")\n"
+            if let type = entry.type { prompt += "Type: \(type)\n" }
+            if let provider = entry.provider?.name { prompt += "Provider: \(provider)\n" }
+            if let person = entry.responsiblePerson?.name { prompt += "Doctor: \(person)\n" }
             if let summary = entry.content?.summary { prompt += "Summary: \(summary)\n" }
             if let details = entry.content?.details { prompt += "Details: \(details)\n" }
             if let notes = entry.content?.notes, !notes.isEmpty {
-                prompt += "Notes: \(notes.joined(separator: "\n"))\n"
+                prompt += "Notes:\n\(notes.joined(separator: "\n"))\n"
             }
 
             chatVM.inputText = prompt

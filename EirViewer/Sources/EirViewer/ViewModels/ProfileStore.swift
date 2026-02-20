@@ -79,6 +79,50 @@ class ProfileStore: ObservableObject {
         saveToDefaults()
     }
 
+    /// Replace the .eir file for an existing profile and update entry count.
+    func replaceFile(_ id: UUID, with newFileURL: URL) -> Bool {
+        guard let index = profiles.firstIndex(where: { $0.id == id }) else { return false }
+        guard let doc = try? EirParser.parse(url: newFileURL) else { return false }
+
+        // Copy file to a stable location in Application Support
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let eirDir = appSupport.appendingPathComponent("EirViewer/profiles")
+        try? FileManager.default.createDirectory(at: eirDir, withIntermediateDirectories: true)
+        let destURL = eirDir.appendingPathComponent("\(id.uuidString).eir")
+        try? FileManager.default.removeItem(at: destURL)
+        do {
+            try FileManager.default.copyItem(at: newFileURL, to: destURL)
+        } catch {
+            errorMessage = "Could not copy file: \(error.localizedDescription)"
+            return false
+        }
+
+        profiles[index] = PersonProfile(
+            id: id,
+            displayName: profiles[index].displayName,
+            fileURL: destURL,
+            patientName: doc.metadata.patient?.name,
+            personalNumber: profiles[index].personalNumber ?? doc.metadata.patient?.personalNumber,
+            birthDate: doc.metadata.patient?.birthDate,
+            totalEntries: doc.entries.count,
+            addedAt: profiles[index].addedAt
+        )
+        saveToDefaults()
+        return true
+    }
+
+    /// Find a profile matching by display name (case-insensitive, diacritics-insensitive, bidirectional contains).
+    func findMatchingProfile(name: String) -> PersonProfile? {
+        let normalizedName = name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        return profiles.first { profile in
+            let normalizedProfile = profile.displayName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            return normalizedProfile.contains(normalizedName) ||
+                   normalizedName.contains(normalizedProfile) ||
+                   profile.displayName.localizedCaseInsensitiveContains(name) ||
+                   name.localizedCaseInsensitiveContains(profile.displayName)
+        }
+    }
+
     // MARK: - Persistence
 
     private func saveToDefaults() {
