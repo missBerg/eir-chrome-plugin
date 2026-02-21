@@ -51,9 +51,19 @@ struct ContentView: View {
             }
             .tint(AppColors.primary)
             .onAppear {
+                // Auto-select first profile if none selected
+                if profileStore.selectedProfileID == nil,
+                   let first = profileStore.profiles.first {
+                    profileStore.selectProfile(first.id)
+                }
                 loadSelectedProfile()
             }
             .onChange(of: profileStore.selectedProfileID) {
+                loadSelectedProfile()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .profileDidLoad)) { _ in
+                // Switch to journal tab and reload when a profile is loaded
+                selectedTab = .journal
                 loadSelectedProfile()
             }
             .onReceive(NotificationCenter.default.publisher(for: .navigateToJournalEntry)) { notification in

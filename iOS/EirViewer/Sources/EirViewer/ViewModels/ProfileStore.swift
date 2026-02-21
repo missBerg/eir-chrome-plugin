@@ -1,6 +1,10 @@
 import Foundation
 import SwiftUI
 
+extension Notification.Name {
+    static let profileDidLoad = Notification.Name("profileDidLoad")
+}
+
 @MainActor
 class ProfileStore: ObservableObject {
     @Published var profiles: [PersonProfile] = []
@@ -11,7 +15,8 @@ class ProfileStore: ObservableObject {
     private let selectedIDKey = "eir_selected_profile_id"
 
     init() {
-        loadFromDefaults()
+        migrateIfNeeded()
+        loadFromStore()
     }
 
     var selectedProfile: PersonProfile? {
@@ -21,17 +26,31 @@ class ProfileStore: ObservableObject {
     @discardableResult
     func addProfile(displayName: String, fileURL: URL) -> PersonProfile? {
         errorMessage = nil
+
+        // Start security-scoped access for files from fileImporter
+        let didStartAccess = fileURL.startAccessingSecurityScopedResource()
+        defer { if didStartAccess { fileURL.stopAccessingSecurityScopedResource() } }
+
         let doc: EirDocument
         do {
             doc = try EirParser.parse(url: fileURL)
         } catch {
             let detail = "\(error)"
             errorMessage = "Failed to load: \(detail)"
-            // Write to log file for debugging
-            let log = "[ProfileStore] Failed to parse \(fileURL.path):\n\(detail)\n"
-            try? log.write(toFile: "/tmp/eirviewer_error.log", atomically: true, encoding: .utf8)
             return nil
         }
+
+        // Copy file to Documents so it persists across app restarts
+        let localURL: URL
+        do {
+            localURL = try copyToDocumentsIfNeeded(fileURL)
+        } catch {
+            errorMessage = "Failed to save file: \(error.localizedDescription)"
+            return nil
+        }
+
+        // Set file protection
+        EncryptedStore.protectFile(at: localURL)
 
         let patient = doc.metadata.patient
         let name = displayName.isEmpty ? (patient?.name ?? fileURL.deletingPathExtension().lastPathComponent) : displayName
@@ -39,7 +58,7 @@ class ProfileStore: ObservableObject {
         let profile = PersonProfile(
             id: UUID(),
             displayName: name,
-            fileURL: fileURL,
+            fileName: localURL.lastPathComponent,
             patientName: patient?.name,
             personalNumber: patient?.personalNumber,
             birthDate: patient?.birthDate,
@@ -48,51 +67,96 @@ class ProfileStore: ObservableObject {
         )
 
         profiles.append(profile)
-        saveToDefaults()
+        saveToStore()
         return profile
     }
 
     func selectProfile(_ id: UUID) {
         guard profiles.contains(where: { $0.id == id }) else { return }
         selectedProfileID = id
-        saveToDefaults()
+        saveToStore()
+        NotificationCenter.default.post(name: .profileDidLoad, object: id)
     }
 
     func removeProfile(_ id: UUID) {
+        // Remove the file from Documents
+        if let profile = profiles.first(where: { $0.id == id }) {
+            try? FileManager.default.removeItem(at: profile.fileURL)
+        }
         profiles.removeAll(where: { $0.id == id })
         if selectedProfileID == id {
             selectedProfileID = profiles.first?.id
         }
-        saveToDefaults()
+        saveToStore()
     }
 
     func renameProfile(_ id: UUID, to newName: String) {
         guard let index = profiles.firstIndex(where: { $0.id == id }) else { return }
         profiles[index].displayName = newName
-        saveToDefaults()
+        saveToStore()
     }
 
-    // MARK: - Persistence
+    // MARK: - File Copy
 
-    private func saveToDefaults() {
-        let encoder = JSONEncoder()
-        if let data = try? encoder.encode(profiles) {
-            UserDefaults.standard.set(data, forKey: profilesKey)
+    private func copyToDocumentsIfNeeded(_ url: URL) throws -> URL {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let docsPath = docs.path
+
+        // Already in Documents — no copy needed
+        if url.path.hasPrefix(docsPath) {
+            return url
         }
-        if let id = selectedProfileID {
-            UserDefaults.standard.set(id.uuidString, forKey: selectedIDKey)
+
+        let destURL = docs.appendingPathComponent(url.lastPathComponent)
+
+        // Avoid overwriting — add UUID suffix if file already exists
+        let finalURL: URL
+        if FileManager.default.fileExists(atPath: destURL.path) {
+            let stem = url.deletingPathExtension().lastPathComponent
+            let ext = url.pathExtension
+            finalURL = docs.appendingPathComponent("\(stem)-\(UUID().uuidString.prefix(8)).\(ext)")
         } else {
-            UserDefaults.standard.removeObject(forKey: selectedIDKey)
+            finalURL = destURL
+        }
+
+        try FileManager.default.copyItem(at: url, to: finalURL)
+        return finalURL
+    }
+
+    // MARK: - Encrypted Persistence
+
+    private func saveToStore() {
+        EncryptedStore.save(profiles, forKey: profilesKey)
+        if let id = selectedProfileID {
+            EncryptedStore.save(id.uuidString, forKey: selectedIDKey)
+        } else {
+            EncryptedStore.remove(forKey: selectedIDKey)
         }
     }
 
-    private func loadFromDefaults() {
-        if let data = UserDefaults.standard.data(forKey: profilesKey),
-           let decoded = try? JSONDecoder().decode([PersonProfile].self, from: data) {
-            profiles = decoded
+    private func loadFromStore() {
+        if let decoded = EncryptedStore.load([PersonProfile].self, forKey: profilesKey) {
+            // Validate that each profile's file still exists
+            profiles = decoded.filter { profile in
+                FileManager.default.fileExists(atPath: profile.fileURL.path)
+            }
+        }
+        if let idString = EncryptedStore.load(String.self, forKey: selectedIDKey) {
+            selectedProfileID = UUID(uuidString: idString)
+        }
+    }
+
+    /// Migrate from plain UserDefaults to encrypted storage (one-time).
+    private func migrateIfNeeded() {
+        if let data = UserDefaults.standard.data(forKey: profilesKey) {
+            if let decoded = try? JSONDecoder().decode([PersonProfile].self, from: data) {
+                EncryptedStore.save(decoded, forKey: profilesKey)
+            }
+            UserDefaults.standard.removeObject(forKey: profilesKey)
         }
         if let idString = UserDefaults.standard.string(forKey: selectedIDKey) {
-            selectedProfileID = UUID(uuidString: idString)
+            EncryptedStore.save(idString, forKey: selectedIDKey)
+            UserDefaults.standard.removeObject(forKey: selectedIDKey)
         }
     }
 }

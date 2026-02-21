@@ -42,6 +42,7 @@ struct ChatView: View {
                         }
                         .padding()
                     }
+                    .scrollDismissesKeyboard(.interactively)
                     .onChange(of: chatThreadStore.messages.count) { _, _ in
                         if let last = chatThreadStore.messages.last(where: { $0.role != .tool }) {
                             withAnimation {
