@@ -96,6 +96,51 @@ class ProfileStore: ObservableObject {
         saveToStore()
     }
 
+    /// Find a profile whose display name or patient name matches (case-insensitive).
+    func findMatchingProfile(name: String) -> PersonProfile? {
+        let lower = name.lowercased()
+        return profiles.first { profile in
+            profile.displayName.lowercased() == lower ||
+            profile.patientName?.lowercased() == lower
+        }
+    }
+
+    /// Replace an existing profile's .eir file with new data and update metadata.
+    func replaceFile(_ profileID: UUID, with fileURL: URL) {
+        guard let index = profiles.firstIndex(where: { $0.id == profileID }) else { return }
+
+        let profile = profiles[index]
+        let destURL = profile.fileURL
+
+        do {
+            // Remove old file and copy new one
+            try? FileManager.default.removeItem(at: destURL)
+            try FileManager.default.copyItem(at: fileURL, to: destURL)
+            EncryptedStore.protectFile(at: destURL)
+
+            // Update entry count from the new file
+            let doc = try EirParser.parse(url: destURL)
+            profiles[index] = PersonProfile(
+                id: profile.id,
+                displayName: profile.displayName,
+                fileName: profile.fileName,
+                patientName: doc.metadata.patient?.name ?? profile.patientName,
+                personalNumber: doc.metadata.patient?.personalNumber ?? profile.personalNumber,
+                birthDate: doc.metadata.patient?.birthDate ?? profile.birthDate,
+                totalEntries: doc.entries.count,
+                addedAt: profile.addedAt
+            )
+            saveToStore()
+
+            // Notify to reload the updated profile
+            if selectedProfileID == profileID {
+                NotificationCenter.default.post(name: .profileDidLoad, object: profileID)
+            }
+        } catch {
+            errorMessage = "Failed to update profile: \(error.localizedDescription)"
+        }
+    }
+
     // MARK: - File Copy
 
     private func copyToDocumentsIfNeeded(_ url: URL) throws -> URL {
