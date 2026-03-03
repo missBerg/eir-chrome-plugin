@@ -2,6 +2,7 @@ import SwiftUI
 
 enum NavTab: String, CaseIterable, Identifiable {
     case journal = "Journal"
+    case healthData = "Health Data"
     case chat = "Chat"
     case settings = "Settings"
 
@@ -10,6 +11,7 @@ enum NavTab: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .journal: return "doc.text"
+        case .healthData: return "heart.text.clipboard"
         case .chat: return "bubble.left.and.bubble.right"
         case .settings: return "gearshape"
         }
@@ -36,6 +38,12 @@ struct ContentView: View {
                 }
                 .tabItem { Label("Journal", systemImage: "doc.text") }
                 .tag(NavTab.journal)
+
+                NavigationStack {
+                    HealthDataBrowserView()
+                }
+                .tabItem { Label("Health Data", systemImage: "heart.text.clipboard") }
+                .tag(NavTab.healthData)
 
                 NavigationStack {
                     ChatView()
@@ -71,6 +79,9 @@ struct ContentView: View {
                     documentVM.selectedEntryID = entryID
                     selectedTab = .journal
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToChat)) { _ in
+                selectedTab = .chat
             }
         }
     }

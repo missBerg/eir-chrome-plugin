@@ -7,6 +7,7 @@ struct ChatView: View {
     @EnvironmentObject var chatThreadStore: ChatThreadStore
     @EnvironmentObject var profileStore: ProfileStore
     @EnvironmentObject var agentMemoryStore: AgentMemoryStore
+    @EnvironmentObject var localModelManager: LocalModelManager
 
     @State private var showOnboarding = false
     @State private var showConversations = false
@@ -168,7 +169,8 @@ struct ChatView: View {
             settingsVM: settingsVM,
             chatThreadStore: chatThreadStore,
             profileID: profileID,
-            agentMemoryStore: agentMemoryStore
+            agentMemoryStore: agentMemoryStore,
+            localModelManager: localModelManager
         )
     }
 }
