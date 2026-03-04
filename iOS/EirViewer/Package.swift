@@ -6,7 +6,7 @@ let package = Package(
     platforms: [.iOS(.v17)],
     dependencies: [
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.0"),
-        .package(url: "https://github.com/ml-explore/mlx-swift-lm", branch: "main"),
+        .package(url: "https://github.com/ml-explore/mlx-swift-lm", revision: "e33eba8513595bde535719c48fedcb10ade5af57"),
     ],
     targets: [
         .executableTarget(
