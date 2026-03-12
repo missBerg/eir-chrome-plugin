@@ -32,12 +32,14 @@ class HealthKitImportViewModel: ObservableObject {
     // MARK: - Load Sample Counts
 
     func loadSampleCounts() async {
+        guard service.isAvailable else { return }
         let startDate = selectedDateRange.startDate
         for category in HealthDataCategory.allCases {
             do {
                 let count = try await service.sampleCount(for: category, from: startDate)
                 sampleCounts[category] = count
             } catch {
+                print("[HealthKit] sampleCount error for \(category.rawValue): \(error)")
                 sampleCounts[category] = 0
             }
         }
@@ -52,11 +54,17 @@ class HealthKitImportViewModel: ObservableObject {
             return
         }
 
+        guard service.isAvailable else {
+            phase = .error("HealthKit är inte tillgängligt på den här enheten.")
+            return
+        }
+
         // Authorize
         phase = .authorizing
         do {
             try await service.requestAuthorization(for: categories)
         } catch {
+            print("[HealthKit] Authorization error: \(error)")
             phase = .error("Kunde inte få behörighet till Apple Health: \(error.localizedDescription)")
             return
         }
@@ -75,19 +83,23 @@ class HealthKitImportViewModel: ObservableObject {
 
         for category in categories {
             do {
+                print("[HealthKit] Importing \(category.rawValue)...")
                 if category.aggregateDaily {
                     let stats = try await service.queryDailyStatistics(for: category, from: startDate, to: endDate)
+                    print("[HealthKit] Got \(stats.count) daily stats for \(category.rawValue)")
                     if !stats.isEmpty {
                         dailyStats.append((category, stats))
                     }
                 } else {
                     let samples = try await service.querySamples(for: category, from: startDate, to: endDate)
+                    print("[HealthKit] Got \(samples.count) samples for \(category.rawValue)")
                     if !samples.isEmpty {
                         individualSamples.append((category, samples))
                     }
                 }
             } catch {
-                // Skip failed categories silently
+                print("[HealthKit] Error importing \(category.rawValue): \(error)")
+                // Skip failed categories
             }
 
             currentStep += 1

@@ -122,6 +122,9 @@ struct SettingsView: View {
                         Text("On-device models keep all data on your phone")
                             .font(.caption)
                             .foregroundColor(AppColors.textSecondary)
+                        Text("Berget AI Trial routes through Stockholm with zero Eir retention")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
                     }
                 }
 
@@ -145,6 +148,7 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showHealthKitImport) {
             HealthKitImportView()
+                .environmentObject(profileStore)
         }
         .alert("Rename Person", isPresented: Binding(
             get: { renamingProfileID != nil },
@@ -187,13 +191,28 @@ private struct ProviderSection: View {
     @State private var baseURL: String = ""
     @State private var model: String = ""
     @State private var showKey = false
+    @State private var isProvisioningManagedAccess = false
+    @State private var managedAccessSnapshot: ManagedCloudAccessSnapshot?
+    @State private var managedAccessError: String?
 
     var isActive: Bool { settingsVM.activeProviderType == config.type }
     var hasKey: Bool { !apiKey.isEmpty }
+    var usesManagedTrial: Bool { config.type.usesManagedTrialAccess }
+    var isConfigured: Bool {
+        usesManagedTrial ? settingsVM.hasManagedAccessToken(for: config.type) : hasKey
+    }
+    var statusColor: Color {
+        isConfigured ? AppColors.green : AppColors.border
+    }
+    var statusText: String {
+        if usesManagedTrial {
+            return isConfigured ? "Trial ready" : "Free credits available"
+        }
+        return hasKey ? "Configured" : "No API key"
+    }
 
     var body: some View {
         Section {
-            // Status
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
@@ -216,7 +235,7 @@ private struct ProviderSection: View {
                             .foregroundColor(AppColors.textSecondary)
                             .lineLimit(2)
                     } else {
-                        Text(config.type.defaultBaseURL)
+                        Text(usesManagedTrial ? "Eir-hosted cloud route" : config.type.defaultBaseURL)
                             .font(.caption2)
                             .foregroundColor(AppColors.textSecondary)
                             .lineLimit(1)
@@ -228,20 +247,20 @@ private struct ProviderSection: View {
                 if !config.type.isLocal {
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(hasKey ? AppColors.green : AppColors.border)
+                            .fill(statusColor)
                             .frame(width: 8, height: 8)
-                        Text(hasKey ? "Configured" : "No API key")
+                        Text(statusText)
                             .font(.caption)
-                            .foregroundColor(hasKey ? AppColors.green : AppColors.textSecondary)
+                            .foregroundColor(isConfigured ? AppColors.green : AppColors.textSecondary)
                     }
                 }
             }
 
             if config.type.isLocal {
-                // Local model UI — handled by LocalModelSection
                 LocalModelSection()
+            } else if usesManagedTrial {
+                managedCloudSection
             } else {
-                // API Key
                 HStack {
                     if showKey {
                         TextField("API Key", text: $apiKey)
@@ -278,7 +297,6 @@ private struct ProviderSection: View {
                         }
                 }
 
-                // Custom base URL
                 if config.type == .custom {
                     HStack {
                         Text("Base URL")
@@ -308,6 +326,137 @@ private struct ProviderSection: View {
             apiKey = settingsVM.apiKey(for: config.type)
             baseURL = config.baseURL
             model = config.model
+            managedAccessSnapshot = settingsVM.managedAccessSnapshot(for: config.type)
+        }
+    }
+
+    private var managedCloudSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Free Eir-hosted trial credits")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppColors.text)
+                Text("Your health data is sent over encrypted HTTPS through Eir-managed servers in the Stockholm Region. Eir is configured for zero Eir-side retention, and Berget AI performs the cloud inference.")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppColors.aiSoft)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            HStack {
+                Text("Model")
+                    .foregroundColor(AppColors.textSecondary)
+                Spacer()
+                Text(config.model)
+                    .font(.subheadline.monospaced())
+                    .foregroundColor(AppColors.text)
+            }
+
+            if let snapshot = managedAccessSnapshot {
+                quotaView(snapshot: snapshot)
+            }
+
+            if let managedAccessError, !managedAccessError.isEmpty {
+                Text(managedAccessError)
+                    .font(.caption)
+                    .foregroundColor(AppColors.danger)
+            }
+
+            Button {
+                Task { await provisionManagedAccess() }
+            } label: {
+                HStack {
+                    if isProvisioningManagedAccess {
+                        ProgressView()
+                            .tint(.white)
+                    }
+                    Text(managedAccessSnapshot == nil ? "Provision Free Credits" : "Refresh Trial Access")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppColors.primaryStrong)
+            .disabled(isProvisioningManagedAccess)
+
+            if !isActive {
+                Button("Use \(config.type.rawValue)") {
+                    settingsVM.setActiveProvider(config.type)
+                }
+                .foregroundColor(AppColors.primary)
+            }
+        }
+    }
+
+    private func quotaView(snapshot: ManagedCloudAccessSnapshot) -> some View {
+        let totalRequests = max(snapshot.quota.limits.requests, 0)
+        let usedRequests = min(snapshot.quota.used.requests, totalRequests)
+        let remainingRequests = max(snapshot.quota.remaining.requests, 0)
+        let usageProgress = totalRequests > 0 ? Double(usedRequests) / Double(totalRequests) : 0
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Trial usage")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppColors.text)
+                Spacer()
+                Text(snapshot.mode.capitalized)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(AppColors.aiStrong)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(AppColors.auraSubtle)
+                    .clipShape(Capsule())
+            }
+
+            ProgressView(value: usageProgress)
+                .tint(AppColors.aiStrong)
+
+            HStack {
+                quotaMetric(title: "Used", value: "\(usedRequests)")
+                Spacer()
+                quotaMetric(title: "Total", value: "\(totalRequests)")
+                Spacer()
+                quotaMetric(title: "Remaining", value: "\(remainingRequests)")
+            }
+
+            Text("\(usedRequests) of \(totalRequests) trial requests used")
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
+            Text("Provisioned on \(snapshot.provisionedAt.formatted(date: .abbreviated, time: .shortened))")
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppColors.backgroundMuted)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func quotaMetric(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline)
+                .foregroundColor(AppColors.text)
+            Text(title)
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary)
+        }
+    }
+
+    private func provisionManagedAccess() async {
+        isProvisioningManagedAccess = true
+        managedAccessError = nil
+        defer { isProvisioningManagedAccess = false }
+
+        let updated = config
+        settingsVM.updateProvider(updated)
+
+        do {
+            managedAccessSnapshot = try await settingsVM.provisionManagedAccess(for: updated)
+        } catch {
+            managedAccessError = error.localizedDescription
         }
     }
 }

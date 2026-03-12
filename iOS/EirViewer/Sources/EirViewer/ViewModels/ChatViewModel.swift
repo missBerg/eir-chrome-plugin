@@ -11,8 +11,28 @@ class ChatViewModel: ObservableObject {
     private let toolRegistry = ToolRegistry()
     private let maxToolIterations = 5
 
-    // Pending message state for consent flow
-    private var pendingSendArgs: (EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?)?
+    private enum PendingAction {
+        case text(
+            document: EirDocument?,
+            settingsVM: SettingsViewModel,
+            chatThreadStore: ChatThreadStore,
+            profileID: UUID,
+            agentMemoryStore: AgentMemoryStore,
+            localModelManager: LocalModelManager?
+        )
+        case voiceNote(
+            draft: RecordedVoiceNoteDraft,
+            entry: EirEntry?,
+            document: EirDocument?,
+            settingsVM: SettingsViewModel,
+            chatThreadStore: ChatThreadStore,
+            profileID: UUID,
+            agentMemoryStore: AgentMemoryStore,
+            localModelManager: LocalModelManager?
+        )
+    }
+
+    private var pendingAction: PendingAction?
 
     static func hasCloudConsent(for provider: LLMProviderType) -> Bool {
         UserDefaults.standard.bool(forKey: "cloudConsent_\(provider.rawValue)")
@@ -26,22 +46,67 @@ class ChatViewModel: ObservableObject {
         guard let provider = pendingCloudConsent else { return }
         Self.grantCloudConsent(for: provider)
         pendingCloudConsent = nil
-        if let args = pendingSendArgs {
-            pendingSendArgs = nil
-            sendMessage(
-                document: args.0,
-                settingsVM: args.1,
-                chatThreadStore: args.2,
-                profileID: args.3,
-                agentMemoryStore: args.4,
-                localModelManager: args.5
-            )
+        if let pendingAction {
+            self.pendingAction = nil
+            Task {
+                do {
+                    let settingsVM: SettingsViewModel
+                    switch pendingAction {
+                    case .text(_, let pendingSettingsVM, _, _, _, _):
+                        settingsVM = pendingSettingsVM
+                    case .voiceNote(_, _, _, let pendingSettingsVM, _, _, _, _):
+                        settingsVM = pendingSettingsVM
+                    }
+
+                    if provider.usesManagedTrialAccess,
+                       let config = settingsVM.providers.first(where: { $0.type == provider }) {
+                        _ = try await settingsVM.provisionManagedAccess(for: config)
+                    }
+
+                    switch pendingAction {
+                    case .text(let document, let settingsVM, let chatThreadStore, let profileID, let agentMemoryStore, let localModelManager):
+                        sendMessage(
+                            document: document,
+                            settingsVM: settingsVM,
+                            chatThreadStore: chatThreadStore,
+                            profileID: profileID,
+                            agentMemoryStore: agentMemoryStore,
+                            localModelManager: localModelManager
+                        )
+                    case .voiceNote(let draft, let entry, let document, let settingsVM, let chatThreadStore, let profileID, let agentMemoryStore, let localModelManager):
+                        if let entry {
+                            askAboutEntry(
+                                entry,
+                                voiceNote: draft,
+                                document: document,
+                                settingsVM: settingsVM,
+                                chatThreadStore: chatThreadStore,
+                                profileID: profileID,
+                                agentMemoryStore: agentMemoryStore,
+                                localModelManager: localModelManager
+                            )
+                        } else {
+                            sendVoiceNote(
+                                draft,
+                                document: document,
+                                settingsVM: settingsVM,
+                                chatThreadStore: chatThreadStore,
+                                profileID: profileID,
+                                agentMemoryStore: agentMemoryStore,
+                                localModelManager: localModelManager
+                            )
+                        }
+                    }
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
+            }
         }
     }
 
     func consentDenied() {
         pendingCloudConsent = nil
-        pendingSendArgs = nil
+        pendingAction = nil
     }
 
     func sendMessage(
@@ -60,9 +125,16 @@ class ChatViewModel: ObservableObject {
             return
         }
 
-        // Check cloud consent before sending data to third-party providers
+        // Check cloud consent before sending data to hosted cloud providers
         if !config.type.isLocal && !Self.hasCloudConsent(for: config.type) {
-            pendingSendArgs = (document, settingsVM, chatThreadStore, profileID, agentMemoryStore, localModelManager)
+            pendingAction = .text(
+                document: document,
+                settingsVM: settingsVM,
+                chatThreadStore: chatThreadStore,
+                profileID: profileID,
+                agentMemoryStore: agentMemoryStore,
+                localModelManager: localModelManager
+            )
             pendingCloudConsent = config.type
             return
         }
@@ -76,13 +148,85 @@ class ChatViewModel: ObservableObject {
         chatThreadStore.addMessage(userMessage)
         inputText = ""
 
+        streamReply(
+            for: userMessage.id,
+            promptText: text,
+            document: document,
+            settingsVM: settingsVM,
+            chatThreadStore: chatThreadStore,
+            agentMemoryStore: agentMemoryStore,
+            localModelManager: localModelManager
+        )
+    }
+
+    func sendVoiceNote(
+        _ draft: RecordedVoiceNoteDraft,
+        document: EirDocument?,
+        settingsVM: SettingsViewModel,
+        chatThreadStore: ChatThreadStore,
+        profileID: UUID,
+        agentMemoryStore: AgentMemoryStore,
+        localModelManager: LocalModelManager? = nil
+    ) {
+        guard !isStreaming else { return }
+        guard let config = settingsVM.activeProvider else {
+            errorMessage = "No LLM provider selected. Configure one in Settings."
+            return
+        }
+
+        guard config.type.usesManagedTrialAccess else {
+            errorMessage = "Voice notes are currently available with Berget AI Trial."
+            return
+        }
+
+        if !Self.hasCloudConsent(for: config.type) {
+            pendingAction = .voiceNote(
+                draft: draft,
+                entry: nil,
+                document: document,
+                settingsVM: settingsVM,
+                chatThreadStore: chatThreadStore,
+                profileID: profileID,
+                agentMemoryStore: agentMemoryStore,
+                localModelManager: localModelManager
+            )
+            pendingCloudConsent = config.type
+            return
+        }
+
+        sendVoiceNoteWithPrompt(
+            draft,
+            promptBuilder: { $0 },
+            document: document,
+            settingsVM: settingsVM,
+            chatThreadStore: chatThreadStore,
+            profileID: profileID,
+            agentMemoryStore: agentMemoryStore,
+            localModelManager: localModelManager
+        )
+    }
+
+    private func streamReply(
+        for userMessageID: UUID,
+        promptText: String,
+        document: EirDocument?,
+        settingsVM: SettingsViewModel,
+        chatThreadStore: ChatThreadStore,
+        agentMemoryStore: AgentMemoryStore,
+        localModelManager: LocalModelManager? = nil
+    ) {
         // Validate provider readiness
+        guard let config = settingsVM.activeProvider else {
+            errorMessage = "No LLM provider selected. Configure one in Settings."
+            return
+        }
+
         if config.type.isLocal {
             guard let manager = localModelManager, manager.isReady else {
                 errorMessage = "On-device model not loaded. Download it in Settings first."
                 return
             }
-        } else {
+        } else if config.type.requiresUserAPIKey {
             let apiKey = settingsVM.apiKey(for: config.type)
             guard !apiKey.isEmpty else {
                 errorMessage = "No API key set for \(config.type.rawValue). Add one in Settings."
@@ -108,7 +252,8 @@ class ChatViewModel: ObservableObject {
         for msg in chatThreadStore.messages.dropLast() {
             switch msg.role {
             case .user:
-                llmMessages.append(.user(msg.content))
+                let content = msg.id == userMessageID ? promptText : msg.content
+                llmMessages.append(.user(content))
             case .assistant:
                 if let toolCalls = msg.toolCalls, !toolCalls.isEmpty {
                     llmMessages.append(.assistantToolCalls(msg.content, toolCalls))
@@ -138,7 +283,7 @@ class ChatViewModel: ObservableObject {
             streamingTask = Task {
                 do {
                     _ = try await localService.streamResponse(
-                        userMessage: text,
+                        userMessage: promptText,
                         systemPrompt: localPrompt,
                         conversationId: conversationId
                     ) { [weak chatThreadStore] token in
@@ -172,13 +317,14 @@ class ChatViewModel: ObservableObject {
             }
         } else {
             // Cloud provider — full agent loop with tools
-            let apiKey = settingsVM.apiKey(for: config.type)
-            let service = LLMService(config: config, apiKey: apiKey)
             let tools = ToolRegistry.tools
             let toolContext = ToolContext(document: document, agentMemoryStore: agentMemoryStore)
 
             streamingTask = Task {
                 do {
+                    let credential = try await settingsVM.resolvedCredential(for: config)
+                    let service = LLMService(config: config, apiKey: credential)
+
                     try await runAgentLoop(
                         service: service,
                         messages: &llmMessages,
@@ -301,8 +447,6 @@ class ChatViewModel: ObservableObject {
         chatThreadStore: ChatThreadStore
     ) {
         guard let config = settingsVM.activeProvider else { return }
-        let apiKey = settingsVM.apiKey(for: config.type)
-        guard !apiKey.isEmpty else { return }
 
         let userMsg = messages.first { $0.role == .user }?.content ?? ""
         let assistantMsg = messages.first { $0.role == .assistant }?.content ?? ""
@@ -314,10 +458,10 @@ class ChatViewModel: ObservableObject {
             (role: "user", content: "Generate a short title for this conversation.")
         ]
 
-        let service = LLMService(config: config, apiKey: apiKey)
-
         Task {
             do {
+                let credential = try await settingsVM.resolvedCredential(for: config)
+                let service = LLMService(config: config, apiKey: credential)
                 let title = try await service.completeChat(messages: titleMessages)
                 let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty {
@@ -380,6 +524,203 @@ class ChatViewModel: ObservableObject {
             agentMemoryStore: agentMemoryStore,
             localModelManager: localModelManager
         )
+    }
+
+    func explainNote(
+        _ note: String,
+        in entry: EirEntry,
+        document: EirDocument?,
+        settingsVM: SettingsViewModel,
+        chatThreadStore: ChatThreadStore,
+        profileID: UUID,
+        agentMemoryStore: AgentMemoryStore,
+        localModelManager: LocalModelManager? = nil
+    ) {
+        var prompt = "Förklara den här journalanteckningen på enkel svenska.\n"
+        prompt += "Beskriv vad vården skriver, vad som är viktigt, eventuella nästa steg, och vad patienten kan fråga vården om.\n"
+        prompt += "Undvik att ge definitiva diagnoser.\n\n"
+        prompt += "Journalpost:\n"
+
+        if let date = entry.date { prompt += "Datum: \(date)\n" }
+        if let category = entry.category { prompt += "Kategori: \(category)\n" }
+        if let type = entry.type { prompt += "Typ: \(type)\n" }
+        if let provider = entry.provider?.name { prompt += "Vårdgivare: \(provider)\n" }
+        if let summary = entry.content?.summary { prompt += "Sammanfattning: \(summary)\n" }
+        if let details = entry.content?.details { prompt += "Detaljer: \(details)\n" }
+
+        prompt += "\nAnteckning att förklara:\n\(note)"
+
+        newConversation(chatThreadStore: chatThreadStore, profileID: profileID)
+        inputText = prompt
+
+        NotificationCenter.default.post(name: .navigateToChat, object: nil)
+
+        sendMessage(
+            document: document,
+            settingsVM: settingsVM,
+            chatThreadStore: chatThreadStore,
+            profileID: profileID,
+            agentMemoryStore: agentMemoryStore,
+            localModelManager: localModelManager
+        )
+    }
+
+    func askAboutEntry(
+        _ entry: EirEntry,
+        question: String,
+        document: EirDocument?,
+        settingsVM: SettingsViewModel,
+        chatThreadStore: ChatThreadStore,
+        profileID: UUID,
+        agentMemoryStore: AgentMemoryStore,
+        localModelManager: LocalModelManager? = nil
+    ) {
+        let prompt = entryQuestionPrompt(for: entry, question: question)
+
+        newConversation(chatThreadStore: chatThreadStore, profileID: profileID)
+        inputText = prompt
+
+        NotificationCenter.default.post(name: .navigateToChat, object: nil)
+
+        sendMessage(
+            document: document,
+            settingsVM: settingsVM,
+            chatThreadStore: chatThreadStore,
+            profileID: profileID,
+            agentMemoryStore: agentMemoryStore,
+            localModelManager: localModelManager
+        )
+    }
+
+    func askAboutEntry(
+        _ entry: EirEntry,
+        voiceNote draft: RecordedVoiceNoteDraft,
+        document: EirDocument?,
+        settingsVM: SettingsViewModel,
+        chatThreadStore: ChatThreadStore,
+        profileID: UUID,
+        agentMemoryStore: AgentMemoryStore,
+        localModelManager: LocalModelManager? = nil
+    ) {
+        guard let config = settingsVM.activeProvider else {
+            errorMessage = "No LLM provider selected. Configure one in Settings."
+            return
+        }
+
+        guard config.type.usesManagedTrialAccess else {
+            errorMessage = "Voice notes are currently available with Berget AI Trial."
+            return
+        }
+
+        if !Self.hasCloudConsent(for: config.type) {
+            pendingAction = .voiceNote(
+                draft: draft,
+                entry: entry,
+                document: document,
+                settingsVM: settingsVM,
+                chatThreadStore: chatThreadStore,
+                profileID: profileID,
+                agentMemoryStore: agentMemoryStore,
+                localModelManager: localModelManager
+            )
+            pendingCloudConsent = config.type
+            return
+        }
+
+        newConversation(chatThreadStore: chatThreadStore, profileID: profileID)
+        NotificationCenter.default.post(name: .navigateToChat, object: nil)
+
+        sendVoiceNoteWithPrompt(
+            draft,
+            promptBuilder: { transcript in
+                self.entryQuestionPrompt(for: entry, question: transcript)
+            },
+            document: document,
+            settingsVM: settingsVM,
+            chatThreadStore: chatThreadStore,
+            profileID: profileID,
+            agentMemoryStore: agentMemoryStore,
+            localModelManager: localModelManager
+        )
+    }
+
+    private func sendVoiceNoteWithPrompt(
+        _ draft: RecordedVoiceNoteDraft,
+        promptBuilder: @escaping (String) -> String,
+        document: EirDocument?,
+        settingsVM: SettingsViewModel,
+        chatThreadStore: ChatThreadStore,
+        profileID: UUID,
+        agentMemoryStore: AgentMemoryStore,
+        localModelManager: LocalModelManager? = nil
+    ) {
+        if chatThreadStore.selectedThreadID == nil {
+            chatThreadStore.createThread(profileID: profileID)
+        }
+
+        let voiceNote = VoiceNoteAttachment(
+            id: UUID(),
+            localFilePath: draft.fileURL.path,
+            duration: draft.duration,
+            waveform: draft.waveform,
+            status: .transcribing,
+            transcript: nil,
+            errorMessage: nil,
+            mimeType: draft.mimeType
+        )
+        let message = ChatMessage(role: .user, content: "", voiceNote: voiceNote)
+        chatThreadStore.addMessage(message)
+
+        Task {
+            do {
+                let transcript = try await VoiceNoteTranscriptionService.transcribe(draft: draft, settingsVM: settingsVM)
+                guard !transcript.isEmpty else {
+                    throw LLMError.requestFailed("The voice note could not be turned into text.")
+                }
+
+                chatThreadStore.updateMessage(id: message.id) { current in
+                    current.content = transcript
+                    current.voiceNote?.status = .ready
+                    current.voiceNote?.transcript = transcript
+                    current.voiceNote?.errorMessage = nil
+                }
+
+                streamReply(
+                    for: message.id,
+                    promptText: promptBuilder(transcript),
+                    document: document,
+                    settingsVM: settingsVM,
+                    chatThreadStore: chatThreadStore,
+                    agentMemoryStore: agentMemoryStore,
+                    localModelManager: localModelManager
+                )
+            } catch {
+                self.errorMessage = error.localizedDescription
+                chatThreadStore.updateMessage(id: message.id) { current in
+                    current.voiceNote?.status = .failed
+                    current.voiceNote?.errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func entryQuestionPrompt(for entry: EirEntry, question: String) -> String {
+        var prompt = "Svara på användarens fråga utifrån journalposten nedan.\n"
+        prompt += "Förklara tydligt på enkel svenska och undvik definitiva diagnoser.\n\n"
+        prompt += "Journalpost:\n"
+
+        if let date = entry.date { prompt += "Datum: \(date)\n" }
+        if let category = entry.category { prompt += "Kategori: \(category)\n" }
+        if let type = entry.type { prompt += "Typ: \(type)\n" }
+        if let provider = entry.provider?.name { prompt += "Vårdgivare: \(provider)\n" }
+        if let summary = entry.content?.summary { prompt += "Sammanfattning: \(summary)\n" }
+        if let details = entry.content?.details { prompt += "Detaljer: \(details)\n" }
+        if let notes = entry.content?.notes, !notes.isEmpty {
+            prompt += "Anteckningar: \(notes.joined(separator: "; "))\n"
+        }
+
+        prompt += "\nAnvändarens fråga:\n\(question)"
+        return prompt
     }
 }
 

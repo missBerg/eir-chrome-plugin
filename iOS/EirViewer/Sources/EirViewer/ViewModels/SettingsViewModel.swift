@@ -1,4 +1,9 @@
+import Foundation
 import SwiftUI
+
+#if canImport(DeviceCheck)
+import DeviceCheck
+#endif
 
 @MainActor
 class SettingsViewModel: ObservableObject {
@@ -12,6 +17,7 @@ class SettingsViewModel: ObservableObject {
     @Published var customPrompts: [PromptVersion] {
         didSet { saveCustomPrompts() }
     }
+    @Published private(set) var managedAccessSnapshots: [LLMProviderType: ManagedCloudAccessSnapshot]
 
     init() {
         let saved = Self.loadProviders()
@@ -20,13 +26,13 @@ class SettingsViewModel: ObservableObject {
         self.activePromptVersionId = UserDefaults.standard.string(forKey: "eir_active_prompt_version")
             ?? PromptLibrary.defaultVersionId
         self.customPrompts = Self.loadCustomPrompts()
+        self.managedAccessSnapshots = Self.loadManagedAccessSnapshots()
     }
 
     var activeProvider: LLMProviderConfig? {
         providers.first(where: { $0.type == activeProviderType })
     }
 
-    /// All available prompts: built-in + custom
     var allPromptVersions: [PromptVersion] {
         PromptLibrary.versions + customPrompts
     }
@@ -58,20 +64,6 @@ class SettingsViewModel: ObservableObject {
         }
     }
 
-    private func saveCustomPrompts() {
-        if let data = try? JSONEncoder().encode(customPrompts) {
-            UserDefaults.standard.set(data, forKey: "eir_custom_prompts")
-        }
-    }
-
-    private static func loadCustomPrompts() -> [PromptVersion] {
-        if let data = UserDefaults.standard.data(forKey: "eir_custom_prompts"),
-           let saved = try? JSONDecoder().decode([PromptVersion].self, from: data) {
-            return saved
-        }
-        return []
-    }
-
     func apiKey(for type: LLMProviderType) -> String {
         KeychainService.get(key: "eir_api_key_\(type.rawValue)") ?? ""
     }
@@ -85,9 +77,97 @@ class SettingsViewModel: ObservableObject {
         objectWillChange.send()
     }
 
+    func managedAccessSnapshot(for type: LLMProviderType) -> ManagedCloudAccessSnapshot? {
+        managedAccessSnapshots[type]
+    }
+
+    func hasManagedAccessToken(for type: LLMProviderType) -> Bool {
+        !managedAccessToken(for: type).isEmpty
+    }
+
+    func resolvedCredential(for config: LLMProviderConfig) async throws -> String {
+        if config.type.usesManagedTrialAccess {
+            let existing = managedAccessToken(for: config.type)
+            if !existing.isEmpty {
+                return existing
+            }
+
+            _ = try await provisionManagedAccess(for: config)
+            let token = managedAccessToken(for: config.type)
+            guard !token.isEmpty else {
+                throw LLMError.requestFailed("Trial access was provisioned, but no usable cloud token was returned.")
+            }
+            return token
+        }
+
+        let key = apiKey(for: config.type)
+        guard !key.isEmpty else {
+            throw LLMError.noAPIKey
+        }
+        return key
+    }
+
+    @discardableResult
+    func provisionManagedAccess(for config: LLMProviderConfig) async throws -> ManagedCloudAccessSnapshot {
+        let normalizedBaseURL = config.baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedBaseURL.isEmpty else {
+            throw LLMError.requestFailed("Set the hosted Eir cloud API URL before provisioning trial credits.")
+        }
+
+        let bootstrap = try await ManagedCloudBootstrapClient.bootstrap(baseURLString: normalizedBaseURL)
+        let token = bootstrap.bearerToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty else {
+            throw LLMError.requestFailed("Secure cloud access setup completed without a usable client token.")
+        }
+
+        KeychainService.set(key: managedAccessTokenKey(for: config.type), value: token)
+
+        let snapshot = ManagedCloudAccessSnapshot(
+            clientId: bootstrap.clientId,
+            mode: bootstrap.mode,
+            attestation: bootstrap.attestation,
+            quota: bootstrap.quota,
+            provisionedAt: Date(),
+            bootstrapBaseURL: normalizedBaseURL
+        )
+        managedAccessSnapshots[config.type] = snapshot
+        saveManagedAccessSnapshots()
+        objectWillChange.send()
+        return snapshot
+    }
+
+    func clearManagedAccess(for type: LLMProviderType) {
+        KeychainService.delete(key: managedAccessTokenKey(for: type))
+        managedAccessSnapshots.removeValue(forKey: type)
+        saveManagedAccessSnapshots()
+        objectWillChange.send()
+    }
+
+    func updateManagedAccessQuota(_ quota: ManagedCloudQuota, for type: LLMProviderType) {
+        guard var snapshot = managedAccessSnapshots[type] else { return }
+        snapshot = ManagedCloudAccessSnapshot(
+            clientId: snapshot.clientId,
+            mode: snapshot.mode,
+            attestation: snapshot.attestation,
+            quota: quota,
+            provisionedAt: snapshot.provisionedAt,
+            bootstrapBaseURL: snapshot.bootstrapBaseURL
+        )
+        managedAccessSnapshots[type] = snapshot
+        saveManagedAccessSnapshots()
+        objectWillChange.send()
+    }
+
     func updateProvider(_ config: LLMProviderConfig) {
         if let idx = providers.firstIndex(where: { $0.type == config.type }) {
+            let oldConfig = providers[idx]
             providers[idx] = config
+
+            if config.type.usesManagedTrialAccess &&
+                oldConfig.baseURL.trimmingCharacters(in: .whitespacesAndNewlines) !=
+                config.baseURL.trimmingCharacters(in: .whitespacesAndNewlines) {
+                clearManagedAccess(for: config.type)
+            }
         }
         saveProviders()
     }
@@ -103,17 +183,50 @@ class SettingsViewModel: ObservableObject {
         }
     }
 
+    private func saveCustomPrompts() {
+        if let data = try? JSONEncoder().encode(customPrompts) {
+            UserDefaults.standard.set(data, forKey: "eir_custom_prompts")
+        }
+    }
+
+    private func saveManagedAccessSnapshots() {
+        let payload = managedAccessSnapshots.map { ManagedCloudAccessRecord(type: $0.key, snapshot: $0.value) }
+        if let data = try? JSONEncoder().encode(payload) {
+            UserDefaults.standard.set(data, forKey: "eir_managed_access_snapshots")
+        }
+    }
+
+    private static func loadCustomPrompts() -> [PromptVersion] {
+        if let data = UserDefaults.standard.data(forKey: "eir_custom_prompts"),
+           let saved = try? JSONDecoder().decode([PromptVersion].self, from: data) {
+            return saved
+        }
+        return []
+    }
+
     private static func loadProviders() -> [LLMProviderConfig] {
+        let sortOrder = Dictionary(uniqueKeysWithValues: LLMProviderType.allCases.enumerated().map { ($1, $0) })
+
         if let data = UserDefaults.standard.data(forKey: "eir_providers"),
            let saved = try? JSONDecoder().decode([LLMProviderConfig].self, from: data) {
-            // Merge in any new provider types that were added since last save
             let existingTypes = Set(saved.map(\.type))
             let missing = LLMProviderType.allCases
                 .filter { !existingTypes.contains($0) }
                 .map { LLMProviderConfig(type: $0) }
-            return saved + missing
+            return (saved + missing).sorted {
+                (sortOrder[$0.type] ?? .max) < (sortOrder[$1.type] ?? .max)
+            }
         }
         return LLMProviderType.allCases.map { LLMProviderConfig(type: $0) }
+    }
+
+    private static func loadManagedAccessSnapshots() -> [LLMProviderType: ManagedCloudAccessSnapshot] {
+        guard let data = UserDefaults.standard.data(forKey: "eir_managed_access_snapshots"),
+              let records = try? JSONDecoder().decode([ManagedCloudAccessRecord].self, from: data) else {
+            return [:]
+        }
+
+        return Dictionary(uniqueKeysWithValues: records.map { ($0.type, $0.snapshot) })
     }
 
     private static func loadActiveProvider() -> LLMProviderType {
@@ -121,6 +234,188 @@ class SettingsViewModel: ObservableObject {
            let type = LLMProviderType(rawValue: raw) {
             return type
         }
-        return .openai
+        return .bergetTrial
     }
+
+    private func managedAccessToken(for type: LLMProviderType) -> String {
+        KeychainService.get(key: managedAccessTokenKey(for: type))?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    private func managedAccessTokenKey(for type: LLMProviderType) -> String {
+        "eir_managed_cloud_token_\(type.storageSlug)"
+    }
+}
+
+private struct ManagedCloudAccessRecord: Codable {
+    let type: LLMProviderType
+    let snapshot: ManagedCloudAccessSnapshot
+}
+
+struct ManagedCloudAccessSnapshot: Codable {
+    let clientId: String
+    let mode: String
+    let attestation: ManagedCloudBootstrapAttestation?
+    let quota: ManagedCloudQuota
+    let provisionedAt: Date
+    let bootstrapBaseURL: String
+}
+
+struct ManagedCloudQuota: Codable {
+    struct UsageBlock: Codable {
+        let requests: Int
+        let audioSeconds: Int
+        let estimatedCostUsd: Double
+    }
+
+    let used: UsageBlock
+    let limits: UsageBlock
+    let remaining: UsageBlock
+}
+
+struct ManagedCloudBootstrapAttestation: Codable, Sendable {
+    let provider: String
+    let status: String
+    let isSupported: Bool
+    let keyID: String?
+    let evidence: String?
+}
+
+private struct ManagedCloudBootstrapResponse: Decodable {
+    let clientId: String
+    let bearerToken: String
+    let mode: String
+    let attestation: ManagedCloudBootstrapAttestation?
+    let quota: ManagedCloudQuota
+}
+
+private struct ManagedCloudBootstrapError: Decodable {
+    let error: String
+}
+
+private struct ManagedCloudBootstrapContext {
+    let installID: String
+    let platform: String
+    let attestation: ManagedCloudBootstrapAttestation
+}
+
+private enum ManagedCloudBootstrapClient {
+    private static let installIDKey = "eir_managed_cloud_install_id"
+    private static let appAttestKeyIDKey = "eir_managed_cloud_app_attest_key_id"
+
+    private struct RequestBody: Encodable {
+        let installId: String
+        let platform: String
+        let attestation: ManagedCloudBootstrapAttestation
+    }
+
+    static func bootstrap(baseURLString: String) async throws -> ManagedCloudBootstrapResponse {
+        let normalizedBaseURL = baseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let baseURL = URL(string: normalizedBaseURL) else {
+            throw LLMError.requestFailed("The hosted Eir cloud API URL is not valid.")
+        }
+
+        let context = await currentContext()
+
+        var request = URLRequest(url: baseURL.appending(path: "client/bootstrap"))
+        request.httpMethod = "POST"
+        request.timeoutInterval = 20
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            RequestBody(
+                installId: context.installID,
+                platform: context.platform,
+                attestation: context.attestation
+            )
+        )
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw LLMError.invalidResponse
+        }
+
+        guard http.statusCode == 200 else {
+            let payload = try? JSONDecoder().decode(ManagedCloudBootstrapError.self, from: data)
+            let message = payload?.error ?? String(data: data, encoding: .utf8) ?? "Secure cloud access setup failed."
+            throw LLMError.requestFailed(message)
+        }
+
+        return try JSONDecoder().decode(ManagedCloudBootstrapResponse.self, from: data)
+    }
+
+    private static func currentContext() async -> ManagedCloudBootstrapContext {
+        ManagedCloudBootstrapContext(
+            installID: installID(),
+            platform: "ios",
+            attestation: await attestation()
+        )
+    }
+
+    private static func installID() -> String {
+        let stored = KeychainService.get(key: installIDKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !stored.isEmpty {
+            return stored
+        }
+
+        let generated = UUID().uuidString.lowercased()
+        KeychainService.set(key: installIDKey, value: generated)
+        return generated
+    }
+
+    private static func attestation() async -> ManagedCloudBootstrapAttestation {
+#if canImport(DeviceCheck)
+        if #available(iOS 14.0, *), DCAppAttestService.shared.isSupported {
+            let keyID = await appAttestKeyID()
+            return ManagedCloudBootstrapAttestation(
+                provider: "app_attest",
+                status: keyID == nil ? "supported_uninitialized" : "supported_key_ready",
+                isSupported: true,
+                keyID: keyID,
+                evidence: nil
+            )
+        }
+#endif
+
+        return ManagedCloudBootstrapAttestation(
+            provider: "none",
+            status: "unavailable",
+            isSupported: false,
+            keyID: nil,
+            evidence: nil
+        )
+    }
+
+#if canImport(DeviceCheck)
+    @available(iOS 14.0, *)
+    private static func appAttestKeyID() async -> String? {
+        let stored = KeychainService.get(key: appAttestKeyIDKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !stored.isEmpty {
+            return stored
+        }
+
+        do {
+            let generated: String = try await withCheckedThrowingContinuation { continuation in
+                DCAppAttestService.shared.generateKey { keyID, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                        return
+                    }
+                    continuation.resume(returning: keyID ?? "")
+                }
+            }
+
+            let normalized = generated.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !normalized.isEmpty else {
+                return nil
+            }
+
+            KeychainService.set(key: appAttestKeyIDKey, value: normalized)
+            return normalized
+        } catch {
+            return nil
+        }
+    }
+#endif
 }

@@ -10,6 +10,12 @@ packages:
   Yams:
     url: https://github.com/jpsim/Yams.git
     from: "5.0.0"
+  mlx-swift-lm:
+    url: https://github.com/ml-explore/mlx-swift-lm
+    branch: main
+  mlx-swift:
+    url: https://github.com/ml-explore/mlx-swift
+    from: "0.30.6"
 
 targets:
   EirViewer:
@@ -28,9 +34,16 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: YJ9A3JT299
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Eir uses the microphone so you can dictate questions and notes for AI assistance.
     dependencies:
       - package: Yams
+      - package: mlx-swift-lm
+        product: MLXLMCommon
+      - package: mlx-swift-lm
+        product: MLXLLM
+      - package: mlx-swift
+        product: MLX
       - sdk: HealthKit.framework
 
   EirViewerTests:

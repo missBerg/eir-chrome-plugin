@@ -97,6 +97,21 @@ enum HealthDataCategory: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The types that are safe to include in HealthKit authorization requests.
+    /// Blood pressure must request the component quantity types instead of the
+    /// correlation type, otherwise HealthKit throws an NSInvalidArgumentException.
+    var authorizationReadTypes: [HKObjectType] {
+        switch self {
+        case .bloodPressure:
+            return [
+                HKQuantityType(.bloodPressureSystolic),
+                HKQuantityType(.bloodPressureDiastolic)
+            ]
+        default:
+            return hkSampleType.map { [$0] } ?? []
+        }
+    }
+
     var hkUnit: HKUnit? {
         switch self {
         case .heartRate: return .count().unitDivided(by: .minute())
@@ -136,24 +151,38 @@ enum DateRangeOption: String, CaseIterable, Identifiable {
 
 // MARK: - Service
 
-final class HealthKitService {
+final class HealthKitService: @unchecked Sendable {
     static let shared = HealthKitService()
 
-    private let store = HKHealthStore()
+    /// Thread-safe store access. Only created if HealthKit is available.
+    private let store: HKHealthStore?
+
+    private init() {
+        if HKHealthStore.isHealthDataAvailable() {
+            self.store = HKHealthStore()
+        } else {
+            self.store = nil
+        }
+    }
 
     var isAvailable: Bool {
-        HKHealthStore.isHealthDataAvailable()
+        store != nil
     }
 
     // MARK: - Authorization
 
     func requestAuthorization(for categories: [HealthDataCategory]) async throws {
-        let readTypes: Set<HKSampleType> = Set(categories.compactMap(\.hkSampleType))
+        guard let store = store else {
+            throw NSError(domain: "HealthKitService", code: 1, userInfo: [NSLocalizedDescriptionKey: "HealthKit is not available on this device"])
+        }
+        let readTypes = Set(categories.flatMap(\.authorizationReadTypes))
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             store.requestAuthorization(toShare: nil, read: readTypes) { success, error in
                 if let error = error {
                     continuation.resume(throwing: error)
+                } else if !success {
+                    continuation.resume(throwing: NSError(domain: "HealthKitService", code: 2, userInfo: [NSLocalizedDescriptionKey: "HealthKit authorization was not granted"]))
                 } else {
                     continuation.resume()
                 }
@@ -163,15 +192,25 @@ final class HealthKitService {
 
     // MARK: - Sample Count
 
+    /// Returns an approximate sample count, capped to avoid loading millions of samples into memory.
     func sampleCount(for category: HealthDataCategory, from startDate: Date) async throws -> Int {
+        guard let store = store else { return 0 }
+
+        // For high-frequency data that gets aggregated daily, use statistics query to check existence
+        if category.aggregateDaily, let quantityType = category.hkSampleType as? HKQuantityType {
+            return try await statisticsCount(for: quantityType, category: category, from: startDate)
+        }
+
+        // For low-frequency data (blood pressure, weight, workouts, etc.), sample query is fine
         guard let sampleType = category.hkSampleType else { return 0 }
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: Date(), options: .strictStartDate)
+        let limit = 5000 // Cap to prevent OOM on large datasets
 
         return try await withCheckedThrowingContinuation { continuation in
             let query = HKSampleQuery(
                 sampleType: sampleType,
                 predicate: predicate,
-                limit: HKObjectQueryNoLimit,
+                limit: limit,
                 sortDescriptors: nil
             ) { _, results, error in
                 if let error = error {
@@ -184,10 +223,52 @@ final class HealthKitService {
         }
     }
 
+    /// Use statistics collection to count days with data (efficient for high-frequency types).
+    private func statisticsCount(for quantityType: HKQuantityType, category: HealthDataCategory, from startDate: Date) async throws -> Int {
+        guard let store = store, let _ = category.hkUnit else { return 0 }
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: Date(), options: .strictStartDate)
+        let interval = DateComponents(day: 1)
+        let options: HKStatisticsOptions = (category == .steps || category == .activeEnergy) ? .cumulativeSum : .discreteAverage
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let query = HKStatisticsCollectionQuery(
+                quantityType: quantityType,
+                quantitySamplePredicate: predicate,
+                options: options,
+                anchorDate: Calendar.current.startOfDay(for: startDate),
+                intervalComponents: interval
+            )
+
+            query.initialResultsHandler = { _, collection, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                guard let collection = collection else {
+                    continuation.resume(returning: 0)
+                    return
+                }
+                var count = 0
+                collection.enumerateStatistics(from: startDate, to: Date()) { stat, _ in
+                    let hasData: Bool
+                    if category == .steps || category == .activeEnergy {
+                        hasData = stat.sumQuantity() != nil
+                    } else {
+                        hasData = stat.averageQuantity() != nil
+                    }
+                    if hasData { count += 1 }
+                }
+                continuation.resume(returning: count)
+            }
+
+            store.execute(query)
+        }
+    }
+
     // MARK: - Query Samples
 
     func querySamples(for category: HealthDataCategory, from startDate: Date, to endDate: Date = Date()) async throws -> [HKSample] {
-        guard let sampleType = category.hkSampleType else { return [] }
+        guard let store = store, let sampleType = category.hkSampleType else { return [] }
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
 
@@ -223,7 +304,8 @@ final class HealthKitService {
         from startDate: Date,
         to endDate: Date = Date()
     ) async throws -> [DailyStat] {
-        guard let quantityType = category.hkSampleType as? HKQuantityType,
+        guard let store = store,
+              let quantityType = category.hkSampleType as? HKQuantityType,
               let unit = category.hkUnit else { return [] }
 
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
