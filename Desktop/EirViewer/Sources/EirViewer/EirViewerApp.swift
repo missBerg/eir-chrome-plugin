@@ -1,10 +1,51 @@
 import SwiftUI
 import SQLiteVec
 
+private struct MainWindowCommands: Commands {
+    let openFile: () -> Void
+
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button("Open EIR File...") {
+                openFile()
+            }
+            .keyboardShortcut("o", modifiers: .command)
+        }
+
+        CommandGroup(after: .windowArrangement) {
+            Divider()
+            Button("Show Main Window") {
+                openWindow(id: "main")
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            .keyboardShortcut("1", modifiers: [.command, .option])
+        }
+    }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize sqlite-vec extension
         try? SQLiteVec.initialize()
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            // Reopen the main window when user clicks dock icon
+            for window in sender.windows {
+                if window.canBecomeMain {
+                    window.makeKeyAndOrderFront(self)
+                    return true
+                }
+            }
+        }
+        return true
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -42,7 +83,7 @@ struct EirViewerApp: App {
     @StateObject private var localModelManager = LocalModelManager()
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("Eir", id: "main") {
             ContentView()
                 .environmentObject(documentVM)
                 .environmentObject(chatVM)
@@ -67,16 +108,13 @@ struct EirViewerApp: App {
                 }
         }
         .commands {
-            CommandGroup(replacing: .newItem) {
-                Button("Open EIR File...") {
-                    documentVM.openFilePicker { url in
-                        NotificationCenter.default.post(
-                            name: .showAddPersonSheet,
-                            object: url
-                        )
-                    }
+            MainWindowCommands {
+                documentVM.openFilePicker { url in
+                    NotificationCenter.default.post(
+                        name: .showAddPersonSheet,
+                        object: url
+                    )
                 }
-                .keyboardShortcut("o", modifiers: .command)
             }
         }
 

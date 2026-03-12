@@ -242,6 +242,16 @@ struct ChatView: View {
             .background(AppColors.card)
         }
         .background(AppColors.background)
+        .sheet(isPresented: Binding(
+            get: { chatVM.pendingCloudConsent != nil },
+            set: { if !$0 { chatVM.consentDenied() } }
+        )) {
+            CloudConsentSheet(
+                providerType: chatVM.pendingCloudConsent,
+                onConsent: { chatVM.consentGrantedAndSend() },
+                onDeny: { chatVM.consentDenied() }
+            )
+        }
         .onAppear {
             triggerOnboardingIfNeeded()
         }
@@ -276,9 +286,12 @@ struct ChatView: View {
               settingsVM.activeProvider != nil
         else { return }
 
-        // Check provider readiness: local needs a loaded model, cloud needs an API key
+        // Check provider readiness before auto-onboarding.
         if settingsVM.activeProviderType.isLocal {
             guard localModelManager.isReady else { return }
+        } else if settingsVM.activeProviderType.usesManagedTrialAccess {
+            // Trial bootstrap happens after consent on first send.
+            return
         } else {
             guard !settingsVM.apiKey(for: settingsVM.activeProviderType).isEmpty else { return }
         }
@@ -295,6 +308,77 @@ struct ChatView: View {
             embeddingStore: embeddingStore,
             localModelManager: localModelManager
         )
+    }
+}
+
+private struct CloudConsentSheet: View {
+    let providerType: LLMProviderType?
+    let onConsent: () -> Void
+    let onDeny: () -> Void
+
+    private var providerName: String {
+        switch providerType {
+        case .bergetTrial:
+            return "Berget AI via Eir"
+        default:
+            return providerType?.rawValue ?? "Cloud Provider"
+        }
+    }
+
+    private var actionLabel: String {
+        providerType == .bergetTrial ? "Start free cloud trial" : "Allow cloud processing"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Use \(providerName)?")
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(AppColors.text)
+                Text("This sends your selected records and message through Eir servers in Stockholm with zero Eir-side data retention. Berget AI performs the cloud inference.")
+                    .foregroundColor(AppColors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                consentRow(icon: "server.rack", text: "Routed through Eir in Stockholm Region.")
+                consentRow(icon: "lock.shield", text: "Zero Eir data retention for hosted processing.")
+                consentRow(icon: "sparkles", text: "Model: openai/gpt-oss-120b via Berget AI.")
+                if providerType == .bergetTrial {
+                    consentRow(icon: "gift", text: "Free trial credits are provisioned on first use.")
+                }
+            }
+            .padding(16)
+            .background(AppColors.backgroundMuted)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            HStack(spacing: 12) {
+                Button("Not now", role: .cancel) {
+                    onDeny()
+                }
+                .buttonStyle(.bordered)
+
+                Button(actionLabel) {
+                    onConsent()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppColors.primaryStrong)
+            }
+        }
+        .padding(24)
+        .frame(width: 480)
+        .background(AppColors.background)
+    }
+
+    private func consentRow(icon: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .foregroundColor(AppColors.aiStrong)
+                .frame(width: 18)
+            Text(text)
+                .foregroundColor(AppColors.text)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

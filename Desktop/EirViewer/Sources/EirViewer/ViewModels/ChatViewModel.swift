@@ -7,12 +7,70 @@ class ChatViewModel: ObservableObject {
     @Published var isThinking = false
     @Published var thinkingTools: [String] = []
     @Published var errorMessage: String?
+    @Published var pendingCloudConsent: LLMProviderType?
 
     private var streamingTask: Task<Void, Never>?
     private let toolRegistry = ToolRegistry()
     private let maxToolIterations = 10
     /// Incremented each agent loop iteration so stale onToken Tasks are ignored
     private var tokenGeneration = 0
+    private var pendingSendContext: PendingSendContext?
+
+    private struct PendingSendContext {
+        let document: EirDocument?
+        let settingsVM: SettingsViewModel
+        let chatThreadStore: ChatThreadStore
+        let profileID: UUID
+        let agentMemoryStore: AgentMemoryStore?
+        let clinicStore: ClinicStore?
+        let profileStore: ProfileStore?
+        let embeddingStore: EmbeddingStore?
+        let localModelManager: LocalModelManager?
+    }
+
+    static func hasCloudConsent(for provider: LLMProviderType) -> Bool {
+        UserDefaults.standard.bool(forKey: "cloudConsent_\(provider.rawValue)")
+    }
+
+    static func grantCloudConsent(for provider: LLMProviderType) {
+        UserDefaults.standard.set(true, forKey: "cloudConsent_\(provider.rawValue)")
+    }
+
+    func consentGrantedAndSend() {
+        guard let provider = pendingCloudConsent,
+              let pending = pendingSendContext else { return }
+        Self.grantCloudConsent(for: provider)
+        pendingCloudConsent = nil
+        pendingSendContext = nil
+
+        Task {
+            do {
+                if provider.usesManagedTrialAccess,
+                   let config = pending.settingsVM.providers.first(where: { $0.type == provider }) {
+                    _ = try await pending.settingsVM.provisionManagedAccess(for: config)
+                }
+
+                sendMessage(
+                    document: pending.document,
+                    settingsVM: pending.settingsVM,
+                    chatThreadStore: pending.chatThreadStore,
+                    profileID: pending.profileID,
+                    agentMemoryStore: pending.agentMemoryStore,
+                    clinicStore: pending.clinicStore,
+                    profileStore: pending.profileStore,
+                    embeddingStore: pending.embeddingStore,
+                    localModelManager: pending.localModelManager
+                )
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    func consentDenied() {
+        pendingCloudConsent = nil
+        pendingSendContext = nil
+    }
 
     func sendMessage(
         document: EirDocument?,
@@ -28,6 +86,65 @@ class ChatViewModel: ObservableObject {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isStreaming else { return }
 
+        guard let config = settingsVM.activeProvider else {
+            errorMessage = "No LLM provider selected. Configure one in Settings."
+            return
+        }
+
+        if !config.type.isLocal && !Self.hasCloudConsent(for: config.type) {
+            pendingSendContext = PendingSendContext(
+                document: document,
+                settingsVM: settingsVM,
+                chatThreadStore: chatThreadStore,
+                profileID: profileID,
+                agentMemoryStore: agentMemoryStore,
+                clinicStore: clinicStore,
+                profileStore: profileStore,
+                embeddingStore: embeddingStore,
+                localModelManager: localModelManager
+            )
+            pendingCloudConsent = config.type
+            return
+        }
+
+        if config.type.usesManagedTrialAccess && !settingsVM.hasManagedAccessToken(for: config.type) {
+            pendingSendContext = PendingSendContext(
+                document: document,
+                settingsVM: settingsVM,
+                chatThreadStore: chatThreadStore,
+                profileID: profileID,
+                agentMemoryStore: agentMemoryStore,
+                clinicStore: clinicStore,
+                profileStore: profileStore,
+                embeddingStore: embeddingStore,
+                localModelManager: localModelManager
+            )
+
+            Task {
+                do {
+                    _ = try await settingsVM.provisionManagedAccess(for: config)
+                    if let pending = self.pendingSendContext {
+                        self.pendingSendContext = nil
+                        self.sendMessage(
+                            document: pending.document,
+                            settingsVM: pending.settingsVM,
+                            chatThreadStore: pending.chatThreadStore,
+                            profileID: pending.profileID,
+                            agentMemoryStore: pending.agentMemoryStore,
+                            clinicStore: pending.clinicStore,
+                            profileStore: pending.profileStore,
+                            embeddingStore: pending.embeddingStore,
+                            localModelManager: pending.localModelManager
+                        )
+                    }
+                } catch {
+                    self.pendingSendContext = nil
+                    self.errorMessage = error.localizedDescription
+                }
+            }
+            return
+        }
+
         // Auto-create thread if none selected
         if chatThreadStore.selectedThreadID == nil {
             chatThreadStore.createThread(profileID: profileID)
@@ -36,11 +153,6 @@ class ChatViewModel: ObservableObject {
         let userMessage = ChatMessage(role: .user, content: text)
         chatThreadStore.addMessage(userMessage)
         inputText = ""
-
-        guard let config = settingsVM.activeProvider else {
-            errorMessage = "No LLM provider selected. Configure one in Settings."
-            return
-        }
 
         // Local model path — no API key needed
         if config.type.isLocal {
@@ -60,9 +172,11 @@ class ChatViewModel: ObservableObject {
             return
         }
 
-        let apiKey = settingsVM.apiKey(for: config.type)
-        guard !apiKey.isEmpty else {
-            errorMessage = "No API key set for \(config.type.rawValue). Add one in Settings."
+        let credential = settingsVM.credentialIfAvailable(for: config.type)
+        guard !credential.isEmpty else {
+            errorMessage = config.type.requiresUserAPIKey
+                ? "No API key set for \(config.type.rawValue). Add one in Settings."
+                : "Cloud access is not ready yet. Try again in a moment."
             return
         }
 
@@ -108,7 +222,7 @@ class ChatViewModel: ObservableObject {
         // Build LLM messages from conversation history (excludes tool artifacts)
         var llmMessages = Self.buildLLMHistory(from: chatThreadStore.messages, systemPrompt: systemPrompt)
 
-        let service = LLMService(config: config, apiKey: apiKey)
+        let service = LLMService(config: config, apiKey: credential)
         let isNewThread = chatThreadStore.messages.count == 2
         let threadID = chatThreadStore.selectedThreadID
         let tools = ToolRegistry.tools
@@ -454,8 +568,8 @@ class ChatViewModel: ObservableObject {
         chatThreadStore: ChatThreadStore
     ) {
         guard let config = settingsVM.activeProvider else { return }
-        let apiKey = settingsVM.apiKey(for: config.type)
-        guard !apiKey.isEmpty else { return }
+        let credential = settingsVM.credentialIfAvailable(for: config.type)
+        guard !credential.isEmpty else { return }
 
         let userMsg = messages.first { $0.role == .user }?.content ?? ""
         let assistantMsg = messages.first { $0.role == .assistant }?.content ?? ""
@@ -467,7 +581,7 @@ class ChatViewModel: ObservableObject {
             (role: "user", content: "Generate a short title for this conversation.")
         ]
 
-        let service = LLMService(config: config, apiKey: apiKey)
+        let service = LLMService(config: config, apiKey: credential)
 
         Task {
             do {
