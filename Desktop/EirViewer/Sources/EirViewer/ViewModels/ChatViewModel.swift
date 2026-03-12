@@ -276,12 +276,15 @@ class ChatViewModel: ObservableObject {
                 }
             } catch {
                 DebugLog.log("[AgentLoop] ERROR: \(error)")
-                self.errorMessage = error.localizedDescription
+                let userFacingError = Self.userFacingErrorMessage(for: error)
+                self.errorMessage = userFacingError
                 self.isThinking = false
                 self.thinkingTools = []
-                if assistantIndex < chatThreadStore.messages.count,
-                   chatThreadStore.messages[assistantIndex].content.isEmpty {
-                    chatThreadStore.messages.remove(at: assistantIndex)
+                if assistantIndex < chatThreadStore.messages.count {
+                    if chatThreadStore.messages[assistantIndex].content.isEmpty {
+                        chatThreadStore.messages[assistantIndex].content = userFacingError
+                    }
+                    chatThreadStore.messages[assistantIndex].toolCalls = nil
                     chatThreadStore.persistMessages()
                 }
             }
@@ -552,6 +555,28 @@ class ChatViewModel: ObservableObject {
     func stopStreaming() {
         streamingTask?.cancel()
         isStreaming = false
+    }
+
+    private static func userFacingErrorMessage(for error: Error) -> String {
+        let rawMessage = error.localizedDescription.lowercased()
+        let transientMarkers = [
+            "http 429",
+            "http 500",
+            "http 502",
+            "http 503",
+            "http 504",
+            "internal_error",
+            "model_overloaded",
+            "rate limit",
+            "retry after",
+            "temporarily unavailable"
+        ]
+
+        if transientMarkers.contains(where: { rawMessage.contains($0) }) {
+            return "Tjansten ar tillfalligt otillganglig just nu. Forsok igen om en liten stund."
+        }
+
+        return error.localizedDescription
     }
 
     func newConversation(chatThreadStore: ChatThreadStore, profileID: UUID) {
