@@ -46,6 +46,7 @@ class ChatViewModel: ObservableObject {
         Task {
             do {
                 if provider.usesManagedTrialAccess,
+                   !pending.settingsVM.hasManagedAccessToken(for: provider),
                    let config = pending.settingsVM.providers.first(where: { $0.type == provider }) {
                     _ = try await pending.settingsVM.provisionManagedAccess(for: config)
                 }
