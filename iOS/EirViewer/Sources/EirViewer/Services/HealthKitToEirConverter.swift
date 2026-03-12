@@ -193,7 +193,9 @@ struct HealthKitToEirConverter {
     }
 
     static func saveToDocuments(_ yamlString: String, fileName: String) throws -> URL {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            throw NSError(domain: "HealthKitToEirConverter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not access Documents directory"])
+        }
         let fileURL = docs.appendingPathComponent(fileName)
         try yamlString.write(to: fileURL, atomically: true, encoding: .utf8)
         return fileURL

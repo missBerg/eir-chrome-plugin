@@ -6,14 +6,15 @@ struct PersonRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Circle()
-                .fill(isSelected ? AppColors.primary : Color.gray.opacity(0.3))
-                .frame(width: 32, height: 32)
-                .overlay(
-                    Text(profile.initials)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(isSelected ? .white : AppColors.textSecondary)
-                )
+            ZStack {
+                Circle()
+                    .fill(isSelected ? AnyShapeStyle(AppColors.aura) : AnyShapeStyle(AppColors.backgroundMuted))
+                    .frame(width: 38, height: 38)
+
+                Text(profile.initials)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(isSelected ? .white : AppColors.primaryDeep)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(profile.displayName)
@@ -32,13 +33,17 @@ struct PersonRow: View {
             Spacer()
 
             if isSelected {
-                Image(systemName: "checkmark")
-                    .font(.caption)
-                    .foregroundColor(AppColors.primary)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.subheadline)
+                    .foregroundColor(AppColors.primaryStrong)
             }
         }
-        .padding(.vertical, 4)
-        .padding(.horizontal, 8)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(isSelected ? AppColors.primarySoft : Color.clear)
+        )
         .contentShape(Rectangle())
     }
 }

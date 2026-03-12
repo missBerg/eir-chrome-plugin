@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct JournalView: View {
     @EnvironmentObject var documentVM: DocumentViewModel
@@ -10,15 +11,27 @@ struct JournalView: View {
         Group {
             if documentVM.document == nil {
                 VStack(spacing: 12) {
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 48))
-                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                    ZStack {
+                        Circle()
+                            .fill(AppColors.auraSubtle)
+                            .frame(width: 92, height: 92)
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .font(.system(size: 34, weight: .semibold))
+                            .foregroundColor(AppColors.primaryStrong)
+                    }
                     Text("No records loaded")
-                        .foregroundColor(AppColors.textSecondary)
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(AppColors.text)
                 }
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 16) {
+                        profileHero
+
+                        if let summary = appleHealthSummary {
+                            appleHealthOverview(summary)
+                        }
+
                         ForEach(documentVM.groupedEntries, id: \.key) { group in
                             Section {
                                 ForEach(group.entries) { entry in
@@ -32,13 +45,14 @@ struct JournalView: View {
                                 }
                             } header: {
                                 Text(group.key)
-                                    .font(.headline)
+                                    .font(.headline.weight(.semibold))
                                     .foregroundColor(AppColors.text)
-                                    .padding(.top, 4)
+                                    .padding(.top, 8)
                             }
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
                 }
                 .navigationDestination(for: String.self) { entryID in
                     if let entry = documentVM.document?.entries.first(where: { $0.id == entryID }) {
@@ -146,5 +160,253 @@ struct JournalView: View {
             AddPersonSheet()
         }
         .background(AppColors.background)
+    }
+
+    private var profileHero: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(profileStore.selectedProfile?.displayName ?? "Journal")
+                        .font(.system(.title2, design: .rounded, weight: .bold))
+                        .foregroundColor(AppColors.text)
+
+                    Text(documentVM.document?.metadata.source ?? "Structured record archive")
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                if let total = documentVM.document?.metadata.exportInfo?.totalEntries ?? profileStore.selectedProfile?.totalEntries {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("\(total)")
+                            .font(.system(.title3, design: .rounded, weight: .bold))
+                            .foregroundColor(AppColors.primaryDeep)
+                        Text("entries")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+            }
+
+            if let range = documentVM.document?.metadata.exportInfo?.dateRange,
+               let start = range.start,
+               let end = range.end {
+                Text("\(start) to \(end)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(AppColors.backgroundMuted)
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(AppColors.backgroundElevated)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
+        .shadow(color: AppColors.shadow, radius: 12, y: 6)
+        .padding(.top, 12)
+    }
+
+    private var appleHealthSummary: AppleHealthSummary? {
+        guard let document = documentVM.document else { return nil }
+        return AppleHealthSummary(document: document)
+    }
+
+    private func appleHealthOverview(_ summary: AppleHealthSummary) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Apple Health Overview")
+                        .font(.headline.weight(.semibold))
+                        .foregroundColor(AppColors.text)
+                    Text("Imported metrics are summarized first, with the full timeline below.")
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                Text("HealthKit")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(AppColors.aiStrong)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(AppColors.aiSoft)
+                    .clipShape(Capsule())
+            }
+
+            HStack(spacing: 10) {
+                summaryTile(title: "Tracked days", value: "\(summary.daysTracked)", tint: AppColors.primary)
+                summaryTile(title: "Metrics", value: "\(summary.metricCount)", tint: AppColors.info)
+                summaryTile(title: "Entries", value: "\(summary.entryCount)", tint: AppColors.ai)
+            }
+
+            if !summary.stepTrend.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Recent steps")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppColors.text)
+
+                    Chart(summary.stepTrend) { point in
+                        BarMark(
+                            x: .value("Date", point.date),
+                            y: .value("Steps", point.value)
+                        )
+                        .foregroundStyle(AppColors.primary.gradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading) { value in
+                            AxisValueLabel {
+                                if let intValue = value.as(Int.self) {
+                                    Text(intValue.formatted(.number.notation(.compactName)))
+                                        .font(.caption2)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                                .foregroundStyle(AppColors.border)
+                        }
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                            AxisValueLabel {
+                                if let date = value.as(Date.self) {
+                                    Text(date, format: .dateTime.day().month(.abbreviated))
+                                        .font(.caption2)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+                        }
+                    }
+                    .frame(height: 180)
+                }
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(summary.metricBreakdown, id: \.metric) { item in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(AppColors.categoryColor(for: item.metric))
+                                .frame(width: 8, height: 8)
+                            Text(item.metric)
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(AppColors.text)
+                            Text("\(item.count)")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(AppColors.backgroundMuted)
+                        .clipShape(Capsule())
+                    }
+                }
+            }
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(AppColors.backgroundElevated)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
+    }
+
+    private func summaryTile(title: String, value: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(value)
+                .font(.system(.title3, design: .rounded, weight: .bold))
+                .foregroundColor(tint)
+            Text(title)
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(AppColors.backgroundMuted)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+private struct AppleHealthSummary {
+    struct BreakdownItem {
+        let metric: String
+        let count: Int
+    }
+
+    struct TrendPoint: Identifiable {
+        let id = UUID()
+        let date: Date
+        let value: Int
+    }
+
+    let entryCount: Int
+    let daysTracked: Int
+    let metricCount: Int
+    let metricBreakdown: [BreakdownItem]
+    let stepTrend: [TrendPoint]
+
+    init?(document: EirDocument) {
+        let entries = document.entries.filter { entry in
+            entry.tags?.contains("apple-health") == true || document.metadata.source == "Apple Health"
+        }
+
+        guard !entries.isEmpty else { return nil }
+
+        entryCount = entries.count
+        daysTracked = Set(entries.compactMap(\.date)).count
+
+        let groupedMetrics = Dictionary(grouping: entries) { $0.type ?? $0.category ?? "Unknown" }
+        metricBreakdown = groupedMetrics
+            .map { BreakdownItem(metric: $0.key, count: $0.value.count) }
+            .sorted { lhs, rhs in
+                lhs.count == rhs.count ? lhs.metric < rhs.metric : lhs.count > rhs.count
+            }
+        metricCount = groupedMetrics.count
+
+        let stepEntries = entries
+            .filter { ($0.type ?? "").localizedCaseInsensitiveContains("steg") }
+            .sorted { ($0.date ?? "") < ($1.date ?? "") }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        stepTrend = stepEntries.suffix(14).compactMap { entry in
+            guard
+                let date = entry.date.flatMap(formatter.date(from:)),
+                let rawValue = entry.content?.summary.flatMap(Self.firstNumericValue)
+            else {
+                return nil
+            }
+
+            return TrendPoint(
+                date: date,
+                value: Int(rawValue.rounded())
+            )
+        }
+    }
+
+    private static func firstNumericValue(in text: String) -> Double? {
+        let pattern = #"[0-9]+(?:[.,][0-9]+)?"#
+        guard
+            let regex = try? NSRegularExpression(pattern: pattern),
+            let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+            let range = Range(match.range, in: text)
+        else {
+            return nil
+        }
+
+        return Double(text[range].replacingOccurrences(of: ",", with: "."))
     }
 }

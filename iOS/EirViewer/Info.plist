@@ -81,6 +81,8 @@
 	<string>Eir uses your camera to scan QR codes for transferring medical records from your Mac.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Eir uses local network to receive medical records from your Mac.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Eir uses the microphone so you can record voice notes and questions for AI assistance.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_eir-transfer._tcp</string>

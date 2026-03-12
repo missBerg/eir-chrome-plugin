@@ -15,6 +15,7 @@
         }
         h1 { font-size: 1.8rem; }
         h2 { font-size: 1.3rem; margin-top: 2rem; }
+        h3 { font-size: 1.1rem; margin-top: 1.2rem; }
         p, li { font-size: 1rem; }
         ul { padding-left: 1.5rem; }
         .updated { color: #666; font-size: 0.9rem; }
@@ -22,7 +23,7 @@
 </head>
 <body>
     <h1>Eir - Privacy Policy</h1>
-    <p class="updated">Last updated: March 3, 2026</p>
+    <p class="updated">Last updated: March 11, 2026</p>
 
     <h2>Overview</h2>
     <p>Eir ("the app") is a personal health records viewer with on-device AI assistance. Your privacy is fundamental to our design: all data processing happens on your device, and we do not operate any servers that collect your information.</p>
@@ -36,7 +37,39 @@
 
     <h2>On-Device AI Processing</h2>
     <p>Eir includes an on-device large language model (LLM) that helps you understand your medical records. This AI runs entirely on your device. No health data, medical records, or conversation history is sent to any external server when using the on-device model.</p>
-    <p>If you choose to configure a cloud-based LLM provider in Settings, your conversation data will be sent to that provider according to their privacy policy. This is entirely optional and requires explicit setup by you.</p>
+
+    <h2>Optional Cloud-Based AI Providers</h2>
+    <p>You may optionally configure a cloud-based AI provider in Settings to use more capable language models. This is <strong>entirely optional</strong> and disabled by default. The app supports the following third-party providers:</p>
+    <ul>
+        <li><strong>OpenAI</strong> &mdash; <a href="https://openai.com/policies/privacy-policy">Privacy Policy</a></li>
+        <li><strong>Anthropic</strong> &mdash; <a href="https://www.anthropic.com/privacy">Privacy Policy</a></li>
+        <li><strong>Groq</strong> &mdash; <a href="https://groq.com/privacy-policy/">Privacy Policy</a></li>
+    </ul>
+
+    <h3>What data is sent to cloud providers</h3>
+    <p>When you use a cloud AI provider, the following data may be included in requests sent to that provider's API:</p>
+    <ul>
+        <li>Your conversation messages (questions you ask and AI responses)</li>
+        <li>Your medical records used as context, including: patient name, diagnoses, medications, lab results, visit notes, healthcare provider names, and dates</li>
+        <li>Basic profile information if included in your records (name, birth date)</li>
+        <li>Any Apple HealthKit data that has been imported into your records (vitals, activity, lab values)</li>
+    </ul>
+
+    <h3>In-app consent</h3>
+    <p>Before any data is sent to a cloud provider for the first time, the app displays a detailed consent dialog that:</p>
+    <ul>
+        <li>Names the specific provider that will receive your data</li>
+        <li>Lists exactly what data will be sent</li>
+        <li>Links to the provider's privacy policy</li>
+        <li>Requires you to explicitly tap "I Understand &amp; Consent" before proceeding</li>
+    </ul>
+    <p>You can revoke consent at any time in Settings &gt; Privacy &amp; Data. When consent is revoked, no further data is sent to that provider.</p>
+
+    <h3>Data retention by cloud providers</h3>
+    <p>Each provider handles data according to their own privacy policy. Eir does not control how providers retain or process data once it is sent. We recommend reviewing each provider's privacy policy before granting consent. API requests are sent over encrypted HTTPS connections.</p>
+
+    <h3>Your API keys</h3>
+    <p>Cloud providers require an API key that you provide. Your API keys are stored securely in the device Keychain and are never sent to us or any party other than the provider they belong to.</p>
 
     <h2>Data Storage</h2>
     <ul>
@@ -46,10 +79,10 @@
     </ul>
 
     <h2>Data Sharing</h2>
-    <p>We do not share your data with any third parties. The app contains no analytics, advertising, or tracking frameworks. We do not collect, transmit, or sell any personal or health information.</p>
+    <p>We do not operate any servers and do not collect your data. The app contains no analytics, advertising, or tracking frameworks. We do not transmit or sell any personal or health information. The only circumstance in which data leaves your device is when you explicitly enable and consent to using a cloud-based AI provider, as described above.</p>
 
     <h2>Data Retention</h2>
-    <p>All data is stored locally on your device. Deleting the app removes all locally stored medical records, chat history, and settings. HealthKit data is managed by Apple Health and is not affected by uninstalling Eir.</p>
+    <p>All data is stored locally on your device. Deleting the app removes all locally stored medical records, chat history, and settings. HealthKit data is managed by Apple Health and is not affected by uninstalling Eir. If you have used a cloud AI provider, any data previously sent to that provider is subject to their data retention policies.</p>
 
     <h2>Children's Privacy</h2>
     <p>The app does not knowingly collect information from children under 13. The app is rated 4+ and is suitable for all ages.</p>

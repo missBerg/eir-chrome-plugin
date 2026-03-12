@@ -8,7 +8,7 @@ enum ChatContentPart {
 }
 
 func parseJournalEntryTags(_ text: String) -> [ChatContentPart] {
-    let pattern = #"<JOURNAL_ENTRY\s+id="([^"]+)"\s*/>"#
+    let pattern = #"`?(?:<|&lt;)JOURNAL_ENTRY\s+id=(?:"([^"]+)"|'([^']+)')\s*/?(?:>|&gt;)`?"#
     guard let regex = try? NSRegularExpression(pattern: pattern) else {
         return [.text(text)]
     }
@@ -19,8 +19,13 @@ func parseJournalEntryTags(_ text: String) -> [ChatContentPart] {
     let nsRange = NSRange(text.startIndex..., in: text)
     regex.enumerateMatches(in: text, range: nsRange) { match, _, _ in
         guard let match = match,
-              let fullRange = Range(match.range, in: text),
-              let idRange = Range(match.range(at: 1), in: text) else { return }
+              let fullRange = Range(match.range, in: text) else { return }
+
+        let captureRange = match.range(at: 1).location != NSNotFound
+            ? match.range(at: 1)
+            : match.range(at: 2)
+
+        guard let idRange = Range(captureRange, in: text) else { return }
 
         // Text before this tag
         if lastEnd < fullRange.lowerBound {

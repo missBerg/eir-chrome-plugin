@@ -7,6 +7,7 @@ struct ChatMessage: Identifiable, Codable {
     let timestamp: Date
     var toolCalls: [ToolCall]?
     var toolCallId: String?
+    var voiceNote: VoiceNoteAttachment?
 
     enum Role: String, Codable {
         case user = "user"
@@ -22,6 +23,7 @@ struct ChatMessage: Identifiable, Codable {
         self.timestamp = Date()
         self.toolCalls = nil
         self.toolCallId = nil
+        self.voiceNote = nil
     }
 
     init(id: UUID, role: Role, content: String, timestamp: Date) {
@@ -31,6 +33,7 @@ struct ChatMessage: Identifiable, Codable {
         self.timestamp = timestamp
         self.toolCalls = nil
         self.toolCallId = nil
+        self.voiceNote = nil
     }
 
     init(role: Role, content: String, toolCalls: [ToolCall]) {
@@ -40,6 +43,7 @@ struct ChatMessage: Identifiable, Codable {
         self.timestamp = Date()
         self.toolCalls = toolCalls
         self.toolCallId = nil
+        self.voiceNote = nil
     }
 
     init(role: Role, content: String, toolCallId: String) {
@@ -49,5 +53,16 @@ struct ChatMessage: Identifiable, Codable {
         self.timestamp = Date()
         self.toolCalls = nil
         self.toolCallId = toolCallId
+        self.voiceNote = nil
+    }
+
+    init(role: Role, content: String, voiceNote: VoiceNoteAttachment) {
+        self.id = UUID()
+        self.role = role
+        self.content = content
+        self.timestamp = Date()
+        self.toolCalls = nil
+        self.toolCallId = nil
+        self.voiceNote = voiceNote
     }
 }
