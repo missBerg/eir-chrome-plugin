@@ -112,8 +112,17 @@ actor LLMService {
             throw LLMError.requestFailed("HTTP \(httpResponse.statusCode): \(errorBody)")
         }
 
+        nonisolated(unsafe) var unexpectedLines: [String] = []
+        nonisolated(unsafe) var emittedAnyContent = false
+
         for try await line in bytes.lines {
-            guard line.hasPrefix("data: ") else { continue }
+            if !line.hasPrefix("data: ") {
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    unexpectedLines.append(trimmed)
+                }
+                continue
+            }
             let payload = String(line.dropFirst(6))
             if payload == "[DONE]" { break }
 
@@ -125,8 +134,11 @@ actor LLMService {
                 continue
             }
 
+            emittedAnyContent = true
             onToken(content)
         }
+
+        try throwIfUnexpectedOpenAICompatPayload(unexpectedLines, emittedAnyContent: emittedAnyContent)
     }
 
     // MARK: - OpenAI Compatible (with tools)
@@ -171,9 +183,16 @@ actor LLMService {
 
         nonisolated(unsafe) var accumulatedContent = ""
         nonisolated(unsafe) var toolCallsMap: [Int: (id: String, name: String, arguments: String)] = [:]
+        nonisolated(unsafe) var unexpectedLines: [String] = []
 
         for try await line in bytes.lines {
-            guard line.hasPrefix("data: ") else { continue }
+            if !line.hasPrefix("data: ") {
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    unexpectedLines.append(trimmed)
+                }
+                continue
+            }
             let payload = String(line.dropFirst(6))
             if payload == "[DONE]" { break }
 
@@ -216,6 +235,7 @@ actor LLMService {
             return .toolCalls(calls)
         }
 
+        try throwIfUnexpectedOpenAICompatPayload(unexpectedLines, emittedAnyContent: !accumulatedContent.isEmpty)
         return .text(accumulatedContent)
     }
 
@@ -510,5 +530,23 @@ actor LLMService {
             result["required"] = required
         }
         return result
+    }
+
+    private func throwIfUnexpectedOpenAICompatPayload(
+        _ lines: [String],
+        emittedAnyContent: Bool
+    ) throws {
+        guard !emittedAnyContent, !lines.isEmpty else { return }
+
+        let rawPayload = lines.joined(separator: "\n")
+        if let data = rawPayload.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let error = json["error"] as? [String: Any] {
+            let message = (error["message"] as? String) ?? rawPayload
+            let code = (error["code"] as? String) ?? ""
+            throw LLMError.requestFailed(code.isEmpty ? message : "\(message) (\(code))")
+        }
+
+        throw LLMError.requestFailed(rawPayload)
     }
 }
