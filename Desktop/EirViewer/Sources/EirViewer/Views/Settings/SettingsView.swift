@@ -169,9 +169,16 @@ struct ProviderCard: View {
     @State private var baseURL: String = ""
     @State private var model: String = ""
     @State private var showKey = false
+    @State private var isProvisioningManagedAccess = false
+    @State private var managedAccessSnapshot: ManagedCloudAccessSnapshot?
+    @State private var managedAccessError: String = ""
 
     var isActive: Bool { settingsVM.activeProviderType == config.type }
     var hasKey: Bool { !apiKey.isEmpty }
+    var usesManagedTrial: Bool { config.type.usesManagedTrialAccess }
+    var isConfigured: Bool {
+        usesManagedTrial ? settingsVM.hasManagedAccessToken(for: config.type) : hasKey
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -190,10 +197,10 @@ struct ProviderCard: View {
                                 .padding(.vertical, 2)
                                 .background(AppColors.primary)
                                 .foregroundColor(.white)
-                                .cornerRadius(4)
+                            .cornerRadius(4)
                         }
                     }
-                    Text(config.type.defaultBaseURL)
+                    Text(usesManagedTrial ? "Eir-hosted cloud route in Stockholm" : config.type.defaultBaseURL)
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
                 }
@@ -203,11 +210,11 @@ struct ProviderCard: View {
                 // Status indicator
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(hasKey ? AppColors.green : AppColors.border)
+                        .fill(isConfigured ? AppColors.green : AppColors.border)
                         .frame(width: 8, height: 8)
-                    Text(hasKey ? "Configured" : "No API key")
+                    Text(statusText)
                         .font(.caption)
-                        .foregroundColor(hasKey ? AppColors.green : AppColors.textSecondary)
+                        .foregroundColor(isConfigured ? AppColors.green : AppColors.textSecondary)
                 }
 
                 if !isActive {
@@ -217,58 +224,18 @@ struct ProviderCard: View {
                     .buttonStyle(.borderedProminent)
                     .tint(AppColors.primary)
                     .controlSize(.small)
-                    .disabled(!hasKey)
+                    .disabled(!isConfigured)
                 }
             }
             .padding(16)
 
             Divider()
 
-            // API Key field
             VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("API Key")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(AppColors.text)
-
-                    HStack(spacing: 8) {
-                        Group {
-                            if showKey {
-                                TextField("Enter your API key", text: $apiKey)
-                            } else {
-                                SecureField("Enter your API key", text: $apiKey)
-                            }
-                        }
-                        .textFieldStyle(.roundedBorder)
-                        .onChange(of: apiKey) { _, newValue in
-                            settingsVM.setApiKey(newValue, for: config.type)
-                        }
-
-                        Button {
-                            showKey.toggle()
-                        } label: {
-                            Image(systemName: showKey ? "eye.slash" : "eye")
-                                .foregroundColor(AppColors.textSecondary)
-                        }
-                        .buttonStyle(.plain)
-                        .help(showKey ? "Hide key" : "Show key")
-                    }
-
-                    // Hint for providers that need API keys
-                    if config.type == .anthropic, !hasKey {
-                        Text("Get a key at console.anthropic.com")
-                            .font(.caption2)
-                            .foregroundColor(AppColors.textSecondary)
-                    } else if config.type == .minimax, !hasKey {
-                        Text("Get a key at platform.minimax.io — uses Anthropic format")
-                            .font(.caption2)
-                            .foregroundColor(AppColors.textSecondary)
-                    } else if config.type == .groq, !hasKey {
-                        Text("Free API key at console.groq.com")
-                            .font(.caption2)
-                            .foregroundColor(AppColors.textSecondary)
-                    }
+                if usesManagedTrial {
+                    managedTrialContent
+                } else {
+                    apiKeyContent
                 }
 
                 // Model field
@@ -318,6 +285,152 @@ struct ProviderCard: View {
             apiKey = settingsVM.apiKey(for: config.type)
             baseURL = config.baseURL
             model = config.model
+            managedAccessSnapshot = settingsVM.managedAccessSnapshot(for: config.type)
         }
+    }
+
+    private var statusText: String {
+        if usesManagedTrial {
+            return isConfigured ? "Trial ready" : "Free credits available"
+        }
+        return hasKey ? "Configured" : "No API key"
+    }
+
+    private var apiKeyContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("API Key")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(AppColors.text)
+
+            HStack(spacing: 8) {
+                Group {
+                    if showKey {
+                        TextField("Enter your API key", text: $apiKey)
+                    } else {
+                        SecureField("Enter your API key", text: $apiKey)
+                    }
+                }
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: apiKey) { _, newValue in
+                    settingsVM.setApiKey(newValue, for: config.type)
+                }
+
+                Button {
+                    showKey.toggle()
+                } label: {
+                    Image(systemName: showKey ? "eye.slash" : "eye")
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .help(showKey ? "Hide key" : "Show key")
+            }
+
+            if config.type == .anthropic, !hasKey {
+                Text("Get a key at console.anthropic.com")
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary)
+            } else if config.type == .minimax, !hasKey {
+                Text("Get a key at platform.minimax.io — uses Anthropic format")
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary)
+            } else if config.type == .groq, !hasKey {
+                Text("Free API key at console.groq.com")
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+        }
+    }
+
+    private var managedTrialContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Hosted by Eir")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(AppColors.text)
+                Text("Data is sent through Eir servers in Stockholm with zero Eir retention. Berget AI performs the inference using \(config.model).")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let snapshot = managedAccessSnapshot {
+                quotaView(snapshot.quota)
+            }
+
+            if !managedAccessError.isEmpty {
+                Text(managedAccessError)
+                    .font(.caption)
+                    .foregroundColor(AppColors.red)
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    Task { await provisionManagedAccess() }
+                } label: {
+                    if isProvisioningManagedAccess {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text(managedAccessSnapshot == nil ? "Provision Free Credits" : "Refresh Trial Access")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppColors.primary)
+                .disabled(isProvisioningManagedAccess)
+
+                if managedAccessSnapshot != nil {
+                    Button("Clear Trial") {
+                        settingsVM.clearManagedAccess(for: config.type)
+                        managedAccessSnapshot = nil
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+    }
+
+    private func quotaView(_ quota: ManagedCloudQuota) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            let total = max(1, quota.limits.requests)
+            let progress = min(max(Double(quota.used.requests) / Double(total), 0), 1)
+
+            HStack {
+                Text("Trial usage")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(AppColors.text)
+                Spacer()
+                Text("\(quota.used.requests) used · \(quota.remaining.requests) left")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            ProgressView(value: progress)
+                .tint(AppColors.aiStrong)
+
+            Text("\(quota.limits.requests) total requests included")
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .padding(12)
+        .background(AppColors.backgroundMuted)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private func provisionManagedAccess() async {
+        isProvisioningManagedAccess = true
+        managedAccessError = ""
+        do {
+            var updated = config
+            updated.baseURL = baseURL
+            settingsVM.updateProvider(updated)
+            managedAccessSnapshot = try await settingsVM.provisionManagedAccess(for: updated)
+            if !isActive {
+                settingsVM.setActiveProvider(config.type)
+            }
+        } catch {
+            managedAccessError = error.localizedDescription
+        }
+        isProvisioningManagedAccess = false
     }
 }
