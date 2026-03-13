@@ -43,11 +43,12 @@ xcodegen generate
 open EirViewer.xcodeproj
 ```
 
-### [Chrome Extension — 1177 Journal Downloader](ChromeExtension/)
+### [Chrome Extension — Eir Health Data Tools](ChromeExtension/)
 
-A Chrome extension that downloads your medical records from 1177.se into portable, structured files.
+A Chrome extension that downloads your medical records from 1177.se into portable, structured files and includes a minimal MyKanta research recorder for integration work.
 
 - **One-click download** — floating button on 1177.se exports all your journal entries
+- **MyKanta capture bundle** — on `kanta.fi` and `suomi.fi`, records flow steps, sanitized HTML snapshots, and fetch/XHR request-response traffic into exportable local files
 - **Structured EIR format** — exports to both plain text (.txt) and the open EIR format (.eir/YAML)
 - **Complete history** — automatically loads all available entries by expanding the full timeline
 - **Privacy-first** — all processing happens locally in your browser
@@ -122,12 +123,19 @@ Requires macOS 14+ and Xcode Command Line Tools.
 
 ### Chrome Extension
 
-1. Clone this repo or download the [latest release](https://github.com/BirgerMoell/eir-open-apps/releases/latest)
+1. Download the packaged extension from [`docs/downloads/eir-chrome-extension.zip`](docs/downloads/eir-chrome-extension.zip), or clone this repo
 2. Open Chrome → `chrome://extensions/` → enable **Developer mode**
-3. Click **"Load unpacked"** and select the `ChromeExtension/` folder
-4. Navigate to [journalen.1177.se](https://journalen.1177.se), log in with BankID, and click "Download Journals"
+3. Unzip the archive if needed, then click **"Load unpacked"** and select the `ChromeExtension/` folder
+4. For Sweden, navigate to [journalen.1177.se](https://journalen.1177.se), log in with BankID, and click the floating downloader to export `.eir` files
+5. For Finland, open [MyKanta](https://kansalainen.kanta.fi/), use the in-page **Kanta Capture Bundle** panel, and use **Download .eir** on logged-in data pages
 
 Works with Chrome, Edge, Brave, Arc, and other Chromium-based browsers.
+
+To rebuild the downloadable archive for the site:
+
+```bash
+./scripts/build-chrome-extension-zip.sh
+```
 
 ## Privacy
 
