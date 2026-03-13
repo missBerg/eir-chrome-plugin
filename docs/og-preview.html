@@ -5,166 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unlock by Eir Preview</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
 
         :root {
-            --bg: #f7f5f0;
-            --ink: #38352f;
-            --muted: #6f6b63;
-            --line: rgba(56, 53, 47, 0.08);
+            --bg: #fafaf7;
+            --ink: #3d3a36;
+            --muted: #78746d;
+            --line: rgba(61, 58, 54, 0.08);
             --teal: #1e94a8;
-            --teal-deep: #197a8e;
-            --gold: #d4a76a;
-            --sky: #8bb8ce;
-            --live: #16a34a;
-            --pilot: #d97706;
-            --surface: rgba(255, 255, 255, 0.82);
-            --aura: linear-gradient(135deg, #d4a76a 0%, #c9b88a 24%, #a8c5d4 68%, #8bb8ce 100%);
+            --aura: linear-gradient(135deg, #d4a76a 0%, #cdb687 30%, #b7c4b5 58%, #9ec7e1 100%);
         }
 
         * {
             box-sizing: border-box;
         }
 
+        html,
         body {
             margin: 0;
             width: 1200px;
             height: 630px;
             overflow: hidden;
+        }
+
+        body {
             font-family: "Geist", system-ui, sans-serif;
             color: var(--ink);
             background:
-                radial-gradient(circle at 15% 18%, rgba(212, 167, 106, 0.26), transparent 26%),
-                radial-gradient(circle at 82% 78%, rgba(139, 184, 206, 0.24), transparent 28%),
-                linear-gradient(180deg, #fafaf7 0%, #f2efe8 100%);
+                radial-gradient(circle at 10% 8%, rgba(212, 167, 106, 0.18), transparent 20%),
+                radial-gradient(circle at 90% 82%, rgba(139, 184, 206, 0.16), transparent 24%),
+                linear-gradient(180deg, #fbfbf8 0%, #f4f1ea 100%);
         }
 
         .frame {
-            position: relative;
             width: 100%;
             height: 100%;
-            padding: 48px;
+            padding: 30px;
         }
 
-        .panel {
-            position: relative;
+        .canvas {
             width: 100%;
             height: 100%;
-            overflow: hidden;
-            border-radius: 34px;
-            background:
-                linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(245, 244, 240, 0.82));
-            border: 1px solid var(--line);
-            box-shadow:
-                0 32px 80px rgba(72, 60, 38, 0.12),
-                inset 0 1px 0 rgba(255, 255, 255, 0.74);
-        }
-
-        .panel::before {
-            content: "";
-            position: absolute;
-            inset: -120px auto auto -80px;
-            width: 340px;
-            height: 340px;
-            border-radius: 50%;
-            background: rgba(212, 167, 106, 0.16);
-            filter: blur(6px);
-        }
-
-        .panel::after {
-            content: "";
-            position: absolute;
-            right: -120px;
-            bottom: -120px;
-            width: 400px;
-            height: 400px;
-            border-radius: 50%;
-            background: rgba(139, 184, 206, 0.16);
-            filter: blur(10px);
-        }
-
-        .chrome {
-            position: absolute;
-            inset: 18px 18px auto 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .chrome__dots {
-            display: flex;
-            gap: 8px;
-        }
-
-        .chrome__dots span {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: rgba(56, 53, 47, 0.12);
-        }
-
-        .chrome__url {
-            min-width: 260px;
-            padding: 10px 14px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid var(--line);
-            color: var(--muted);
-            font-size: 14px;
-            font-weight: 700;
-            text-align: center;
-        }
-
-        .content {
-            position: relative;
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 24px;
-            height: 100%;
-            padding: 76px 40px 40px;
+            padding: 28px 34px 28px 30px;
         }
 
         .eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
+            gap: 14px;
+            min-height: 52px;
+            padding: 0 18px;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.88);
-            border: 1px solid var(--line);
-            color: var(--teal-deep);
-            font-size: 13px;
+            background: rgba(255, 249, 240, 0.86);
+            border: 1px solid rgba(255, 255, 255, 0.46);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+            color: #767168;
+            font-size: 15px;
             font-weight: 800;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
         }
 
-        .mark {
-            display: inline-grid;
-            place-items: center;
-            width: 56px;
-            height: 56px;
-            margin-right: 10px;
-            border-radius: 18px;
-            background: var(--aura);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-        }
-
-        .mark img {
-            width: 28px;
-            height: 28px;
-            display: block;
+        .eyebrow__dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--teal);
+            box-shadow: 0 0 0 6px rgba(30, 148, 168, 0.12);
         }
 
         h1 {
-            margin: 18px 0 18px;
-            max-width: 10ch;
-            font-size: 68px;
-            line-height: 0.94;
-            letter-spacing: -0.06em;
+            margin: 42px 0 24px;
+            max-width: 8.8ch;
+            font-size: 86px;
+            line-height: 0.93;
+            letter-spacing: -0.08em;
+            font-weight: 800;
         }
 
-        h1 span {
+        .accent {
             background: var(--aura);
             -webkit-background-clip: text;
             background-clip: text;
@@ -172,195 +91,31 @@
         }
 
         .lede {
-            max-width: 30ch;
-            margin: 0 0 26px;
-            font-size: 22px;
-            line-height: 1.35;
-            color: var(--muted);
-        }
-
-        .signals {
-            display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
-        }
-
-        .signal {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            min-height: 44px;
-            padding: 0 16px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid var(--line);
-            font-size: 15px;
-            font-weight: 800;
-        }
-
-        .signal::before {
-            content: "";
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        .signal--live::before {
-            background: var(--live);
-            box-shadow: 0 0 0 7px rgba(22, 163, 74, 0.12);
-        }
-
-        .signal--pilot::before {
-            background: var(--pilot);
-            box-shadow: 0 0 0 7px rgba(217, 119, 6, 0.12);
-        }
-
-        .right {
-            position: relative;
-            display: grid;
-            align-content: end;
-        }
-
-        .card {
-            position: relative;
-            padding: 24px;
-            border-radius: 28px;
-            background: var(--surface);
-            border: 1px solid var(--line);
-            box-shadow: 0 20px 40px rgba(72, 60, 38, 0.08);
-            backdrop-filter: blur(8px);
-        }
-
-        .mini-map {
-            position: relative;
-            height: 250px;
-            margin-bottom: 18px;
-            overflow: hidden;
-            border-radius: 22px;
-            background:
-                radial-gradient(circle at 20% 30%, rgba(212, 167, 106, 0.16), transparent 22%),
-                radial-gradient(circle at 75% 75%, rgba(139, 184, 206, 0.18), transparent 25%),
-                linear-gradient(180deg, rgba(240, 247, 251, 0.98), rgba(250, 250, 247, 0.98));
-            border: 1px solid var(--line);
-        }
-
-        .mini-map svg {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .pin {
-            position: absolute;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 64px;
-            height: 64px;
-            border-radius: 999px;
-            border: 3px solid rgba(255, 255, 255, 0.92);
-            color: #fff;
-            font-family: "Geist Mono", monospace;
-            font-size: 18px;
-            font-weight: 800;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
-        }
-
-        .pin--se {
-            left: 58%;
-            top: 22%;
-            background: var(--live);
-        }
-
-        .pin--fi {
-            left: 75%;
-            top: 16%;
-            background: var(--pilot);
-        }
-
-        .pin--dk {
-            left: 52%;
-            top: 34%;
-            background: var(--teal);
-        }
-
-        .card h2 {
-            margin: 0 0 12px;
-            font-size: 34px;
-            line-height: 1.02;
-            letter-spacing: -0.05em;
-        }
-
-        .card p {
+            max-width: 17ch;
             margin: 0;
-            font-size: 18px;
-            line-height: 1.45;
             color: var(--muted);
+            font-size: 27px;
+            line-height: 1.34;
+            font-weight: 500;
         }
 
-        .footer {
-            position: absolute;
-            left: 40px;
-            right: 40px;
-            bottom: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: var(--muted);
-            font-size: 15px;
-            font-weight: 700;
-        }
-
-        .footer strong {
-            color: var(--ink);
+        .lede + .lede {
+            margin-top: 12px;
         }
     </style>
 </head>
 <body>
     <div class="frame">
-        <div class="panel">
-            <div class="chrome">
-                <div class="chrome__dots"><span></span><span></span><span></span></div>
-                <div class="chrome__url">unlock.eir.space</div>
+        <div class="canvas">
+            <div class="eyebrow">
+                <span class="eyebrow__dot"></span>
+                Sweden is live. Finland is in pilot. Europe is next.
             </div>
-            <div class="content">
-                <div>
-                    <div class="eyebrow">
-                        <span class="mark"><img src="https://eir-design-system.netlify.app/icon-white.png" alt=""></span>
-                        Unlock by Eir
-                    </div>
-                    <h1>Help <span>unlock</span> healthcare data in every country.</h1>
-                    <p class="lede">
-                        Patients already have the right to see their health data. Unlock turns that access path into real integrations.
-                    </p>
-                    <div class="signals">
-                        <div class="signal signal--live">Sweden is live</div>
-                        <div class="signal signal--pilot">Finland is in pilot</div>
-                    </div>
-                </div>
-                <div class="right">
-                    <div class="card">
-                        <div class="mini-map">
-                            <svg viewBox="0 0 420 250" aria-hidden="true">
-                                <path d="M24 176 L58 132 L120 122 L165 88 L218 88 L248 72 L300 40 L356 78 L390 150 L380 212 L326 220 L290 244 L220 236 L176 206 L120 198 L88 190 L58 188 Z" fill="none" stroke="#ceb983" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
-                                <circle cx="108" cy="174" r="48" fill="none" stroke="#ceb983" stroke-width="6" opacity="0.95"/>
-                            </svg>
-                            <div class="pin pin--se">SE</div>
-                            <div class="pin pin--fi">FI</div>
-                            <div class="pin pin--dk">DK</div>
-                        </div>
-                        <h2>Country by country. Patient-first. Public.</h2>
-                        <p>
-                            Download the extension. Follow the official portal flow. Help turn national health portals into local, readable <strong>.eir</strong> exports.
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="footer">
-                <div><strong>unlock.eir.space</strong></div>
-                <div>Chrome plugin for Sweden. Guided pilot in Finland.</div>
-            </div>
+
+            <h1>Help <span class="accent">unlock</span><br>healthcare data<br>for every<br>patient, in every<br>country.</h1>
+
+            <p class="lede">Citizens already have a right to see their health data. Unlock turns that right into an open, practical integration effort. One person logs into their official patient portal.</p>
+            <p class="lede">One contribution helps map a country. Enough good contributions turn a portal into a working Eir adapter.</p>
         </div>
     </div>
 </body>
