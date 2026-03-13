@@ -3,757 +3,1758 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eir - 1177 Journal Downloader</title>
-    <meta name="description" content="Download your Swedish medical records from 1177.se with one click. Privacy-first Chrome extension - your data never leaves your device.">
+    <title>Unlock by Eir</title>
+    <meta name="description" content="Help unlock patient access to healthcare data country by country. Sweden is live. Finland is in pilot. Build the next national integration with Eir.">
+    <meta name="theme-color" content="#fafaf7">
+    <link rel="icon" href="https://eir-design-system.netlify.app/icon-teal.png">
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    >
+    <meta property="og:title" content="Unlock by Eir">
+    <meta property="og:description" content="A public mission to unlock patient access to healthcare data in every country.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://unlock.eir.space/">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg: #fafaf7;
+            --bg-deep: #f5f4f0;
+            --surface: rgba(255, 255, 255, 0.88);
+            --surface-strong: #ffffff;
+            --ink: #3d3a36;
+            --muted: #7a766f;
+            --line: #e8e6e1;
+            --accent: #1e94a8;
+            --accent-strong: #197a8e;
+            --accent-soft: rgba(30, 148, 168, 0.08);
+            --gold: #d4a76a;
+            --gold-deep: #b8894e;
+            --blue: #4a8db4;
+            --eir-aura: linear-gradient(135deg, #d4a76a 0%, #c9b88a 30%, #a8c5d4 70%, #8bb8ce 100%);
+            --eir-aura-subtle: linear-gradient(135deg, rgba(212, 167, 106, 0.1) 0%, rgba(139, 184, 206, 0.12) 100%);
+            --signal-live: #16a34a;
+            --signal-pilot: #d97706;
+            --signal-ready: #197a8e;
+            --signal-research: #4a8db4;
+            --signal-watch: #7a766f;
+            --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --radius-xl: 20px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --max-width: 1280px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: #1C1917;
-            background: #FAFAF9;
-            line-height: 1.6;
+            margin: 0;
+            font-family: "Geist", system-ui, -apple-system, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(212, 167, 106, 0.16), transparent 30%),
+                radial-gradient(circle at top right, rgba(139, 184, 206, 0.14), transparent 30%),
+                linear-gradient(180deg, #fafaf7 0%, #f5f4f0 52%, #fafaf7 100%);
+            line-height: 1.55;
         }
 
-        .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
-
-        /* Hero */
-        .hero {
-            padding: 80px 0 60px;
-            text-align: center;
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
         }
 
-        .hero-icon {
-            width: 96px;
-            height: 96px;
-            margin: 0 auto 24px;
-            border-radius: 20px;
+        a {
+            color: inherit;
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        .shell {
+            width: min(var(--max-width), calc(100vw - 32px));
+            margin: 0 auto;
+        }
+
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            backdrop-filter: blur(16px);
+            background: rgba(250, 250, 247, 0.78);
+            border-bottom: 1px solid rgba(61, 58, 54, 0.08);
+        }
+
+        .site-header__inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            min-height: 78px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+        }
+
+        .brand__mark {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--eir-aura);
+            border: 1px solid rgba(61, 58, 54, 0.08);
+            display: grid;
+            place-items: center;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
             overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
         }
 
-        .hero-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .brand__mark img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .brand__eyebrow {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--accent);
+        }
+
+        .brand__name {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .nav a:hover {
+            color: var(--ink);
+        }
+
+        .nav__cta {
+            padding: 12px 16px;
+            border-radius: 999px;
+            background: var(--ink);
+            color: #f7f3ea !important;
+            box-shadow: var(--shadow-card);
+        }
+
+        .hero {
+            padding: 72px 0 48px;
+        }
+
+        .hero__grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+            gap: 32px;
+            align-items: start;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px;
+            border-radius: 999px;
+            background: rgba(255, 250, 241, 0.78);
+            border: 1px solid rgba(31, 43, 36, 0.08);
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .eyebrow__dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 0 6px rgba(15, 138, 95, 0.14);
+        }
+
+        .hero h1,
+        h2,
+        h3 {
+            margin: 0;
+            letter-spacing: -0.04em;
         }
 
         .hero h1 {
-            font-size: 42px;
+            margin-top: 22px;
+            font-size: clamp(3.1rem, 7vw, 5.5rem);
             font-weight: 700;
-            margin-bottom: 16px;
-            letter-spacing: -0.5px;
+            line-height: 0.98;
+            max-width: 11ch;
         }
 
-        .hero h1 span { color: #6366F1; }
-
-        .hero p {
-            font-size: 20px;
-            color: #57534E;
-            max-width: 600px;
-            margin: 0 auto 32px;
+        .hero h1 span {
+            background: var(--eir-aura);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
 
-        .cta-group {
+        .hero__lede {
+            margin: 22px 0 28px;
+            max-width: 58ch;
+            font-size: 1.12rem;
+            color: var(--muted);
+        }
+
+        .hero__actions,
+        .hero__support {
             display: flex;
-            gap: 16px;
-            justify-content: center;
+            gap: 14px;
             flex-wrap: wrap;
         }
 
-        .btn {
+        .hero__support {
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 44px;
+            padding: 0 18px;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+        }
+
+        .button--primary {
+            background: var(--accent-strong);
+            color: #ffffff;
+            box-shadow: var(--shadow-card);
+        }
+
+        .button--secondary {
+            background: var(--bg-deep);
+            color: var(--ink);
+            border-color: var(--line);
+        }
+
+        .button--ghost {
+            background: transparent;
+            color: var(--muted);
+            border-color: var(--line);
+        }
+
+        .hero-panel {
+            position: relative;
+            overflow: hidden;
+            padding: 28px;
+            border-radius: var(--radius-xl);
+            background:
+                linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(245, 244, 240, 0.92)),
+                #ffffff;
+            border: 1px solid rgba(61, 58, 54, 0.08);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .hero-panel::before {
+            content: "";
+            position: absolute;
+            inset: -60px auto auto -40px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: rgba(212, 167, 106, 0.12);
+            filter: blur(2px);
+        }
+
+        .hero-panel__header,
+        .mission-card__header,
+        .section-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .hero-panel__kicker,
+        .section-kicker {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+        }
+
+        .hero-panel__status,
+        .pill {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 14px 28px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background: #6366F1;
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #4F46E5;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
-        }
-
-        .btn-secondary {
-            background: #fff;
-            color: #1C1917;
-            border: 1px solid #D6D3D1;
-        }
-
-        .btn-secondary:hover {
-            background: #F5F5F4;
-            border-color: #A8A29E;
-        }
-
-        /* Badge */
-        .badge {
-            display: inline-block;
-            background: #EEF2FF;
-            color: #6366F1;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-
-        /* Features */
-        .features {
-            padding: 60px 0;
-        }
-
-        .features h2 {
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 24px;
-        }
-
-        .feature-card {
-            background: #fff;
-            border: 1px solid #E7E5E4;
-            border-radius: 16px;
-            padding: 28px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        .feature-icon {
-            width: 48px;
-            height: 48px;
-            background: #EEF2FF;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-bottom: 16px;
-        }
-
-        .feature-card h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
-        }
-
-        .feature-card p {
-            color: #57534E;
-            font-size: 15px;
-        }
-
-        /* How it works */
-        .how-it-works {
-            padding: 60px 0;
-            border-top: 1px solid #E7E5E4;
-        }
-
-        .how-it-works h2 {
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 32px;
-        }
-
-        .step {
-            text-align: center;
-        }
-
-        .step-number {
-            width: 40px;
-            height: 40px;
-            background: #6366F1;
-            color: #fff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 12px;
             font-weight: 700;
-            font-size: 18px;
-            margin: 0 auto 16px;
+            background: rgba(212, 167, 106, 0.12);
+            color: var(--gold-deep);
         }
 
-        .step h3 {
-            font-size: 16px;
-            margin-bottom: 8px;
+        .hero-panel__headline {
+            margin-top: 18px;
+            font-size: 1.55rem;
+            font-weight: 800;
+            max-width: 18ch;
         }
 
-        .step p {
-            color: #57534E;
+        .hero-panel__copy {
+            margin: 12px 0 24px;
+            color: var(--muted);
+            max-width: 34ch;
+        }
+
+        .signal-grid,
+        .country-grid,
+        .principles,
+        .steps-grid,
+        .mission-grid,
+        .sweden-grid,
+        .privacy-grid,
+        .faq-grid,
+        .atlas-grid {
+            display: grid;
+            gap: 18px;
+        }
+
+        .signal-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .signal-card,
+        .country-card,
+        .step-card,
+        .mission-card,
+        .sweden-card,
+        .privacy-card,
+        .atlas-card,
+        .faq-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid rgba(61, 58, 54, 0.08);
+            box-shadow: var(--shadow-card);
+            backdrop-filter: blur(10px);
+        }
+
+        .signal-card,
+        .country-card,
+        .step-card,
+        .privacy-card,
+        .atlas-card {
+            padding: 20px;
+        }
+
+        .signal-card strong {
+            display: block;
+            margin-top: 12px;
+            font-size: 1.7rem;
+            line-height: 1;
+            letter-spacing: -0.05em;
+        }
+
+        .signal-card span {
+            display: block;
+            margin-top: 10px;
+            color: var(--muted);
             font-size: 14px;
         }
 
-        /* Install section */
-        .install {
-            padding: 60px 0;
-            border-top: 1px solid #E7E5E4;
+        .signal-card em {
+            color: var(--accent-strong);
+            font-style: normal;
+            font-weight: 700;
         }
 
-        .install h2 {
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 12px;
+        main section {
+            padding: 34px 0 40px;
         }
 
-        .install > .container > p {
-            text-align: center;
-            color: #57534E;
-            margin-bottom: 32px;
+        .section-head {
+            margin-bottom: 26px;
         }
 
-        .install-steps {
-            background: #fff;
-            border: 1px solid #E7E5E4;
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 640px;
-            margin: 0 auto;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        .section-head h2 {
+            margin-top: 12px;
+            font-size: clamp(2.2rem, 4vw, 3.4rem);
+            line-height: 1.04;
+            max-width: 15ch;
         }
 
-        .install-steps ol {
-            padding-left: 20px;
+        .section-head p {
+            margin: 14px 0 0;
+            max-width: 62ch;
+            font-size: 1rem;
+            color: var(--muted);
         }
 
-        .install-steps li {
-            margin-bottom: 16px;
-            font-size: 15px;
+        .principles {
+            grid-template-columns: 1.2fr 0.8fr;
+            align-items: start;
         }
 
-        .install-steps li:last-child {
+        .principles__essay {
+            padding: 30px;
+            border-radius: var(--radius-xl);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 244, 240, 0.96));
+            border: 1px solid rgba(61, 58, 54, 0.08);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .principles__essay p {
+            margin: 0 0 18px;
+            color: var(--muted);
+            font-size: 1.04rem;
+        }
+
+        .principles__essay p:last-child {
             margin-bottom: 0;
         }
 
-        .install-steps code {
-            background: #F5F5F4;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 14px;
-            color: #6366F1;
-        }
-
-        .install-steps strong {
-            color: #1C1917;
-        }
-
-        /* Privacy */
-        .privacy {
-            padding: 60px 0;
-            border-top: 1px solid #E7E5E4;
-        }
-
-        .privacy-box {
-            background: #EEF2FF;
-            border-radius: 16px;
-            padding: 32px;
-            text-align: center;
-            max-width: 640px;
-            margin: 0 auto;
-        }
-
-        .privacy-box h2 {
-            font-size: 24px;
-            margin-bottom: 12px;
-        }
-
-        .privacy-box p {
-            color: #57534E;
-            font-size: 15px;
-            margin-bottom: 20px;
-        }
-
-        .privacy-points {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
-        }
-
-        .privacy-point {
-            background: #fff;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #1C1917;
-        }
-
-        /* Native App */
-        .native-app {
-            padding: 60px 0;
-            border-top: 1px solid #E7E5E4;
-        }
-
-        .native-app h2 {
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 12px;
-        }
-
-        .native-app > .container > p {
-            text-align: center;
-            color: #57534E;
-            margin-bottom: 32px;
-        }
-
-        .app-showcase {
+        .principles__list {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            align-items: center;
-            max-width: 840px;
-            margin: 0 auto;
+            gap: 14px;
         }
 
-        .app-preview {
-            background: #1C1917;
-            border-radius: 12px;
+        .principle {
             padding: 20px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border-radius: var(--radius-md);
+            background: rgba(245, 244, 240, 0.9);
+            border: 1px solid var(--line);
         }
 
-        .app-window-bar {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 16px;
+        .principle h3 {
+            margin-bottom: 8px;
+            font-size: 1rem;
+            font-weight: 800;
         }
 
-        .app-window-dot {
+        .principle p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .steps-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .step-card {
+            min-height: 244px;
+        }
+
+        .step-card__index {
+            display: inline-flex;
+            width: 42px;
+            height: 42px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(212, 167, 106, 0.14);
+            color: var(--gold-deep);
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .step-card h3 {
+            margin: 22px 0 10px;
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .step-card p,
+        .step-card ul,
+        .country-card p,
+        .mission-card p,
+        .sweden-card p,
+        .privacy-card p,
+        .atlas-card p,
+        .faq-item p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .step-card ul,
+        .country-card ul,
+        .sweden-card ul,
+        .privacy-card ul {
+            padding-left: 18px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .country-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .country-card h3,
+        .mission-card h3,
+        .sweden-card h3,
+        .privacy-card h3,
+        .atlas-card h3,
+        .faq-item h3 {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .status-line {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .status-line::before {
+            content: "";
             width: 10px;
             height: 10px;
             border-radius: 50%;
         }
 
-        .app-window-dot.red { background: #EF4444; }
-        .app-window-dot.yellow { background: #F59E0B; }
-        .app-window-dot.green { background: #22C55E; }
-
-        .app-mock {
-            display: grid;
-            grid-template-columns: 140px 1fr;
-            gap: 12px;
-            min-height: 200px;
+        .status-line--live {
+            color: var(--signal-live);
         }
 
-        .app-mock-sidebar {
-            background: #292524;
-            border-radius: 8px;
-            padding: 12px;
+        .status-line--live::before {
+            background: var(--signal-live);
+            box-shadow: 0 0 0 7px rgba(22, 163, 74, 0.14);
         }
 
-        .app-mock-sidebar-item {
-            background: #44403C;
-            border-radius: 4px;
-            height: 10px;
-            margin-bottom: 8px;
+        .status-line--pilot {
+            color: var(--signal-pilot);
         }
 
-        .app-mock-sidebar-item.active {
-            background: #6366F1;
+        .status-line--pilot::before {
+            background: var(--signal-pilot);
+            box-shadow: 0 0 0 7px rgba(217, 119, 6, 0.12);
         }
 
-        .app-mock-main {
-            background: #292524;
-            border-radius: 8px;
-            padding: 12px;
+        .status-line--research {
+            color: var(--signal-research);
+        }
+
+        .status-line--research::before {
+            background: var(--signal-research);
+            box-shadow: 0 0 0 7px rgba(74, 141, 180, 0.12);
+        }
+
+        .country-card__meta {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
         }
 
-        .app-mock-bubble {
-            border-radius: 10px;
-            padding: 8px 12px;
-            font-size: 11px;
-            line-height: 1.4;
-            max-width: 80%;
-        }
-
-        .app-mock-bubble.user {
-            background: #6366F1;
-            color: #fff;
-            align-self: flex-end;
-        }
-
-        .app-mock-bubble.assistant {
-            background: #44403C;
-            color: #E7E5E4;
-            align-self: flex-start;
-        }
-
-        .app-features {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .app-feature {
-            display: flex;
-            gap: 14px;
-            align-items: flex-start;
-        }
-
-        .app-feature-icon {
-            width: 36px;
-            height: 36px;
-            min-width: 36px;
-            background: #EEF2FF;
-            border-radius: 10px;
-            display: flex;
+        .meta-pill {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            font-size: 18px;
-        }
-
-        .app-feature h4 {
-            font-size: 15px;
-            margin-bottom: 2px;
-        }
-
-        .app-feature p {
-            font-size: 14px;
-            color: #57534E;
-        }
-
-        .app-download-cta {
-            text-align: center;
-            margin-top: 36px;
-        }
-
-        .app-download-cta p {
+            min-height: 32px;
+            padding: 0 12px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-deep);
+            color: var(--muted);
             font-size: 13px;
-            color: #78716C;
+            font-weight: 700;
+            border: 1px solid var(--line);
+        }
+
+        .mission-grid,
+        .sweden-grid,
+        .privacy-grid,
+        .atlas-grid,
+        .faq-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .mission-card,
+        .sweden-card,
+        .faq-item {
+            padding: 26px;
+        }
+
+        .mission-card__header {
+            margin-bottom: 16px;
+        }
+
+        .mission-card__country {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .mission-card__portal {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .mission-card ol {
+            margin: 18px 0 0;
+            padding-left: 20px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .mission-card li + li {
             margin-top: 10px;
         }
 
-        @media (max-width: 700px) {
-            .app-showcase {
-                grid-template-columns: 1fr;
-            }
+        .sweden-card--featured {
+            background:
+                linear-gradient(160deg, rgba(15, 138, 95, 0.08), rgba(255, 250, 241, 0.86)),
+                #fffaf1;
         }
 
-        /* EIR format */
-        .eir-format {
-            padding: 60px 0;
-            border-top: 1px solid #E7E5E4;
+        .sweden-card__eyebrow {
+            display: inline-block;
+            margin-bottom: 10px;
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
-        .eir-format h2 {
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 12px;
+        .sweden-card__stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
         }
 
-        .eir-format > .container > p {
-            text-align: center;
-            color: #57534E;
-            margin-bottom: 32px;
+        .chip-link {
+            display: inline-flex;
+            align-items: center;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid var(--line);
+            color: var(--ink);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: var(--shadow-card);
         }
 
-        .format-example {
-            background: #1C1917;
-            color: #E7E5E4;
-            border-radius: 16px;
-            padding: 24px;
-            max-width: 640px;
-            margin: 0 auto;
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            font-size: 13px;
-            line-height: 1.7;
-            overflow-x: auto;
+        .privacy-card ul li + li,
+        .sweden-card ul li + li {
+            margin-top: 8px;
         }
 
-        .format-example .key { color: #818CF8; }
-        .format-example .str { color: #86EFAC; }
-        .format-example .comment { color: #78716C; }
+        .atlas-card {
+            background:
+                linear-gradient(160deg, rgba(212, 167, 106, 0.08), rgba(168, 197, 212, 0.12)),
+                #ffffff;
+        }
 
-        /* Footer */
-        .footer {
-            padding: 40px 0;
-            border-top: 1px solid #E7E5E4;
-            text-align: center;
-            color: #78716C;
+        .atlas-explorer {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+            gap: 20px;
+            align-items: start;
+            margin-top: 8px;
+        }
+
+        .atlas-map-shell,
+        .atlas-detail-shell {
+            padding: 22px;
+            border-radius: var(--radius-xl);
+            background: var(--surface);
+            border: 1px solid rgba(61, 58, 54, 0.08);
+            box-shadow: var(--shadow-card);
+        }
+
+        .atlas-map-shell {
+            min-height: 620px;
+        }
+
+        .atlas-map-shell h3,
+        .atlas-detail-shell h3 {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .atlas-map-shell p,
+        .atlas-detail-shell p {
+            color: var(--muted);
             font-size: 14px;
         }
 
-        .footer a {
-            color: #6366F1;
-            text-decoration: none;
+        .atlas-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0 14px;
         }
 
-        .footer a:hover { text-decoration: underline; }
+        .atlas-filter {
+            appearance: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--muted);
+            cursor: pointer;
+            font-weight: 700;
+        }
 
-        @media (max-width: 600px) {
-            .hero { padding: 48px 0 40px; }
-            .hero h1 { font-size: 30px; }
-            .hero p { font-size: 17px; }
-            .cta-group { flex-direction: column; align-items: center; }
-            .btn { width: 100%; justify-content: center; max-width: 300px; }
+        .atlas-filter strong {
+            color: var(--ink);
+            font-size: 12px;
+        }
+
+        .atlas-filter--active {
+            background: rgba(30, 148, 168, 0.08);
+            color: var(--accent-strong);
+            border-color: rgba(30, 148, 168, 0.24);
+        }
+
+        .atlas-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .atlas-legend__item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .atlas-legend__dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .atlas-legend__dot--unlocked,
+        .status-badge--unlocked,
+        .country-pin--unlocked {
+            background: #16a34a;
+        }
+
+        .atlas-legend__dot--pilot,
+        .status-badge--pilot,
+        .country-pin--pilot {
+            background: #d97706;
+        }
+
+        .atlas-legend__dot--ready,
+        .status-badge--ready,
+        .country-pin--ready {
+            background: #197a8e;
+        }
+
+        .atlas-legend__dot--research,
+        .status-badge--research,
+        .country-pin--research {
+            background: #4a8db4;
+        }
+
+        .atlas-legend__dot--watch,
+        .status-badge--watch,
+        .country-pin--watch {
+            background: #7a766f;
+        }
+
+        .atlas-map {
+            position: relative;
+            min-height: 520px;
+            margin-top: 6px;
+            border-radius: var(--radius-xl);
+            background:
+                radial-gradient(circle at 24% 18%, rgba(212, 167, 106, 0.16), transparent 18%),
+                radial-gradient(circle at 74% 72%, rgba(139, 184, 206, 0.16), transparent 22%),
+                linear-gradient(180deg, rgba(240, 247, 251, 0.94), rgba(250, 250, 247, 0.98));
+            border: 1px solid rgba(61, 58, 54, 0.08);
+            overflow: hidden;
+        }
+
+        .atlas-map .leaflet-container {
+            width: 100%;
+            min-height: 520px;
+            background: transparent;
+            font-family: 'Geist', sans-serif;
+        }
+
+        .atlas-map .leaflet-control-zoom {
+            border: 1px solid rgba(61, 58, 54, 0.08);
+            box-shadow: var(--shadow-card);
+            overflow: hidden;
+        }
+
+        .atlas-map .leaflet-control-zoom a {
+            color: var(--ink);
+            background: rgba(255, 255, 255, 0.96);
+            border: none;
+        }
+
+        .atlas-map .leaflet-control-attribution {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 999px;
+            padding: 4px 10px;
+            margin: 0 0 12px 12px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .atlas-map .leaflet-control-attribution a {
+            color: var(--accent-strong);
+        }
+
+        .atlas-map__hint {
+            position: absolute;
+            right: 18px;
+            bottom: 16px;
+            max-width: 230px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: var(--shadow-card);
+            z-index: 500;
+        }
+
+        .country-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 2px solid rgba(255, 255, 255, 0.92);
+            color: #ffffff;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+        }
+
+        .country-marker--unlocked { background: #16a34a; }
+        .country-marker--pilot { background: #d97706; }
+        .country-marker--ready { background: #197a8e; }
+        .country-marker--research { background: #4a8db4; }
+        .country-marker--watch { background: #7a766f; }
+
+        .country-marker--selected {
+            transform: scale(1.08);
+            box-shadow: 0 16px 28px rgba(0, 0, 0, 0.22), 0 0 0 4px rgba(255, 255, 255, 0.72);
+        }
+
+        .country-marker__code {
+            font-size: 11px;
+            font-family: "Geist Mono", ui-monospace, monospace;
+            letter-spacing: 0.06em;
+            font-weight: 800;
+            transform: translateY(1px);
+        }
+
+        .atlas-tooltip {
+            border: none;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.96);
+            color: var(--ink);
+            box-shadow: var(--shadow-card);
+            font-weight: 700;
+            padding: 6px 10px;
+        }
+
+        .atlas-tooltip::before {
+            display: none;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 32px;
+            padding: 0 12px;
+            border-radius: var(--radius-sm);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .atlas-detail__eyebrow {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent);
+        }
+
+        .atlas-detail__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .atlas-detail__portal {
+            margin-top: 4px;
+            font-size: 15px;
+        }
+
+        .atlas-detail__summary {
+            margin: 16px 0 18px;
+        }
+
+        .atlas-detail__facts {
+            display: grid;
+            gap: 14px;
+            margin: 0;
+        }
+
+        .atlas-detail__facts div {
+            padding: 14px 0;
+            border-top: 1px solid var(--line);
+        }
+
+        .atlas-detail__plugin-note {
+            margin-top: 18px;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            background: rgba(212, 167, 106, 0.1);
+            border: 1px solid rgba(212, 167, 106, 0.24);
+        }
+
+        .atlas-detail__plugin-note strong {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--gold-deep);
+        }
+
+        .atlas-detail__plugin-note p {
+            margin: 0;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .atlas-detail__facts dt {
+            margin-bottom: 4px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .atlas-detail__facts dd {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .atlas-detail__claim {
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(31, 43, 36, 0.05);
+        }
+
+        .atlas-detail__claim--claimed {
+            background: rgba(15, 138, 95, 0.1);
+            color: var(--accent-strong);
+        }
+
+        .atlas-detail__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .country-directory {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 22px;
+        }
+
+        .country-directory-card {
+            padding: 18px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 250, 241, 0.78);
+            border: 1px solid rgba(31, 43, 36, 0.08);
+            cursor: pointer;
+            transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .country-directory-card:hover {
+            transform: translateY(-1px);
+            border-color: rgba(15, 138, 95, 0.18);
+            box-shadow: 0 10px 22px rgba(31, 43, 36, 0.08);
+        }
+
+        .country-directory-card--selected {
+            border-color: rgba(15, 138, 95, 0.35);
+            box-shadow: inset 0 0 0 1px rgba(15, 138, 95, 0.14);
+        }
+
+        .country-directory-card__top {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 10px;
+        }
+
+        .country-directory-card__name {
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .country-directory-card__portal {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .country-directory-card__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .country-directory-card__claim {
+            margin-top: 14px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .country-directory-card__claim a,
+        .atlas-detail__claim a {
+            color: var(--accent-strong);
+        }
+
+        .faq-item summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-weight: 800;
+            font-size: 1rem;
+        }
+
+        .faq-item summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .faq-item summary::after {
+            content: "+";
+            flex: none;
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: rgba(31, 43, 36, 0.06);
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .faq-item[open] summary::after {
+            content: "-";
+        }
+
+        .faq-item p {
+            margin-top: 16px;
+        }
+
+        .site-footer {
+            padding: 54px 0 70px;
+        }
+
+        .site-footer__panel {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+            padding: 30px;
+            border-radius: var(--radius-xl);
+            background: rgba(31, 43, 36, 0.96);
+            color: #f7f3ea;
+            box-shadow: 0 24px 60px rgba(31, 43, 36, 0.18);
+        }
+
+        .site-footer__panel p {
+            margin: 0;
+            max-width: 48ch;
+            color: rgba(247, 243, 234, 0.74);
+        }
+
+        .site-footer__links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-content: start;
+            justify-content: flex-start;
+        }
+
+        .site-footer__links a {
+            color: #f7f3ea;
+            text-decoration: none;
+            opacity: 0.86;
+        }
+
+        .site-footer__links a:hover {
+            opacity: 1;
+        }
+
+        .fade-up {
+            opacity: 0;
+            transform: translateY(18px);
+            animation: fadeUp 0.7s ease forwards;
+        }
+
+        .fade-up:nth-child(2) { animation-delay: 0.08s; }
+        .fade-up:nth-child(3) { animation-delay: 0.16s; }
+        .fade-up:nth-child(4) { animation-delay: 0.24s; }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .hero__grid,
+            .principles,
+            .site-footer__panel,
+            .atlas-explorer {
+                grid-template-columns: 1fr;
+            }
+
+            .signal-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .steps-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 800px) {
+            .site-header {
+                position: static;
+            }
+
+            .site-header__inner {
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: flex-start;
+                padding: 16px 0 18px;
+            }
+
+            .nav {
+                gap: 12px;
+            }
+
+            .signal-grid,
+            .country-grid,
+            .steps-grid,
+            .mission-grid,
+            .sweden-grid,
+            .privacy-grid,
+            .atlas-grid,
+            .faq-grid,
+            .country-directory {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                padding-top: 38px;
+            }
+
+            .hero-panel,
+            .principles__essay,
+            .mission-card,
+            .sweden-card,
+            .faq-item,
+            .atlas-map-shell,
+            .atlas-detail-shell {
+                padding: 22px;
+            }
+
+            .button {
+                width: 100%;
+            }
+
+            .atlas-map {
+                min-height: 540px;
+            }
+
+            .hero__actions,
+            .hero__support {
+                align-items: stretch;
+            }
         }
     </style>
 </head>
 <body>
-
-<section class="hero">
-    <div class="container">
-        <div class="hero-icon">
-            <img src="https://raw.githubusercontent.com/BirgerMoell/eir-chrome-plugin/main/icon128.png" alt="Eir icon" onerror="this.parentElement.innerHTML='<div style=&quot;width:100%;height:100%;background:#6366F1;display:flex;align-items:center;justify-content:center;font-size:48px&quot;>&#x1F3E5;</div>'">
-        </div>
-        <span class="badge">Open Source &middot; Free &middot; Privacy-First</span>
-        <h1>Download Your Medical Records<br>from <span>1177.se</span></h1>
-        <p>A Chrome extension that lets you export your complete Swedish medical journal with one click. Your data stays on your device.</p>
-        <div class="cta-group">
-            <a href="https://github.com/BirgerMoell/eir-chrome-plugin/releases/latest" class="btn btn-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download Extension
+    <header class="site-header">
+        <div class="shell site-header__inner">
+            <a class="brand" href="#top" aria-label="Unlock by Eir home">
+                <span class="brand__mark" aria-hidden="true">
+                    <img src="https://eir-design-system.netlify.app/icon-white.png" alt="">
+                </span>
+                <span>
+                    <span class="brand__eyebrow">unlock.eir.space</span>
+                    <span class="brand__name">Unlock by Eir</span>
+                </span>
             </a>
-            <a href="https://github.com/BirgerMoell/eir-chrome-plugin" class="btn btn-secondary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                View Source
-            </a>
+            <nav class="nav" aria-label="Primary">
+                <a href="#mission">Mission</a>
+                <a href="#flow">How it works</a>
+                <a href="#countries">Countries</a>
+                <a href="#atlas">Atlas</a>
+                <a href="#sweden">Sweden</a>
+                <a href="#privacy">Privacy</a>
+                <a href="https://github.com/BirgerMoell/eir-chrome-plugin">GitHub</a>
+                <a class="nav__cta" href="downloads/eir-chrome-extension.zip">Get the extension</a>
+            </nav>
         </div>
-    </div>
-</section>
+    </header>
 
-<section class="features">
-    <div class="container">
-        <h2>What It Does</h2>
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="feature-icon">&#128203;</div>
-                <h3>One-Click Download</h3>
-                <p>A floating button appears on 1177.se. Click it to automatically expand and download all your journal entries.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">&#128196;</div>
-                <h3>Structured EIR Format</h3>
-                <p>Exports your records in the open EIR format (YAML) - machine-readable, human-readable, and easy to import into health apps.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">&#128274;</div>
-                <h3>100% Private</h3>
-                <p>All processing happens locally in your browser. No data is ever sent to any server. Zero tracking, zero analytics.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">&#127760;</div>
-                <h3>Transfer to Eir.Space</h3>
-                <p>Optionally view your records in the Eir.Space viewer for AI-powered insights and better visualization of your health data.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">&#128202;</div>
-                <h3>Complete History</h3>
-                <p>Automatically clicks "Load More" to fetch your entire medical history - vaccinations, diagnoses, visits, prescriptions, and more.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">&#127468;&#127463;</div>
-                <h3>Swedish Healthcare</h3>
-                <p>Built specifically for the Swedish 1177.se patient portal (Journalen). Understands Swedish medical record structures.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="how-it-works">
-    <div class="container">
-        <h2>How It Works</h2>
-        <div class="steps">
-            <div class="step">
-                <div class="step-number">1</div>
-                <h3>Install the Extension</h3>
-                <p>Download and load the extension in Chrome via Developer Mode.</p>
-            </div>
-            <div class="step">
-                <div class="step-number">2</div>
-                <h3>Log in to 1177.se</h3>
-                <p>Navigate to journalen.1177.se and authenticate with BankID as usual.</p>
-            </div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <h3>Click Download</h3>
-                <p>Click the floating "Download Journals" button that appears on the page.</p>
-            </div>
-            <div class="step">
-                <div class="step-number">4</div>
-                <h3>Get Your Files + App</h3>
-                <p>Receive your records as .txt and .eir files, plus the Eir Viewer app to explore them with AI.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="install">
-    <div class="container">
-        <h2>Installation</h2>
-        <p>Since this extension isn't on the Chrome Web Store, install it manually:</p>
-        <div class="install-steps">
-            <ol>
-                <li><strong>Download</strong> the latest release from <a href="https://github.com/BirgerMoell/eir-chrome-plugin/releases/latest">GitHub Releases</a>, or clone the repo.</li>
-                <li>Open Chrome and go to <code>chrome://extensions/</code></li>
-                <li>Enable <strong>Developer mode</strong> (toggle in the top right).</li>
-                <li>Click <strong>"Load unpacked"</strong> and select the extension folder.</li>
-                <li>Navigate to <a href="https://journalen.1177.se" target="_blank" rel="noopener">journalen.1177.se</a>, log in, and use the floating button.</li>
-            </ol>
-        </div>
-    </div>
-</section>
-
-<section class="privacy">
-    <div class="container">
-        <div class="privacy-box">
-            <h2>Privacy First</h2>
-            <p>We take the privacy of your medical records extremely seriously. This extension is designed so that your health data never leaves your device.</p>
-            <div class="privacy-points">
-                <span class="privacy-point">No external servers</span>
-                <span class="privacy-point">No analytics</span>
-                <span class="privacy-point">No tracking</span>
-                <span class="privacy-point">No cookies</span>
-                <span class="privacy-point">GDPR compliant</span>
-                <span class="privacy-point">Open source</span>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="native-app">
-    <div class="container">
-        <span class="badge" style="display:block;text-align:center;">New: Native macOS App</span>
-        <h2>Eir Viewer for Mac</h2>
-        <p>A desktop app that opens your <code>.eir</code> files locally. No server, no cloud &mdash; your records stay on your Mac.</p>
-
-        <div class="app-showcase">
-            <div class="app-preview">
-                <div class="app-window-bar">
-                    <div class="app-window-dot red"></div>
-                    <div class="app-window-dot yellow"></div>
-                    <div class="app-window-dot green"></div>
-                </div>
-                <div class="app-mock">
-                    <div class="app-mock-sidebar">
-                        <div class="app-mock-sidebar-item" style="width:70%"></div>
-                        <div class="app-mock-sidebar-item" style="width:85%"></div>
-                        <div style="height:12px"></div>
-                        <div class="app-mock-sidebar-item active" style="width:60%"></div>
-                        <div class="app-mock-sidebar-item" style="width:80%"></div>
-                        <div class="app-mock-sidebar-item" style="width:50%"></div>
+    <main id="top">
+        <section class="hero">
+            <div class="shell hero__grid">
+                <div>
+                    <div class="eyebrow fade-up">
+                        <span class="eyebrow__dot" aria-hidden="true"></span>
+                        Sweden is live. Finland is in pilot. Europe is next.
                     </div>
-                    <div class="app-mock-main">
-                        <div class="app-mock-bubble user">What does this diagnosis mean?</div>
-                        <div class="app-mock-bubble assistant"><strong>J06.9</strong> is an upper respiratory infection. This is a common cold or flu-like illness...</div>
-                        <div class="app-mock-bubble user">Any follow-up needed?</div>
-                        <div class="app-mock-bubble assistant">Based on your records, no follow-up was scheduled. The condition typically resolves on its own.</div>
+                    <h1 class="fade-up">Help <span>unlock</span> healthcare data for every patient, in every country.</h1>
+                    <p class="hero__lede fade-up">
+                        Citizens already have a right to see their health data. Unlock turns that right into an open, practical integration effort. One person logs into their official patient portal. One contribution helps map a country. Enough good contributions turn a portal into a working Eir adapter.
+                    </p>
+                    <div class="hero__actions fade-up">
+                        <a class="button button--primary" href="downloads/eir-chrome-extension.zip">Download the extension</a>
+                        <a class="button button--secondary" href="#flow">See the contribution flow</a>
+                    </div>
+                    <div class="hero__support fade-up">
+                        <span>You log in yourself.</span>
+                        <span>No passwords are collected.</span>
+                        <span>Capture is reviewed before sharing.</span>
+                    </div>
+                </div>
+
+                <aside class="hero-panel fade-up" aria-label="Mission status">
+                    <div class="hero-panel__header">
+                        <div class="hero-panel__kicker">Mission board</div>
+                        <div class="hero-panel__status">Public effort</div>
+                    </div>
+                    <div class="hero-panel__headline">A country unlock starts with a real patient flow, not a theoretical API.</div>
+                    <p class="hero-panel__copy">
+                        We study the same official path people already use to see their records electronically. Sweden proves the model. Finland is the next mission. The rest of Europe follows through guided contributions, network capture, and adapter generation.
+                    </p>
+                    <div class="signal-grid">
+                        <div class="signal-card">
+                            <div class="hero-panel__kicker">Live now</div>
+                            <strong>SE</strong>
+                            <span><em>1177</em> export works today.</span>
+                        </div>
+                        <div class="signal-card">
+                            <div class="hero-panel__kicker">Pilot</div>
+                            <strong>FI</strong>
+                            <span><em>MyKanta</em> capture bundle path is in place.</span>
+                        </div>
+                        <div class="signal-card">
+                            <div class="hero-panel__kicker">Mapped</div>
+                            <strong>27</strong>
+                            <span>EU countries analyzed for patient-facing access.</span>
+                        </div>
+                        <div class="signal-card">
+                            <div class="hero-panel__kicker">Method</div>
+                            <strong>XHR</strong>
+                            <span>Network-first reverse engineering, not brittle scraping.</span>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section id="mission">
+            <div class="shell principles">
+                <div class="principles__essay">
+                    <div class="section-kicker">Mission</div>
+                    <h2>Healthcare data should not stay locked behind country borders, vendor walls, or institutional inertia.</h2>
+                    <p>
+                        Unlock is the public side of Eir's integration work. The mission is simple: make it possible for people to access and carry their own healthcare data in the same way they already do through official patient portals. Not by waiting for every institution to modernize. By showing the path, mapping the flow, and turning real patient access into reusable integrations.
+                    </p>
+                    <p>
+                        The tone matters. This is not data extraction theater. It is careful, review-first infrastructure work. Citizens contribute from the portals they already trust. Eir helps structure what is needed to unlock that country's electronic health record flow for everyone who comes next.
+                    </p>
+                </div>
+                <div class="principles__list">
+                    <div class="principle">
+                        <h3>Patient-led</h3>
+                        <p>The patient performs the real login. Unlock never asks for a password and never turns access into a black box.</p>
+                    </div>
+                    <div class="principle">
+                        <h3>Protocol-aware</h3>
+                        <p>We learn from the actual transport layer: pages, API calls, response schemas, and document downloads.</p>
+                    </div>
+                    <div class="principle">
+                        <h3>Country by country</h3>
+                        <p>Each unlocked country becomes a documented public asset: portal flow, data mapping, and adapter confidence.</p>
+                    </div>
+                    <div class="principle">
+                        <h3>Built to ship</h3>
+                        <p>This is not a petition site. The output is working product infrastructure inside Eir.</p>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <div class="app-features">
-                <div class="app-feature">
-                    <div class="app-feature-icon">&#10024;</div>
-                    <div>
-                        <h4>Explain with AI</h4>
-                        <p>One-click button on each journal entry. Understand medical terms, what happened, and what to watch for.</p>
-                    </div>
+        <section id="flow">
+            <div class="shell">
+                <div class="section-head">
+                    <div class="section-kicker">How it works</div>
+                    <h2>One guided mission. One reviewed contribution. One step closer to a country adapter.</h2>
+                    <p>
+                        The contribution flow is designed to be autonomous where it should be and human where it must be. The user does the official login. Unlock guides the rest: which pages to visit, what evidence to capture, and what to review before anything is shared.
+                    </p>
                 </div>
-                <div class="app-feature">
-                    <div class="app-feature-icon">&#128172;</div>
-                    <div>
-                        <h4>Chat Threads</h4>
-                        <p>Persistent conversations per person with auto-generated titles. Pick up where you left off.</p>
-                    </div>
-                </div>
-                <div class="app-feature">
-                    <div class="app-feature-icon">&#128269;</div>
-                    <div>
-                        <h4>Timeline &amp; Search</h4>
-                        <p>Browse entries by month, filter by category or provider, search across all your records.</p>
-                    </div>
-                </div>
-                <div class="app-feature">
-                    <div class="app-feature-icon">&#128101;</div>
-                    <div>
-                        <h4>Multi-Profile</h4>
-                        <p>Manage records for multiple family members. Each person gets their own chat history.</p>
-                    </div>
-                </div>
-                <div class="app-feature">
-                    <div class="app-feature-icon">&#128274;</div>
-                    <div>
-                        <h4>Fully Local</h4>
-                        <p>Runs entirely on your Mac. API keys stored in Keychain. No data leaves your device.</p>
-                    </div>
-                </div>
-                <div class="app-feature">
-                    <div class="app-feature-icon">&#127959;</div>
-                    <div>
-                        <h4>Find Care</h4>
-                        <p>Browse 17,800+ Swedish clinics on an interactive map. Filter by type, services, and search by name or city.</p>
-                    </div>
+                <div class="steps-grid">
+                    <article class="step-card">
+                        <div class="step-card__index">01</div>
+                        <h3>Choose your country and portal</h3>
+                        <p>Select the official patient portal you already use. Sweden is live. Finland is in capture pilot. More national missions follow the same template.</p>
+                    </article>
+                    <article class="step-card">
+                        <div class="step-card__index">02</div>
+                        <h3>Log in yourself</h3>
+                        <p>Open the portal, authenticate as usual, and stay in control. Unlock records the flow around the session, not your password, OTP, or cookies.</p>
+                    </article>
+                    <article class="step-card">
+                        <div class="step-card__index">03</div>
+                        <h3>Follow the mission path</h3>
+                        <p>Go to records, prescriptions, labs, vaccinations, visits, and any export screens. The extension captures page structure, network traffic, and document behavior.</p>
+                    </article>
+                    <article class="step-card">
+                        <div class="step-card__index">04</div>
+                        <h3>Review and contribute</h3>
+                        <p>You inspect the capture bundle first. Shared contributions help Eir identify endpoints, map schemas, and promote a country from observed to unlocked.</p>
+                    </article>
                 </div>
             </div>
+        </section>
+
+        <section id="countries">
+            <div class="shell">
+                <div class="section-head">
+                    <div class="section-kicker">Country missions</div>
+                    <h2>Sweden proves the route. Finland is the pilot. The next wave is already visible.</h2>
+                    <p>
+                        Not every market has the same shape. Some countries have one clean national portal. Others route citizens through regions, insurers, or personal health environments. Unlock makes that visible and turns it into an execution queue.
+                    </p>
+                </div>
+                <div class="country-grid">
+                    <article class="country-card">
+                        <div class="status-line status-line--live">Live now</div>
+                        <h3>Sweden</h3>
+                        <p>1177 Journalen is the production path today. Citizens can download the Chrome plugin, export their healthcare data from 1177 into `.eir` files, and open it inside the Eir apps.</p>
+                        <div class="country-card__meta">
+                            <span class="meta-pill">Portal: 1177</span>
+                            <span class="meta-pill">Mode: plugin download</span>
+                            <span class="meta-pill">Status: usable now</span>
+                        </div>
+                    </article>
+                    <article class="country-card">
+                        <div class="status-line status-line--pilot">Pilot mission</div>
+                        <h3>Finland</h3>
+                        <p>MyKanta is the first Unlock mission. The same extension now includes a Finland trial mode with capture bundles and page-level `.eir` exports from logged-in MyKanta pages.</p>
+                        <div class="country-card__meta">
+                            <span class="meta-pill">Portal: MyKanta</span>
+                            <span class="meta-pill">Mode: guided capture</span>
+                            <span class="meta-pill">Status: active pilot</span>
+                        </div>
+                    </article>
+                    <article class="country-card">
+                        <div class="status-line status-line--research">Research queue</div>
+                        <h3>Clean national portal candidates</h3>
+                        <p>Denmark, Estonia, Poland, Austria, Hungary, Slovenia, and Luxembourg look like the strongest follow-on countries for the current browser-first model.</p>
+                        <div class="country-card__meta">
+                            <span class="meta-pill">Best fit for Eir</span>
+                            <span class="meta-pill">National patient flow</span>
+                        </div>
+                    </article>
+                    <article class="country-card">
+                        <div class="status-line status-line--research">Structured backlog</div>
+                        <h3>Messier but important</h3>
+                        <p>Belgium, France, Portugal, Germany, Italy, Spain, and the Netherlands need deeper analysis because the patient flow is distributed, app-heavy, or institution-fragmented.</p>
+                        <div class="country-card__meta">
+                            <span class="meta-pill">Needs endpoint clustering</span>
+                            <span class="meta-pill">Higher maintenance risk</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="shell">
+                <div class="section-head">
+                    <div class="section-kicker">Unlock missions</div>
+                    <h2>The system should feel clear, serious, and motivating enough that people want to help.</h2>
+                    <p>
+                        Each mission is small enough to complete in one sitting and structured enough to produce usable technical evidence. The user never has to improvise what to click next.
+                    </p>
+                </div>
+                <div class="mission-grid">
+                    <article class="mission-card">
+                        <div class="mission-card__header">
+                            <div>
+                                <div class="mission-card__country">Mission type</div>
+                                <h3>Unlock a country</h3>
+                            </div>
+                            <span class="pill">High leverage</span>
+                        </div>
+                        <p>Best for countries where no working Eir adapter exists yet. One good mission can surface the routes, schemas, and product constraints that define the whole country build.</p>
+                        <ol>
+                            <li>Open the official patient portal for your country.</li>
+                            <li>Visit records, prescriptions, labs, vaccinations, and documents.</li>
+                            <li>Stop recording and review the capture bundle locally.</li>
+                            <li>Contribute the structured mission output.</li>
+                        </ol>
+                    </article>
+                    <article class="mission-card">
+                        <div class="mission-card__header">
+                            <div>
+                                <div class="mission-card__country">Mission type</div>
+                                <h3>Strengthen an existing adapter</h3>
+                            </div>
+                            <span class="pill">Quality pass</span>
+                        </div>
+                        <p>Useful when a country is already observed or partially mapped. New sessions help validate endpoint stability across users, clinics, regions, and time.</p>
+                        <ol>
+                            <li>Run the guided flow with the current capture mission.</li>
+                            <li>Confirm whether the same core routes still appear.</li>
+                            <li>Highlight missing data categories or broken navigation paths.</li>
+                            <li>Help move the country from draft to validated.</li>
+                        </ol>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="sweden">
+            <div class="shell">
+                <div class="section-head">
+                    <div class="section-kicker">Sweden</div>
+                    <h2>The working example already exists.</h2>
+                    <p>
+                        Sweden is not just a concept page. The 1177 Chrome plugin already lets people download their healthcare data and bring it into EIR. That matters because it shows the entire thesis can move from patient portal to usable health data product without waiting for centralized permission structures.
+                    </p>
+                </div>
+                <div class="sweden-grid">
+                    <article class="sweden-card sweden-card--featured">
+                        <div class="sweden-card__eyebrow">Live workflow</div>
+                        <h3>How Sweden works today</h3>
+                        <p>Download the Chrome plugin, sign in to 1177 as usual, click the floating downloader, and download your healthcare data into `.eir` files that work with Eir. No cloud storage. No tracking. The records stay on your device unless you choose to move them.</p>
+                        <div class="sweden-card__stack">
+                            <a class="chip-link" href="downloads/eir-chrome-extension.zip">Download extension zip</a>
+                            <a class="chip-link" href="https://journalen.1177.se/JournalCategories/JournalOverview">Open 1177</a>
+                            <a class="chip-link" href="https://github.com/BirgerMoell/eir-chrome-plugin">View source</a>
+                        </div>
+                    </article>
+                    <article class="sweden-card">
+                        <h3>Install in Chrome</h3>
+                        <p>Unzip the file, open Chrome or another Chromium browser, then load the extension locally.</p>
+                        <ul>
+                            <li>Download <a class="chip-link" href="downloads/eir-chrome-extension.zip">eir-chrome-extension.zip</a>.</li>
+                            <li>Unzip it so you have a local <code>ChromeExtension</code> folder.</li>
+                            <li>Open <code>chrome://extensions/</code> and turn on <strong>Developer mode</strong>.</li>
+                            <li>Click <strong>Load unpacked</strong> and select the unzipped <code>ChromeExtension</code> folder.</li>
+                        </ul>
+                    </article>
+                    <article class="sweden-card">
+                        <h3>Sweden live, Finland trial</h3>
+                        <p>The current build has two country modes inside one extension.</p>
+                        <ul>
+                            <li><strong>Sweden:</strong> production export from 1177 Journalen into `.eir` journal-note files.</li>
+                            <li><strong>Finland:</strong> trial integration on MyKanta with capture bundles and per-page `.eir` downloads for mapping the portal.</li>
+                            <li><strong>Other countries:</strong> tracked in the atlas with portal access instructions and claimable integration missions.</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="privacy">
+            <div class="shell">
+                <div class="section-head">
+                    <div class="section-kicker">Privacy and trust</div>
+                    <h2>Unlock has to be ambitious without ever becoming reckless.</h2>
+                    <p>
+                        The project only works if contributors understand the boundaries clearly. The model is not “give us your login.” It is “perform your normal login, let the extension observe the patient-visible flow, and review the bundle before anything leaves your device.”
+                    </p>
+                </div>
+                <div class="privacy-grid">
+                    <article class="privacy-card">
+                        <h3>What the capture can include</h3>
+                        <ul>
+                            <li>Visited page routes and navigation steps</li>
+                            <li>Sanitized HTML snapshots and visible text</li>
+                            <li>Fetch and XHR request URLs, methods, statuses, and response bodies</li>
+                            <li>Document download behavior and page classifications</li>
+                            <li>Structured evidence that helps identify endpoint families and schemas</li>
+                        </ul>
+                    </article>
+                    <article class="privacy-card">
+                        <h3>What the capture should never keep</h3>
+                        <ul>
+                            <li>Passwords or OTP values</li>
+                            <li>Cookie values, bearer tokens, or authorization secrets</li>
+                            <li>Hidden credential material copied from the browser state</li>
+                            <li>Any upload that the contributor has not reviewed locally first</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="atlas">
+            <div class="shell">
+                <div class="section-head">
+                    <div class="section-kicker">Open atlas</div>
+                    <h2>See what is unlocked, how to access your data, and who has claimed the next country.</h2>
+                    <p>
+                        The atlas is useful even before a country is integrated. Every country points to the official patient access route. Every country mission links to a GitHub issue where someone can claim the work in public.
+                    </p>
+                </div>
+                <div class="atlas-explorer">
+                    <div class="atlas-map-shell">
+                        <div class="section-label">
+                            <div>
+                                <div class="section-kicker">Mission map</div>
+                                <h3>Europe first, with Nordic countries outside the EU included.</h3>
+                            </div>
+                        </div>
+                        <p>The map shows where Eir is already live, where pilots are active, and where contribution is still needed.</p>
+                        <div id="unlockAtlasFilters" class="atlas-controls" aria-label="Country filters"></div>
+                        <div id="unlockAtlasLegend" class="atlas-legend" aria-label="Atlas legend"></div>
+                        <div id="unlockAtlasMap" class="atlas-map" aria-label="Country status map"></div>
+                    </div>
+                    <aside class="atlas-detail-shell">
+                        <div class="section-label">
+                            <div>
+                                <div class="section-kicker">Country detail</div>
+                                <h3>Access route and claim state</h3>
+                            </div>
+                        </div>
+                        <div id="unlockAtlasDetail"></div>
+                    </aside>
+                </div>
+                <div id="unlockCountryDirectory" class="country-directory" aria-label="Country directory"></div>
+                <div class="atlas-grid" style="margin-top:22px;">
+                    <article class="atlas-card">
+                        <h3>EU patient EHR map</h3>
+                        <p>A country-by-country view of the official patient-facing portals used across the EU, plus the likely integration shape for each market.</p>
+                        <div class="sweden-card__stack">
+                            <a class="chip-link" href="eu-patient-ehr-integration-map.md">Read the map</a>
+                        </div>
+                    </article>
+                    <article class="atlas-card">
+                        <h3>Execution roadmap</h3>
+                        <p>A build-oriented roadmap that turns the country analysis into rollout priorities, adapter strategy, and practical sequencing for Eir.</p>
+                        <div class="sweden-card__stack">
+                            <a class="chip-link" href="eu-ehr-integration-roadmap.md">Read the roadmap</a>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="integration">
+            <div class="shell">
+                <div class="section-head">
+                    <div class="section-kicker">When it works</div>
+                    <h2>Every unlocked country should end in the same simple outcome for the patient.</h2>
+                    <p>
+                        The integration work is not finished when a portal is mapped. It is finished when a person can open the official portal for their country, use the Chrome plugin, and download their healthcare data into a local format that is structured, readable, and portable.
+                    </p>
+                </div>
+                <div class="sweden-grid">
+                    <article class="sweden-card sweden-card--featured">
+                        <div class="sweden-card__eyebrow">The product outcome</div>
+                        <h3>Download your healthcare data in <code>.eir</code>.</h3>
+                        <p>
+                            When an integration is live, the patient does not need to understand endpoints, page states, or internal healthcare systems. They log in through the same official path they already use, click the Eir plugin, and download their records in a format designed to be easy to read and usable across Eir products.
+                        </p>
+                        <div class="sweden-card__stack">
+                            <a class="chip-link" href="downloads/eir-chrome-extension.zip">Download the extension</a>
+                            <a class="chip-link" href="https://journalen.1177.se/JournalCategories/JournalOverview">See the live Swedish portal</a>
+                        </div>
+                    </article>
+                    <article class="sweden-card">
+                        <h3>How the live integration works</h3>
+                        <p>
+                            Sweden is the working reference. A patient installs the Chrome plugin, signs in to 1177 as usual, opens Journalen, and downloads their healthcare data locally. The plugin turns the patient-visible records into a consistent <code>.eir</code> export instead of leaving the information trapped inside one portal view.
+                        </p>
+                        <ul>
+                            <li>The patient uses the normal national login flow.</li>
+                            <li>The plugin runs on the logged-in healthcare pages.</li>
+                            <li>The export is saved locally in a clear, structured format.</li>
+                        </ul>
+                    </article>
+                    <article class="sweden-card">
+                        <h3>The same model should work country by country</h3>
+                        <p>
+                            Finland is the current trial path, and the same approach extends to every country once the portal flow is understood well enough. Unlock exists to make that reusable: official patient login, browser-side extraction, local download, and one common Eir format instead of one-off country silos.
+                        </p>
+                        <ul>
+                            <li>Map the official patient portal and data routes.</li>
+                            <li>Build the country adapter into the extension.</li>
+                            <li>Let patients in that country download their own records the same way.</li>
+                        </ul>
+                    </article>
+                    <article class="sweden-card">
+                        <h3>Why this matters</h3>
+                        <p>
+                            The goal is not just to inspect healthcare portals. It is to give people a dependable way to take their data with them in every market where electronic access already exists. Once a country is unlocked, the result should feel ordinary: log in, download your data, read it easily, and keep it under your own control.
+                        </p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="shell">
+                <div class="section-head">
+                    <div class="section-kicker">Questions</div>
+                    <h2>What people need to understand before they help.</h2>
+                </div>
+                <div class="faq-grid">
+                    <details class="faq-item">
+                        <summary>Is this only for Europe?</summary>
+                        <p>No. The current strategy starts with Sweden, Finland, and the wider EU because the patient portal landscape is already visible there. The model can expand to other countries once the mission system is mature.</p>
+                    </details>
+                    <details class="faq-item">
+                        <summary>Why not just wait for official APIs?</summary>
+                        <p>Because the patient-visible route already exists. Unlock starts from what citizens can already access electronically, then builds the product path from there. Official APIs are still valuable later, but they should not be the only route to progress.</p>
+                    </details>
+                    <details class="faq-item">
+                        <summary>Why does the language sound so direct?</summary>
+                        <p>Because this project is meant to feel operational, not ornamental. The aim is to unlock real healthcare data access, not to surround the problem with abstract policy language.</p>
+                    </details>
+                    <details class="faq-item">
+                        <summary>What is the actual output of a mission?</summary>
+                        <p>A reviewed capture bundle that helps Eir identify routes, endpoints, payload shapes, data categories, and adapter confidence. The contribution feeds real integration work.</p>
+                    </details>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell site-footer__panel">
+            <div>
+                <div class="section-kicker" style="color:#86efc5;">Unlock by Eir</div>
+                <h3 style="margin:10px 0 12px;font-size:1.7rem;font-family:'Newsreader',serif;letter-spacing:-0.04em;">One person can help unlock a country.</h3>
+                <p>
+                    Sweden is live. Finland is in motion. The rest depends on whether enough people decide their healthcare data should be portable, understandable, and genuinely theirs.
+                </p>
+            </div>
+            <div class="site-footer__links">
+                <a href="downloads/eir-chrome-extension.zip">Get the extension</a>
+                <a href="https://github.com/BirgerMoell/eir-chrome-plugin">GitHub</a>
+                <a href="privacy-policy.html">Privacy policy</a>
+                <a href="eu-patient-ehr-integration-map.md">EU map</a>
+                <a href="eu-ehr-integration-roadmap.md">Roadmap</a>
+                <a href="https://eir.space">eir.space</a>
+            </div>
         </div>
-
-        <div class="app-download-cta">
-            <a href="https://github.com/BirgerMoell/eir-chrome-plugin/raw/main/releases/EirViewer-macOS.dmg" class="btn btn-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download Eir Viewer for macOS
-            </a>
-            <p>Requires macOS 14 (Sonoma) or later. Also included with every journal download.</p>
-            <p style="margin-top:8px">If macOS says the app is "damaged", open Terminal and run: <code>xattr -cr /path/to/EirViewer.app</code></p>
-        </div>
-    </div>
-</section>
-
-<section class="eir-format">
-    <div class="container">
-        <h2>The EIR Format</h2>
-        <p>Your records are exported in a clean, structured YAML-based format:</p>
-        <div class="format-example">
-<span class="comment"># EIR File Format v1.0</span>
-<span class="key">metadata</span>:
-  <span class="key">format_version</span>: <span class="str">"1.0"</span>
-  <span class="key">source</span>: <span class="str">"1177.se Journal"</span>
-  <span class="key">patient</span>:
-    <span class="key">name</span>: <span class="str">"Your Name"</span>
-
-<span class="key">entries</span>:
-  - <span class="key">date</span>: <span class="str">"2025-03-17"</span>
-    <span class="key">category</span>: <span class="str">"Vaccinationer"</span>
-    <span class="key">provider</span>:
-      <span class="key">name</span>: <span class="str">"Your Healthcare Provider"</span>
-    <span class="key">content</span>:
-      <span class="key">summary</span>: <span class="str">"TBE-vaccination"</span>
-      <span class="key">notes</span>:
-        - <span class="str">"Dos: 0.5 ml"</span>
-        </div>
-    </div>
-</section>
-
-<footer class="footer">
-    <div class="container">
-        <p>
-            Built by <a href="https://eir.space">Eir</a> &middot;
-            <a href="https://github.com/BirgerMoell/eir-chrome-plugin">GitHub</a> &middot;
-            <a href="privacy-policy.html">Privacy Policy</a>
-        </p>
-        <p style="margin-top: 8px;">Your health data belongs to you.</p>
-    </div>
-</footer>
-
+    </footer>
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+    <script src="unlock-atlas.js?v=20260313c"></script>
 </body>
 </html>

@@ -1,15 +1,17 @@
 {
   "manifest_version": 3,
-  "name": "1177 Journal Downloader",
+  "name": "Eir Health Data Tools",
   "version": "1.0.0",
-  "description": "Download and structure patient journals from 1177.se",
+  "description": "Download 1177 journals and record MyKanta page flows for integration research",
   "permissions": [
     "activeTab",
     "storage",
     "tabs"
   ],
   "host_permissions": [
-    "https://journalen.1177.se/*"
+    "https://journalen.1177.se/*",
+    "https://*.kanta.fi/*",
+    "https://*.suomi.fi/*"
   ],
   "content_scripts": [
     {
@@ -17,11 +19,29 @@
       "js": ["data-transfer.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://*.kanta.fi/*",
+        "https://*.suomi.fi/*"
+      ],
+      "js": ["kanta-recorder.js"],
+      "css": ["styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["kanta-network-probe.js"],
+      "matches": [
+        "https://*.kanta.fi/*",
+        "https://*.suomi.fi/*"
+      ]
     }
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "1177 Journal Downloader"
+    "default_title": "Eir Health Data Tools"
   },
   "icons": {
     "16": "icon16.png",

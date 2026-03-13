@@ -49,16 +49,22 @@
     </style>
 </head>
 <body>
-    <h1>📄 1177 Journal Downloader</h1>
-    <p>Download your complete medical journal from 1177.se with one click</p>
+    <h1>📄 Eir Health Data Tools</h1>
+    <p>Download 1177 journals or open MyKanta with the capture bundle recorder enabled</p>
     <button class="button" onclick="openJournal()">
         <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
             <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
             <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
         </svg>
-        Open Journal & Download
+        Open 1177 Journal
     </button>
+    <div style="margin-top: 12px;">
+        <button class="button" onclick="openMyKanta()">
+            Open MyKanta Recorder
+        </button>
+        <p style="font-size: 11px; margin: 8px 0 0; opacity: 0.75;">The in-page panel records flow, HTML snapshots, and fetch/XHR traffic</p>
+    </div>
     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
         <button class="button" style="background: rgba(255,255,255,0.1); font-size: 12px; padding: 8px 16px;" onclick="downloadViewer()">
             Download Eir Viewer for macOS
@@ -70,6 +76,11 @@
         function openJournal() {
             chrome.tabs.create({
                 url: 'https://journalen.1177.se/JournalCategories/JournalOverview'
+            });
+        }
+        function openMyKanta() {
+            chrome.tabs.create({
+                url: 'https://kansalainen.kanta.fi/'
             });
         }
         function downloadViewer() {

@@ -1,0 +1,441 @@
+{
+  "generatedAt": "2026-03-13T16:27:53.854Z",
+  "repo": "BirgerMoell/eir-open-apps",
+  "countries": {
+    "AT": {
+      "number": 1,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/1",
+      "title": "[Unlock:AT] Austria healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:08Z"
+    },
+    "BE": {
+      "number": 2,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/2",
+      "title": "[Unlock:BE] Belgium healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:08Z"
+    },
+    "BG": {
+      "number": 3,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/3",
+      "title": "[Unlock:BG] Bulgaria healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:09Z"
+    },
+    "HR": {
+      "number": 4,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/4",
+      "title": "[Unlock:HR] Croatia healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:09Z"
+    },
+    "CY": {
+      "number": 5,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/5",
+      "title": "[Unlock:CY] Cyprus healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:10Z"
+    },
+    "CZ": {
+      "number": 6,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/6",
+      "title": "[Unlock:CZ] Czechia healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-watch"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:10Z"
+    },
+    "DK": {
+      "number": 7,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/7",
+      "title": "[Unlock:DK] Denmark healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-ready"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:11Z"
+    },
+    "EE": {
+      "number": 8,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/8",
+      "title": "[Unlock:EE] Estonia healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-ready"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:11Z"
+    },
+    "FI": {
+      "number": 9,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/9",
+      "title": "[Unlock:FI] Finland healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-pilot"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:12Z"
+    },
+    "FR": {
+      "number": 10,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/10",
+      "title": "[Unlock:FR] France healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:13Z"
+    },
+    "DE": {
+      "number": 11,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/11",
+      "title": "[Unlock:DE] Germany healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-watch"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:13Z"
+    },
+    "GR": {
+      "number": 12,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/12",
+      "title": "[Unlock:GR] Greece healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:14Z"
+    },
+    "HU": {
+      "number": 13,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/13",
+      "title": "[Unlock:HU] Hungary healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-ready"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:14Z"
+    },
+    "IE": {
+      "number": 14,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/14",
+      "title": "[Unlock:IE] Ireland healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-watch"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:15Z"
+    },
+    "IT": {
+      "number": 15,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/15",
+      "title": "[Unlock:IT] Italy healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-watch"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:15Z"
+    },
+    "LV": {
+      "number": 16,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/16",
+      "title": "[Unlock:LV] Latvia healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:16Z"
+    },
+    "LT": {
+      "number": 17,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/17",
+      "title": "[Unlock:LT] Lithuania healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:16Z"
+    },
+    "LU": {
+      "number": 18,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/18",
+      "title": "[Unlock:LU] Luxembourg healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-ready"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:17Z"
+    },
+    "MT": {
+      "number": 19,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/19",
+      "title": "[Unlock:MT] Malta healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:17Z"
+    },
+    "NL": {
+      "number": 20,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/20",
+      "title": "[Unlock:NL] Netherlands healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-watch"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:18Z"
+    },
+    "PL": {
+      "number": 21,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/21",
+      "title": "[Unlock:PL] Poland healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-ready"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:18Z"
+    },
+    "PT": {
+      "number": 22,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/22",
+      "title": "[Unlock:PT] Portugal healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:19Z"
+    },
+    "RO": {
+      "number": 23,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/23",
+      "title": "[Unlock:RO] Romania healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-watch"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:19Z"
+    },
+    "SK": {
+      "number": 24,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/24",
+      "title": "[Unlock:SK] Slovakia healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:20Z"
+    },
+    "SI": {
+      "number": 25,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/25",
+      "title": "[Unlock:SI] Slovenia healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-ready"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:20Z"
+    },
+    "ES": {
+      "number": 26,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/26",
+      "title": "[Unlock:ES] Spain healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-watch"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:20Z"
+    },
+    "SE": {
+      "number": 27,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/27",
+      "title": "[Unlock:SE] Sweden healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-unlocked"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:21Z"
+    },
+    "NO": {
+      "number": 28,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/28",
+      "title": "[Unlock:NO] Norway healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:21Z"
+    },
+    "IS": {
+      "number": 29,
+      "url": "https://github.com/BirgerMoell/eir-open-apps/issues/29",
+      "title": "[Unlock:IS] Iceland healthcare data integration",
+      "state": "open",
+      "labels": [
+        "unlock-country",
+        "unlock-research"
+      ],
+      "comments": 0,
+      "claimant": null,
+      "claimedAt": null,
+      "claimUrl": null,
+      "updatedAt": "2026-03-13T16:25:22Z"
+    }
+  }
+}
