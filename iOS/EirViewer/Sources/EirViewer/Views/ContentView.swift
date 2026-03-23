@@ -59,23 +59,6 @@ struct ContentView: View {
                 .tag(NavTab.settings)
             }
             .tint(AppColors.primary)
-            .background {
-                ZStack {
-                    AppColors.background.ignoresSafeArea()
-                    AppColors.pageGlow
-                        .ignoresSafeArea()
-                    LinearGradient(
-                        colors: [
-                            AppColors.auraStart.opacity(0.05),
-                            .clear,
-                            AppColors.auraEnd.opacity(0.05)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .ignoresSafeArea()
-                }
-            }
             .overlay(alignment: .top) {
                 if healthDataExtractor.isExtracting && selectedTab != .healthData {
                     Button {
@@ -85,16 +68,16 @@ struct ContentView: View {
                             ProgressView()
                                 .tint(.white)
                                 .scaleEffect(0.8)
-                            Text("Importing records... \(Int(healthDataExtractor.progress * 100))%")
+                            Text("Downloading health data... \(Int(healthDataExtractor.progress * 100))%")
                                 .font(.caption)
-                                .fontWeight(.semibold)
+                                .fontWeight(.medium)
                                 .foregroundColor(.white)
                         }
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 11)
-                        .background(AppColors.primaryStrong)
-                        .clipShape(Capsule())
-                        .shadow(color: AppColors.shadowStrong, radius: 12, y: 6)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(AppColors.primary)
+                        .cornerRadius(20)
+                        .shadow(radius: 6)
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 8)

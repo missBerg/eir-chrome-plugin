@@ -10,6 +10,23 @@ enum LLMProviderType: String, CaseIterable, Identifiable, Codable {
 
     var id: String { rawValue }
 
+    var displayName: String {
+        switch self {
+        case .bergetTrial:
+            return "Free Trial for Eir"
+        case .openai:
+            return "OpenAI"
+        case .anthropic:
+            return "Anthropic"
+        case .groq:
+            return "Groq"
+        case .custom:
+            return "Custom"
+        case .local:
+            return "On-Device"
+        }
+    }
+
     var defaultBaseURL: String {
         switch self {
         case .bergetTrial: return "https://scribe.eir.space/v1"

@@ -88,16 +88,16 @@ class ChatThreadStore: ObservableObject {
         touchThread()
     }
 
-    func updateMessage(id: UUID, _ mutate: (inout ChatMessage) -> Void) {
+    func updateLastMessage(content: String) {
+        guard !messages.isEmpty else { return }
+        messages[messages.count - 1].content = content
+    }
+
+    func updateMessage(id: UUID, mutate: (inout ChatMessage) -> Void) {
         guard let index = messages.firstIndex(where: { $0.id == id }) else { return }
         mutate(&messages[index])
         persistMessages()
         touchThread()
-    }
-
-    func updateLastMessage(content: String) {
-        guard !messages.isEmpty else { return }
-        messages[messages.count - 1].content = content
     }
 
     func persistMessages() {
