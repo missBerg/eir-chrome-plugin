@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum NavTab: String, CaseIterable, Identifiable {
+    case forYou = "For You"
     case journal = "Journal"
     case healthData = "Health Data"
     case chat = "Chat"
@@ -10,6 +11,7 @@ enum NavTab: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
+        case .forYou: return "sparkles"
         case .journal: return "doc.text"
         case .healthData: return "heart.text.clipboard"
         case .chat: return "bubble.left.and.bubble.right"
@@ -34,6 +36,12 @@ struct ContentView: View {
             WelcomeView()
         } else {
             TabView(selection: $selectedTab) {
+                NavigationStack {
+                    ForYouView()
+                }
+                .tabItem { Label("For You", systemImage: "sparkles") }
+                .tag(NavTab.forYou)
+
                 NavigationStack {
                     JournalView()
                 }

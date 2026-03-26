@@ -11,6 +11,8 @@ struct EirViewerApp: App {
     @StateObject private var localModelManager = LocalModelManager()
     @StateObject private var healthDataExtractor = HealthDataExtractor()
     @StateObject private var purchaseManager = PurchaseManager()
+    @StateObject private var actionsVM = ActionsViewModel()
+    @StateObject private var forYouVM = ForYouViewModel()
 
     var body: some Scene {
         WindowGroup {
@@ -24,6 +26,8 @@ struct EirViewerApp: App {
                 .environmentObject(localModelManager)
                 .environmentObject(healthDataExtractor)
                 .environmentObject(purchaseManager)
+                .environmentObject(actionsVM)
+                .environmentObject(forYouVM)
                 .onOpenURL { url in
                     let ext = url.pathExtension.lowercased()
                     guard ext == "eir" || ext == "yaml" || ext == "yml" else { return }
