@@ -1,0 +1,201 @@
+[
+  {
+    "hsaId": "SE2321000206-E00620",
+    "name": "Hälsocentralen Kramfors",
+    "address": "Bruksgatan 12-14",
+    "phone": "0612-860 42",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/Halsocentralen-Kramfors/",
+    "brand": null,
+    "websiteUrl": null,
+    "domain": null,
+    "domainSource": null,
+    "foundEmails": null,
+    "suggestedEmails": null,
+    "error": null
+  },
+  {
+    "hsaId": "SE2321000016-GTS9",
+    "name": "ASIH Norrort Capio omr 5",
+    "address": "Bågljusvägen 30, Plan 1, STOCKHOLM",
+    "phone": "08-523 148 00",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/ASIH-Norrort-Capio-omr-5/",
+    "brand": "capio",
+    "websiteUrl": null,
+    "domain": "capio.se",
+    "domainSource": "brand-mapping",
+    "foundEmails": null,
+    "suggestedEmails": [
+      "info@capio.se",
+      "kontakt@capio.se",
+      "reception@capio.se",
+      "bokning@capio.se",
+      "vardcentral@capio.se",
+      "mottagning@capio.se"
+    ],
+    "error": null
+  },
+  {
+    "hsaId": "SE2321000131-E000000001652",
+    "name": "Närhälsan Dagson vårdcentral, Uddevalla",
+    "address": "Södergatan 11, 451 40, Uddevalla",
+    "phone": "010-441 64 00",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/Narhalsan-Dagson-vardcentral-Uddevalla/",
+    "brand": "närhälsan",
+    "websiteUrl": "http://www.narhalsan.se/Dagsonvardcentral",
+    "domain": "narhalsan.se",
+    "domainSource": "ld+json",
+    "foundEmails": null,
+    "suggestedEmails": [
+      "info@narhalsan.se",
+      "kontakt@narhalsan.se",
+      "reception@narhalsan.se",
+      "bokning@narhalsan.se",
+      "vardcentral@narhalsan.se",
+      "mottagning@narhalsan.se"
+    ],
+    "error": null
+  },
+  {
+    "hsaId": "SE162321000255-O35708",
+    "name": "Limhamns Sjöstad Vårdcentral, Malmö",
+    "address": "Geijersgatan 2E, Limhamn",
+    "phone": "040-614 81 00",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/Limhamns-Sjostad-Vardcentral-Malmo/",
+    "brand": null,
+    "websiteUrl": "http://www.limhamnssjostadvc.se/",
+    "domain": "limhamnssjostadvc.se",
+    "domainSource": "ld+json",
+    "foundEmails": null,
+    "suggestedEmails": [
+      "info@limhamnssjostadvc.se",
+      "kontakt@limhamnssjostadvc.se",
+      "reception@limhamnssjostadvc.se",
+      "bokning@limhamnssjostadvc.se",
+      "vardcentral@limhamnssjostadvc.se",
+      "mottagning@limhamnssjostadvc.se"
+    ],
+    "error": null
+  },
+  {
+    "hsaId": "SE2321000172-29VK",
+    "name": "Hudmottagningen, Västerås",
+    "address": "Västmanlands sjukhus Västerås, ingång 5, entréplan, Utmarksgatan 18, Västerås",
+    "phone": "021-17 35 02",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/Hudmottagningen-Vasteras/",
+    "brand": null,
+    "websiteUrl": "https://synpunkter.regionvastmanland.se/synergianonymous",
+    "domain": "synpunkter.regionvastmanland.se",
+    "domainSource": "external-link-only",
+    "foundEmails": [
+      "hudkliniken@regionvastmanland.se",
+      "dataskyddsombudet@regionvastmanland.se"
+    ],
+    "suggestedEmails": [
+      "info@synpunkter.regionvastmanland.se",
+      "kontakt@synpunkter.regionvastmanland.se",
+      "reception@synpunkter.regionvastmanland.se",
+      "bokning@synpunkter.regionvastmanland.se",
+      "vardcentral@synpunkter.regionvastmanland.se",
+      "mottagning@synpunkter.regionvastmanland.se"
+    ],
+    "error": null
+  },
+  {
+    "hsaId": "SE2321000016-5FWM",
+    "name": "Palliativ vårdavdelning SPSV, Ersta sjukhus",
+    "address": "Folkungagatan 125, STOCKHOLM",
+    "phone": "08-714 66 05",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/Palliativ-vardavdelning-SPSV-Ersta-sjukhus/",
+    "brand": null,
+    "websiteUrl": "https://www.erstadiakoni.se/verksamheter/sjukvard/palliativ-vard/palliativa-kliniken/palliativ-vardavdelning/",
+    "domain": "erstadiakoni.se",
+    "domainSource": "ld+json",
+    "foundEmails": null,
+    "suggestedEmails": [
+      "info@erstadiakoni.se",
+      "kontakt@erstadiakoni.se",
+      "reception@erstadiakoni.se",
+      "bokning@erstadiakoni.se",
+      "vardcentral@erstadiakoni.se",
+      "mottagning@erstadiakoni.se"
+    ],
+    "error": null
+  },
+  {
+    "hsaId": "SE2321000230-E00488",
+    "name": "Avd 4 Gynekologi Gällivare sjukhus",
+    "address": "Källgatan 14, 982 82 Gällivare",
+    "phone": "010-452 63 00",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/Avd-4-Gynekologi-Gallivare-sjukhus/",
+    "brand": null,
+    "websiteUrl": "https://www.norrbotten.se/sv/vard-och-halsa/vara-vardenheter",
+    "domain": "norrbotten.se",
+    "domainSource": "ld+json",
+    "foundEmails": null,
+    "suggestedEmails": [
+      "info@norrbotten.se",
+      "kontakt@norrbotten.se",
+      "reception@norrbotten.se",
+      "bokning@norrbotten.se",
+      "vardcentral@norrbotten.se",
+      "mottagning@norrbotten.se"
+    ],
+    "error": null
+  },
+  {
+    "hsaId": "SE2321000131-E000000017107",
+    "name": "Praktikertjänst Gastromedica, Göteborg",
+    "address": "Södra Vägen 27, 411 35, Göteborg",
+    "phone": "031-387 02 35",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/Praktikertjanst-Gastromedica-Goteborg/",
+    "brand": "praktikertjänst",
+    "websiteUrl": "https://www.ptj.se/gastromedica",
+    "domain": "ptj.se",
+    "domainSource": "ld+json",
+    "foundEmails": null,
+    "suggestedEmails": [
+      "info@ptj.se",
+      "kontakt@ptj.se",
+      "reception@ptj.se",
+      "bokning@ptj.se",
+      "vardcentral@ptj.se",
+      "mottagning@ptj.se"
+    ],
+    "error": null
+  },
+  {
+    "hsaId": "SE162321000255-O25139",
+    "name": "Kirurgiavdelning dagvård Helsingborg",
+    "address": "Charlotte Yhlens gata 10, Helsingborg",
+    "phone": "042-406 15 86",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/Kirurgiavdelning-dagvard-Helsingborg/",
+    "brand": null,
+    "websiteUrl": "https://vard.skane.se/helsingborgs-lasarett/mottagningar-och-avdelningar/kirurgiavdelning-dagvard/",
+    "domain": "vard.skane.se",
+    "domainSource": "ld+json",
+    "foundEmails": null,
+    "suggestedEmails": [
+      "info@vard.skane.se",
+      "kontakt@vard.skane.se",
+      "reception@vard.skane.se",
+      "bokning@vard.skane.se",
+      "vardcentral@vard.skane.se",
+      "mottagning@vard.skane.se"
+    ],
+    "error": null
+  },
+  {
+    "hsaId": "SE2321000032-42TG",
+    "name": "Dagvårdsavdelningen barn och ungdom Mälarsjukhuset, Barn- och ungdomskliniken Sörmland",
+    "address": "Mälarsjukhuset",
+    "phone": "016-10 45 54",
+    "url1177": "https://www.1177.se/hitta-vard/kontaktkort/Dagvardsavdelningen-barn-och-ungdom-Malarsjukhuset-Barn-och-ungdomskliniken-Sormland/",
+    "brand": null,
+    "websiteUrl": null,
+    "domain": null,
+    "domainSource": null,
+    "foundEmails": null,
+    "suggestedEmails": null,
+    "error": null
+  }
+]
