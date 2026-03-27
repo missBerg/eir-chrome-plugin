@@ -14,6 +14,7 @@
 		14615AA1C2F9F832CF337DD8 /* ChatThreadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDD79CD3F1023AEE60EFD1C /* ChatThreadStore.swift */; };
 		1A4FD6BA76079E193919115E /* ColorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B507DC2490C495A0990D7AA6 /* ColorExtension.swift */; };
 		1AE8EE2BF8A9B6751CBFB21E /* ChatBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66EE9E2EC4164E702159408C /* ChatBubbleView.swift */; };
+		1B5C8F81585AC3EBE6A931C8 /* FileShareViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2ED4BE5CB76FCA26A278E762 /* FileShareViews.swift */; };
 		1FD98DC080579097543C0268 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 340E673CE7624A453E343715 /* ContentView.swift */; };
 		2393589910298083AE0E1802 /* ConversationListSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1747584B59A65BEDE4A45CCD /* ConversationListSheet.swift */; };
 		2674A9D3ACC4CD9FB87828E7 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B2FB926C253E2C0C6EEC1 /* OnboardingView.swift */; };
@@ -22,11 +23,13 @@
 		3FF23216CD5FDD5C7639C22E /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2420C4DEBEEE4DA345D5DBC /* ChatViewModel.swift */; };
 		3FF47E8B50B02EE8841909DF /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8150635BB2A535271C6E9DF6 /* HealthKitService.swift */; };
 		468C6D68209A69E16056FC91 /* ToolRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7533EFA7AB708D1A74C75160 /* ToolRegistry.swift */; };
+		47D5D30C92775FECA4ED1E25 /* HealthAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = B53967D56CF2AFBD216E1586 /* HealthAction.swift */; };
 		4BB23ECD3576FECFE19B1374 /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33B9625F99E6780A6CC9B21 /* ProfileStore.swift */; };
 		4E43A61C4051ED03205A578E /* LLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9BAE5A1EF5CFDF5848BFE3E /* LLMService.swift */; };
 		4F489AF663309610DD135379 /* HealthKitToEirConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EE8893CD2539AA24E8E0F0A /* HealthKitToEirConverter.swift */; };
 		5BB9A1AA0662BAADD8318593 /* sample-data.yaml in Resources */ = {isa = PBXBuildFile; fileRef = D52095FCCD63578C3345DDEE /* sample-data.yaml */; };
 		5D0B33E61917258631F387F9 /* LocalModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78FD527F24390E7AC05D10D1 /* LocalModelManager.swift */; };
+		5E5C4EF38D35826A7A73C240 /* ActionsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBD79C71E9D27B6CC075B5 /* ActionsViewModel.swift */; };
 		61894AFDA01B8EB911E173B8 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = BBA73EAFCA7F8D248F80F1C0 /* Yams */; };
 		626524B46041F197D22A4FC4 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E40A4EAAF54FB04C1B750D /* WelcomeView.swift */; };
 		643F5195244E6ED2119F2079 /* EirDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8434B44AEFD4017D0F72594F /* EirDocument.swift */; };
@@ -43,9 +46,11 @@
 		7D4EA8DB5B988BF2795556B8 /* EntryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ACFF29B2C5132B668726FEC /* EntryCardView.swift */; };
 		7E039A51B266CD38D090D288 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = F5EEA1ADC15ECA536512B4B7 /* MLXLMCommon */; };
 		85B604502C498F68DA68BAD7 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A7171AB56F25BA404CA5AB /* ChatMessage.swift */; };
+		896A8BD57D607DEAA95FCE55 /* ForYouCardGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */; };
 		913B76B784FD4CB55B6385C4 /* QRTransferFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBB538AFDEEB8FD799CEF6A /* QRTransferFlowTests.swift */; };
 		A596E9A9FD380B1BA68FE2E4 /* DocumentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */; };
 		A5C90FF6130BCADCE0F364FB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2B5A2EB7786BFABF5D0B05 /* SettingsView.swift */; };
+		ADD0986EC7DAC34E846FE7DB /* HealthActionScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F8FE8E9C075F8448EE3869 /* HealthActionScheduler.swift */; };
 		B12F24DE6232CED1EEAFF0C7 /* HealthDataExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BDAF9E392CFDC5898D1AA7 /* HealthDataExtractor.swift */; };
 		B4117C40077D7E12E35BA93D /* AgentConfigCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCED288BFC7AEA4BC087A84E /* AgentConfigCard.swift */; };
 		B647EFAE5C04335E4FA218B3 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14BAAC14014C60D244FFD006 /* ChatView.swift */; };
@@ -59,16 +64,20 @@
 		DE5D9699E48C9139BD211C6B /* EntryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D52174202074B6F98FF6185A /* EntryDetailView.swift */; };
 		DF9EB9E13118F54F4B2D3615 /* EncryptedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0642B699BCEB214F64366D9D /* EncryptedStore.swift */; };
 		E191DB777526A5AF21AB8FAA /* PromptVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F90FD37A1F5782007EF4989 /* PromptVersion.swift */; };
+		E305D7EA53AAECBF466A9B84 /* ForYouCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A674C7371CB370B78831BBC /* ForYouCard.swift */; };
 		E43DFADD4055A186F02FE741 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F39BB86C578A67730DA2E3 /* KeychainService.swift */; };
+		E451DD80A66291F6C64F9625 /* ActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989386C8D86030A8B539D143 /* ActionsView.swift */; };
 		E64000690918BE4CB3D434B1 /* EirParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDD9A98A16DE81625130468 /* EirParser.swift */; };
 		E6FBDEA1859A3A382DC39B48 /* VoiceNoteAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3BFCA4C74FC9139915A4ED /* VoiceNoteAttachment.swift */; };
 		ECB4318B162C32AE0D5516C9 /* EirViewerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B22A40C8A839BEEED37CD1 /* EirViewerApp.swift */; };
 		EFFC959FC5D20D13266AC9C4 /* HealthKitImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9648C3396E95DF705A8F727E /* HealthKitImportView.swift */; };
 		F10040CD48102747C6205BFC /* SystemPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = E46EF1E5504BFF059ECF64CC /* SystemPrompt.swift */; };
 		F202DCA58446BE68487F7D7C /* AddPersonSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1CA8FE68F0C0F09A232BE32 /* AddPersonSheet.swift */; };
+		F250CC154605EF13A465A0EC /* ForYouViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87961881B4A1E3B1327AD44D /* ForYouViewModel.swift */; };
 		F3024E6E4DDE49DDE6E4D6E9 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8096E2A11C754D7BDA358B4 /* SettingsViewModel.swift */; };
 		F7CB4449387C4830A142EEA6 /* LocalTransferService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E57B4022FB6A2DCEE81DD32E /* LocalTransferService.swift */; };
 		FAAF03C135FA6196A229F224 /* AgentMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A67A5A760AEC759E2D04BE2 /* AgentMemory.swift */; };
+		FD138F81380B7E80878F2622 /* HealthActionGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B836B5D91462233049438F30 /* HealthActionGenerator.swift */; };
 		FE8B61C82F8D58EBB7A6D702 /* JournalEntryLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FB3F018C828B97817906708 /* JournalEntryLink.swift */; };
 /* End PBXBuildFile section */
 
@@ -89,9 +98,12 @@
 		0EE8893CD2539AA24E8E0F0A /* HealthKitToEirConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitToEirConverter.swift; sourceTree = "<group>"; };
 		119A697A765510A595D89472 /* PersonRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonRow.swift; sourceTree = "<group>"; };
 		14BAAC14014C60D244FFD006 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouCardGenerator.swift; sourceTree = "<group>"; };
 		1747584B59A65BEDE4A45CCD /* ConversationListSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationListSheet.swift; sourceTree = "<group>"; };
 		289D41DC298A152E56FD349A /* VoiceNoteRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteRecorder.swift; sourceTree = "<group>"; };
+		2A674C7371CB370B78831BBC /* ForYouCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouCard.swift; sourceTree = "<group>"; };
 		2E9B4EE3B86605F32741172D /* VoiceNotePlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNotePlayer.swift; sourceTree = "<group>"; };
+		2ED4BE5CB76FCA26A278E762 /* FileShareViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileShareViews.swift; sourceTree = "<group>"; };
 		30F85BD291BABC62454B4DBB /* AgentDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentDefaults.swift; sourceTree = "<group>"; };
 		340E673CE7624A453E343715 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3CC134672B103B1CAD5367E6 /* EirViewerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EirViewerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,6 +111,7 @@
 		4A2B5A2EB7786BFABF5D0B05 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		50DB1027E7C1FA9DD4B4165A /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		53B5224AC43701680F835B69 /* SystemPromptEvalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemPromptEvalTests.swift; sourceTree = "<group>"; };
+		54CBD79C71E9D27B6CC075B5 /* ActionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsViewModel.swift; sourceTree = "<group>"; };
 		60150BE0AF8CE3D99DB3C94E /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
 		66EE9E2EC4164E702159408C /* ChatBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatBubbleView.swift; sourceTree = "<group>"; };
 		68173D5B1D09C80059F229F7 /* HealthKitImportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitImportViewModel.swift; sourceTree = "<group>"; };
@@ -110,10 +123,12 @@
 		8150635BB2A535271C6E9DF6 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		8434B44AEFD4017D0F72594F /* EirDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EirDocument.swift; sourceTree = "<group>"; };
 		852E21C0DB4109191EEFD187 /* ToolDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolDefinition.swift; sourceTree = "<group>"; };
+		87961881B4A1E3B1327AD44D /* ForYouViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouViewModel.swift; sourceTree = "<group>"; };
 		8A67A5A760AEC759E2D04BE2 /* AgentMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentMemory.swift; sourceTree = "<group>"; };
 		8ACFF29B2C5132B668726FEC /* EntryCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryCardView.swift; sourceTree = "<group>"; };
 		8DE0A79A4CA679B89535E7FB /* HealthDataBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataBrowserView.swift; sourceTree = "<group>"; };
 		9648C3396E95DF705A8F727E /* HealthKitImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitImportView.swift; sourceTree = "<group>"; };
+		989386C8D86030A8B539D143 /* ActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsView.swift; sourceTree = "<group>"; };
 		9F90FD37A1F5782007EF4989 /* PromptVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptVersion.swift; sourceTree = "<group>"; };
 		A8BDAF9E392CFDC5898D1AA7 /* HealthDataExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataExtractor.swift; sourceTree = "<group>"; };
 		AE5CCD5E136F8474222C4DC6 /* ChatThread.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatThread.swift; sourceTree = "<group>"; };
@@ -121,7 +136,9 @@
 		B33B9625F99E6780A6CC9B21 /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
 		B46E484C23AF332B0D081CEF /* AgentMemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentMemoryStore.swift; sourceTree = "<group>"; };
 		B507DC2490C495A0990D7AA6 /* ColorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtension.swift; sourceTree = "<group>"; };
+		B53967D56CF2AFBD216E1586 /* HealthAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthAction.swift; sourceTree = "<group>"; };
 		B8096E2A11C754D7BDA358B4 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		B836B5D91462233049438F30 /* HealthActionGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthActionGenerator.swift; sourceTree = "<group>"; };
 		B998537AC99341CF1C2D0D19 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
 		BB360D1D5BBF139F5A3AA997 /* LocalLLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMService.swift; sourceTree = "<group>"; };
 		BEDD79CD3F1023AEE60EFD1C /* ChatThreadStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatThreadStore.swift; sourceTree = "<group>"; };
@@ -133,6 +150,7 @@
 		D2F4115FBB641F7CF33A000B /* PersonProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonProfile.swift; sourceTree = "<group>"; };
 		D52095FCCD63578C3345DDEE /* sample-data.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "sample-data.yaml"; sourceTree = "<group>"; };
 		D52174202074B6F98FF6185A /* EntryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryDetailView.swift; sourceTree = "<group>"; };
+		D5F8FE8E9C075F8448EE3869 /* HealthActionScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthActionScheduler.swift; sourceTree = "<group>"; };
 		D6B22A40C8A839BEEED37CD1 /* EirViewerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EirViewerApp.swift; sourceTree = "<group>"; };
 		D9BAE5A1EF5CFDF5848BFE3E /* LLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMService.swift; sourceTree = "<group>"; };
 		DDDD9A98A16DE81625130468 /* EirParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EirParser.swift; sourceTree = "<group>"; };
@@ -176,6 +194,7 @@
 				340E673CE7624A453E343715 /* ContentView.swift */,
 				60150BE0AF8CE3D99DB3C94E /* QRScannerView.swift */,
 				C4E40A4EAAF54FB04C1B750D /* WelcomeView.swift */,
+				8A4DB5E53AD8A29089EE4D10 /* Actions */,
 				4C7F4C9FC9724C8CF13EFF2D /* Chat */,
 				7CB47C75174067A76460A05F /* Components */,
 				9D58425CD5C67B5A3C87035A /* HealthData */,
@@ -219,6 +238,9 @@
 				30F85BD291BABC62454B4DBB /* AgentDefaults.swift */,
 				DDDD9A98A16DE81625130468 /* EirParser.swift */,
 				0642B699BCEB214F64366D9D /* EncryptedStore.swift */,
+				1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */,
+				B836B5D91462233049438F30 /* HealthActionGenerator.swift */,
+				D5F8FE8E9C075F8448EE3869 /* HealthActionScheduler.swift */,
 				A8BDAF9E392CFDC5898D1AA7 /* HealthDataExtractor.swift */,
 				8150635BB2A535271C6E9DF6 /* HealthKitService.swift */,
 				0EE8893CD2539AA24E8E0F0A /* HealthKitToEirConverter.swift */,
@@ -284,10 +306,19 @@
 			children = (
 				0BB40951059FDE72D983CFB3 /* CategoryBadge.swift */,
 				B507DC2490C495A0990D7AA6 /* ColorExtension.swift */,
+				2ED4BE5CB76FCA26A278E762 /* FileShareViews.swift */,
 				119A697A765510A595D89472 /* PersonRow.swift */,
 				6FE6812C85D970222820AD6E /* VoiceNoteComposerSheet.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		8A4DB5E53AD8A29089EE4D10 /* Actions */ = {
+			isa = PBXGroup;
+			children = (
+				989386C8D86030A8B539D143 /* ActionsView.swift */,
+			);
+			path = Actions;
 			sourceTree = "<group>";
 		};
 		9760FC0E272AC3AAE6241C43 /* Journal */ = {
@@ -307,6 +338,8 @@
 				06A7171AB56F25BA404CA5AB /* ChatMessage.swift */,
 				AE5CCD5E136F8474222C4DC6 /* ChatThread.swift */,
 				8434B44AEFD4017D0F72594F /* EirDocument.swift */,
+				2A674C7371CB370B78831BBC /* ForYouCard.swift */,
+				B53967D56CF2AFBD216E1586 /* HealthAction.swift */,
 				C19D96044A03BA979D89DCD8 /* LLMProvider.swift */,
 				D2F4115FBB641F7CF33A000B /* PersonProfile.swift */,
 				9F90FD37A1F5782007EF4989 /* PromptVersion.swift */,
@@ -327,10 +360,12 @@
 		A3FB36CB5DF278A77A2E3611 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				54CBD79C71E9D27B6CC075B5 /* ActionsViewModel.swift */,
 				B46E484C23AF332B0D081CEF /* AgentMemoryStore.swift */,
 				BEDD79CD3F1023AEE60EFD1C /* ChatThreadStore.swift */,
 				C2420C4DEBEEE4DA345D5DBC /* ChatViewModel.swift */,
 				F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */,
+				87961881B4A1E3B1327AD44D /* ForYouViewModel.swift */,
 				68173D5B1D09C80059F229F7 /* HealthKitImportViewModel.swift */,
 				78FD527F24390E7AC05D10D1 /* LocalModelManager.swift */,
 				B33B9625F99E6780A6CC9B21 /* ProfileStore.swift */,
@@ -477,6 +512,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E451DD80A66291F6C64F9625 /* ActionsView.swift in Sources */,
+				5E5C4EF38D35826A7A73C240 /* ActionsViewModel.swift in Sources */,
 				F202DCA58446BE68487F7D7C /* AddPersonSheet.swift in Sources */,
 				B4117C40077D7E12E35BA93D /* AgentConfigCard.swift in Sources */,
 				79495FD4216EE0E46C0E58AF /* AgentDefaults.swift in Sources */,
@@ -499,6 +536,13 @@
 				DF9EB9E13118F54F4B2D3615 /* EncryptedStore.swift in Sources */,
 				7D4EA8DB5B988BF2795556B8 /* EntryCardView.swift in Sources */,
 				DE5D9699E48C9139BD211C6B /* EntryDetailView.swift in Sources */,
+				1B5C8F81585AC3EBE6A931C8 /* FileShareViews.swift in Sources */,
+				E305D7EA53AAECBF466A9B84 /* ForYouCard.swift in Sources */,
+				896A8BD57D607DEAA95FCE55 /* ForYouCardGenerator.swift in Sources */,
+				F250CC154605EF13A465A0EC /* ForYouViewModel.swift in Sources */,
+				47D5D30C92775FECA4ED1E25 /* HealthAction.swift in Sources */,
+				FD138F81380B7E80878F2622 /* HealthActionGenerator.swift in Sources */,
+				ADD0986EC7DAC34E846FE7DB /* HealthActionScheduler.swift in Sources */,
 				C0E4A3FFCEB5DE03B98BAA34 /* HealthDataBrowserView.swift in Sources */,
 				B12F24DE6232CED1EEAFF0C7 /* HealthDataExtractor.swift in Sources */,
 				EFFC959FC5D20D13266AC9C4 /* HealthKitImportView.swift in Sources */,
@@ -569,7 +613,7 @@
 				CODE_SIGN_ENTITLEMENTS = EirViewer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = YJ9A3JT299;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Eir uses the microphone so you can dictate questions and notes for AI assistance.";
@@ -577,7 +621,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.eir.viewer;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
@@ -729,7 +773,7 @@
 				CODE_SIGN_ENTITLEMENTS = EirViewer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = YJ9A3JT299;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Eir uses the microphone so you can dictate questions and notes for AI assistance.";
@@ -737,7 +781,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.eir.viewer;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;

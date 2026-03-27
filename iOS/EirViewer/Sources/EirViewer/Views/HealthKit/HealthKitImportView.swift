@@ -1,4 +1,5 @@
 import SwiftUI
+import HealthKit
 
 struct HealthKitImportView: View {
     @StateObject private var viewModel = HealthKitImportViewModel()
@@ -57,7 +58,7 @@ struct HealthKitImportView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .onChange(of: viewModel.selectedDateRange) { _, _ in
+                .onChange(of: viewModel.selectedDateRange) {
                     Task { await viewModel.loadSampleCounts() }
                 }
             } header: {
@@ -163,11 +164,7 @@ struct HealthKitImportView: View {
 
             Section {
                 Button {
-                    if let url = viewModel.save() {
-                        if let profile = profileStore.addProfile(displayName: "Apple Health", fileURL: url) {
-                            profileStore.selectProfile(profile.id)
-                        }
-                    }
+                    saveAndOpen()
                 } label: {
                     HStack {
                         Spacer()
@@ -197,9 +194,17 @@ struct HealthKitImportView: View {
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-            Button("Klar") { dismiss() }
+            VStack(spacing: 12) {
+                Button("Öppna i Eir") {
+                    openSavedProfile()
+                }
                 .buttonStyle(.borderedProminent)
                 .tint(AppColors.primary)
+
+                Button("Klar") { dismiss() }
+                    .buttonStyle(.plain)
+                    .foregroundColor(AppColors.textSecondary)
+            }
             Spacer()
         }
     }
@@ -225,6 +230,29 @@ struct HealthKitImportView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(AppColors.primary)
             Spacer()
+        }
+    }
+
+    private func saveAndOpen() {
+        guard let url = viewModel.save() else { return }
+        openProfile(for: url)
+        dismiss()
+    }
+
+    private func openSavedProfile() {
+        guard let url = viewModel.savedFileURL ?? viewModel.exportFile() else { return }
+        openProfile(for: url)
+        dismiss()
+    }
+
+    private func openProfile(for url: URL) {
+        if let existing = profileStore.profiles.first(where: { $0.fileName == url.lastPathComponent }) {
+            profileStore.selectProfile(existing.id)
+            return
+        }
+
+        if let profile = profileStore.addProfile(displayName: "Apple Health", fileURL: url) {
+            profileStore.selectProfile(profile.id)
         }
     }
 }

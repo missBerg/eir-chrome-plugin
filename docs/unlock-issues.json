@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-25T21:39:01.252Z",
+  "generatedAt": "2026-03-13T20:35:53.647Z",
   "repo": "BirgerMoell/eir-open-apps",
   "countries": {
     "AT": {
@@ -401,11 +401,11 @@
         "unlock-country",
         "unlock-unlocked"
       ],
-      "comments": 3,
+      "comments": 1,
       "claimant": "BirgerMoell",
       "claimedAt": "2026-03-13T20:03:09Z",
       "claimUrl": "https://github.com/BirgerMoell/eir-open-apps/issues/27#issuecomment-4057657112",
-      "updatedAt": "2026-03-23T17:46:19Z"
+      "updatedAt": "2026-03-13T20:35:53Z"
     },
     "NO": {
       "number": 28,

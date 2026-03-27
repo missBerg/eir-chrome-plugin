@@ -79,10 +79,12 @@
 	<string>Eir uses your location to find nearby healthcare facilities.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Eir uses your camera to scan QR codes for transferring medical records from your Mac.</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Eir uses local network to receive medical records from your Mac.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Eir uses the microphone so you can record voice notes and questions for AI assistance.</string>
+	<string>Eir uses the microphone so you can dictate questions and notes for AI assistance.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Eir uses Calendar so you can schedule health actions and keep them visible in your day.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Eir uses your local network to securely share medical records between your nearby devices.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_eir-transfer._tcp</string>
@@ -91,6 +93,13 @@
 	<string>Eir imports your health data (vitals, activity, lab values) from Apple Health to display alongside your medical records.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Eir does not write any data to Apple Health. This permission is required by the HealthKit framework.</string>
+	<key>EIRBillingSubscriptionProductID</key>
+	<string>com.eir.viewer.subscription.monthly</string>
+	<key>EIRBillingTopUpProductIDs</key>
+	<array>
+		<string>com.eir.viewer.topup.1000</string>
+		<string>com.eir.viewer.topup.5000</string>
+	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>bankid</string>

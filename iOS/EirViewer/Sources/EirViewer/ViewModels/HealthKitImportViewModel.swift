@@ -21,6 +21,7 @@ class HealthKitImportViewModel: ObservableObject {
     @Published var importProgress: Double = 0
     @Published var importedEntryCount: Int = 0
     @Published var categoryCounts: [String: Int] = [:]
+    @Published private(set) var savedFileURL: URL?
 
     private let service = HealthKitService.shared
     private var importedDocument: EirDocument?
@@ -32,14 +33,12 @@ class HealthKitImportViewModel: ObservableObject {
     // MARK: - Load Sample Counts
 
     func loadSampleCounts() async {
-        guard service.isAvailable else { return }
         let startDate = selectedDateRange.startDate
         for category in HealthDataCategory.allCases {
             do {
                 let count = try await service.sampleCount(for: category, from: startDate)
                 sampleCounts[category] = count
             } catch {
-                print("[HealthKit] sampleCount error for \(category.rawValue): \(error)")
                 sampleCounts[category] = 0
             }
         }
@@ -54,17 +53,11 @@ class HealthKitImportViewModel: ObservableObject {
             return
         }
 
-        guard service.isAvailable else {
-            phase = .error("HealthKit är inte tillgängligt på den här enheten.")
-            return
-        }
-
         // Authorize
         phase = .authorizing
         do {
             try await service.requestAuthorization(for: categories)
         } catch {
-            print("[HealthKit] Authorization error: \(error)")
             phase = .error("Kunde inte få behörighet till Apple Health: \(error.localizedDescription)")
             return
         }
@@ -83,23 +76,19 @@ class HealthKitImportViewModel: ObservableObject {
 
         for category in categories {
             do {
-                print("[HealthKit] Importing \(category.rawValue)...")
                 if category.aggregateDaily {
                     let stats = try await service.queryDailyStatistics(for: category, from: startDate, to: endDate)
-                    print("[HealthKit] Got \(stats.count) daily stats for \(category.rawValue)")
                     if !stats.isEmpty {
                         dailyStats.append((category, stats))
                     }
                 } else {
                     let samples = try await service.querySamples(for: category, from: startDate, to: endDate)
-                    print("[HealthKit] Got \(samples.count) samples for \(category.rawValue)")
                     if !samples.isEmpty {
                         individualSamples.append((category, samples))
                     }
                 }
             } catch {
-                print("[HealthKit] Error importing \(category.rawValue): \(error)")
-                // Skip failed categories
+                // Skip failed categories silently
             }
 
             currentStep += 1
@@ -133,22 +122,34 @@ class HealthKitImportViewModel: ObservableObject {
 
     // MARK: - Save
 
-    func save() -> URL? {
+    func exportFile() -> URL? {
         guard let document = importedDocument else { return nil }
-        phase = .saving
 
         do {
+            if let savedFileURL, FileManager.default.fileExists(atPath: savedFileURL.path) {
+                return savedFileURL
+            }
+
             let yaml = try HealthKitToEirConverter.serializeToYAML(document)
-            let dateStr = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .none)
-                .replacingOccurrences(of: "/", with: "-")
-            let fileName = "apple-health-\(dateStr).eir"
+            let fileName = makeExportFileName(document: document)
             let url = try HealthKitToEirConverter.saveToDocuments(yaml, fileName: fileName)
-            phase = .complete(url)
+            savedFileURL = url
             return url
         } catch {
             phase = .error("Kunde inte spara filen: \(error.localizedDescription)")
             return nil
         }
+    }
+
+    func save() -> URL? {
+        phase = .saving
+
+        guard let url = exportFile() else {
+            return nil
+        }
+
+        phase = .complete(url)
+        return url
     }
 
     // MARK: - Reset
@@ -159,5 +160,23 @@ class HealthKitImportViewModel: ObservableObject {
         importedEntryCount = 0
         categoryCounts = [:]
         importedDocument = nil
+        savedFileURL = nil
+    }
+
+    private func makeExportFileName(document: EirDocument) -> String {
+        let patientSlug = document.metadata.patient?.name?
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .replacingOccurrences(of: "[^A-Za-z0-9]+", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+            .lowercased()
+
+        let dateStr = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .none)
+            .replacingOccurrences(of: "/", with: "-")
+
+        if let patientSlug, !patientSlug.isEmpty {
+            return "\(patientSlug)-apple-health-\(dateStr).eir"
+        }
+
+        return "apple-health-\(dateStr).eir"
     }
 }

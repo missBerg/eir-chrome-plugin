@@ -1,33 +1,28 @@
-import SwiftUI
 import Charts
+import SwiftUI
 
 struct JournalView: View {
     @EnvironmentObject var documentVM: DocumentViewModel
     @EnvironmentObject var profileStore: ProfileStore
 
     @State private var showingAddPerson = false
+    @State private var shareItems: [Any] = []
+    @State private var showShareSheet = false
+    @State private var qrExportURL: URL?
 
     var body: some View {
         Group {
             if documentVM.document == nil {
                 VStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(AppColors.auraSubtle)
-                            .frame(width: 92, height: 92)
-                        Image(systemName: "doc.text.magnifyingglass")
-                            .font(.system(size: 34, weight: .semibold))
-                            .foregroundColor(AppColors.primaryStrong)
-                    }
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.system(size: 48))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
                     Text("No records loaded")
-                        .font(.title3.weight(.semibold))
-                        .foregroundColor(AppColors.text)
+                        .foregroundColor(AppColors.textSecondary)
                 }
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 16) {
-                        profileHero
-
                         if let summary = appleHealthSummary {
                             appleHealthOverview(summary)
                         }
@@ -45,14 +40,13 @@ struct JournalView: View {
                                 }
                             } header: {
                                 Text(group.key)
-                                    .font(.headline.weight(.semibold))
+                                    .font(.headline)
                                     .foregroundColor(AppColors.text)
-                                    .padding(.top, 8)
+                                    .padding(.top, 4)
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 24)
+                    .padding()
                 }
                 .navigationDestination(for: String.self) { entryID in
                     if let entry = documentVM.document?.entries.first(where: { $0.id == entryID }) {
@@ -64,6 +58,27 @@ struct JournalView: View {
         .navigationTitle(profileStore.selectedProfile?.displayName ?? "Journal")
         .searchable(text: $documentVM.searchText, prompt: "Search entries...")
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if selectedProfileFileURL != nil {
+                    Menu {
+                        Button {
+                            shareSelectedProfile()
+                        } label: {
+                            Label("Export File", systemImage: "square.and.arrow.up")
+                        }
+
+                        Button {
+                            showSelectedProfileQRCode()
+                        } label: {
+                            Label("Show QR Code", systemImage: "qrcode")
+                        }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(AppColors.primary)
+                    }
+                }
+            }
+
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     // Category filter
@@ -159,59 +174,34 @@ struct JournalView: View {
         .sheet(isPresented: $showingAddPerson) {
             AddPersonSheet()
         }
+        .sheet(isPresented: $showShareSheet) {
+            ActivityView(activityItems: shareItems)
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { qrExportURL != nil },
+                set: { if !$0 { qrExportURL = nil } }
+            )
+        ) {
+            if let qrExportURL {
+                FileTransferQRCodeView(fileURL: qrExportURL)
+            }
+        }
         .background(AppColors.background)
     }
 
-    private var profileHero: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(profileStore.selectedProfile?.displayName ?? "Journal")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                        .foregroundColor(AppColors.text)
+    private var selectedProfileFileURL: URL? {
+        profileStore.selectedProfile?.fileURL
+    }
 
-                    Text(documentVM.document?.metadata.source ?? "Structured record archive")
-                        .font(.subheadline)
-                        .foregroundColor(AppColors.textSecondary)
-                }
+    private func shareSelectedProfile() {
+        guard let fileURL = selectedProfileFileURL else { return }
+        shareItems = [fileURL]
+        showShareSheet = true
+    }
 
-                Spacer()
-
-                if let total = documentVM.document?.metadata.exportInfo?.totalEntries ?? profileStore.selectedProfile?.totalEntries {
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(total)")
-                            .font(.system(.title3, design: .rounded, weight: .bold))
-                            .foregroundColor(AppColors.primaryDeep)
-                        Text("entries")
-                            .font(.caption)
-                            .foregroundColor(AppColors.textSecondary)
-                    }
-                }
-            }
-
-            if let range = documentVM.document?.metadata.exportInfo?.dateRange,
-               let start = range.start,
-               let end = range.end {
-                Text("\(start) to \(end)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(AppColors.textSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(AppColors.backgroundMuted)
-                    .clipShape(Capsule())
-            }
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(AppColors.backgroundElevated)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(AppColors.border, lineWidth: 1)
-        )
-        .shadow(color: AppColors.shadow, radius: 12, y: 6)
-        .padding(.top, 12)
+    private func showSelectedProfileQRCode() {
+        qrExportURL = selectedProfileFileURL
     }
 
     private var appleHealthSummary: AppleHealthSummary? {
@@ -226,7 +216,7 @@ struct JournalView: View {
                     Text("Apple Health Overview")
                         .font(.headline.weight(.semibold))
                         .foregroundColor(AppColors.text)
-                    Text("Imported metrics are summarized first, with the full timeline below.")
+                    Text("Imported activity data is summarized here before the full journal timeline.")
                         .font(.subheadline)
                         .foregroundColor(AppColors.textSecondary)
                 }
@@ -244,8 +234,8 @@ struct JournalView: View {
 
             HStack(spacing: 10) {
                 summaryTile(title: "Tracked days", value: "\(summary.daysTracked)", tint: AppColors.primary)
-                summaryTile(title: "Metrics", value: "\(summary.metricCount)", tint: AppColors.info)
-                summaryTile(title: "Entries", value: "\(summary.entryCount)", tint: AppColors.ai)
+                summaryTile(title: "Metrics", value: "\(summary.metricCount)", tint: AppColors.blue)
+                summaryTile(title: "Entries", value: "\(summary.entryCount)", tint: AppColors.green)
             }
 
             if !summary.stepTrend.isEmpty {
@@ -313,10 +303,8 @@ struct JournalView: View {
             }
         }
         .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(AppColors.backgroundElevated)
-        )
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(AppColors.border, lineWidth: 1)
@@ -359,7 +347,9 @@ private struct AppleHealthSummary {
 
     init?(document: EirDocument) {
         let entries = document.entries.filter { entry in
-            entry.tags?.contains("apple-health") == true || document.metadata.source == "Apple Health"
+            entry.tags?.contains("apple-health") == true
+                || entry.provider?.name == "Apple Health"
+                || document.metadata.source == "Apple Health"
         }
 
         guard !entries.isEmpty else { return nil }
@@ -376,7 +366,10 @@ private struct AppleHealthSummary {
         metricCount = groupedMetrics.count
 
         let stepEntries = entries
-            .filter { ($0.type ?? "").localizedCaseInsensitiveContains("steg") }
+            .filter {
+                ($0.type ?? "").localizedCaseInsensitiveContains("steg")
+                    || ($0.category ?? "").localizedCaseInsensitiveContains("steg")
+            }
             .sorted { ($0.date ?? "") < ($1.date ?? "") }
 
         let formatter = DateFormatter()
@@ -390,10 +383,7 @@ private struct AppleHealthSummary {
                 return nil
             }
 
-            return TrendPoint(
-                date: date,
-                value: Int(rawValue.rounded())
-            )
+            return TrendPoint(date: date, value: Int(rawValue.rounded()))
         }
     }
 

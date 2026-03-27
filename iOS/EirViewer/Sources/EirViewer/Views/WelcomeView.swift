@@ -11,132 +11,112 @@ struct WelcomeView: View {
     @State private var show1177Browser = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 28) {
-                VStack(spacing: 18) {
-                    ZStack {
-                        Circle()
-                            .fill(AppColors.aura)
-                            .frame(width: 108, height: 108)
-                            .shadow(color: AppColors.shadowStrong, radius: 18, y: 10)
+        VStack(spacing: 24) {
+            Spacer()
 
-                        Circle()
-                            .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                            .frame(width: 116, height: 116)
+            Image(systemName: "heart.text.clipboard")
+                .font(.system(size: 64))
+                .foregroundColor(AppColors.primary)
 
-                        Image("EirRune")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 54, height: 54)
-                    }
+            Text("Eir Viewer")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundColor(AppColors.text)
 
-                    VStack(spacing: 10) {
-                        Text("Eir")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                            .foregroundColor(AppColors.text)
+            Text("View and explore your Swedish medical records")
+                .font(.title3)
+                .foregroundColor(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
 
-                        Text("A calmer way to collect, read, and understand your health records.")
-                            .font(.title3)
-                            .foregroundColor(AppColors.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
-                    }
-                }
-                .padding(.top, 28)
-
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Bring your records into one place")
-                        .font(.headline)
-                        .foregroundColor(AppColors.text)
-
-                    actionButton(
-                        title: "Hämta journal från 1177",
-                        subtitle: "Secure import from Swedish healthcare records",
-                        systemImage: "cross.case.fill",
-                        tint: AppColors.primaryStrong
-                    ) {
-                        show1177Browser = true
-                    }
-
-                    actionButton(
-                        title: "Import from Apple Health",
-                        subtitle: "Activity, vitals, and workouts with structured summaries",
-                        systemImage: "heart.fill",
-                        tint: AppColors.ai,
-                        isVisible: HKHealthStore.isHealthDataAvailable()
-                    ) {
-                        showHealthKitImport = true
-                    }
-
-                    actionButton(
-                        title: "Choose EIR or YAML File",
-                        subtitle: "Open an existing export from Files",
-                        systemImage: "folder.fill",
-                        tint: AppColors.info
-                    ) {
-                        showFilePicker = true
-                    }
-
-                    actionButton(
-                        title: "Scan from Mac",
-                        subtitle: "Move records directly from your desktop",
-                        systemImage: "qrcode.viewfinder",
-                        tint: AppColors.primary
-                    ) {
-                        showQRScanner = true
-                    }
-                }
-                .padding(22)
-                .background(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(AppColors.backgroundElevated)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(AppColors.border, lineWidth: 1)
-                )
-                .shadow(color: AppColors.shadow, radius: 18, y: 10)
-                .padding(.horizontal, 20)
-
-                VStack(spacing: 12) {
-                    Button {
-                        loadSampleData()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "sparkles.rectangle.stack.fill")
-                            Text("Try Sample Data")
-                                .fontWeight(.semibold)
-                        }
-                        .font(.subheadline)
-                        .foregroundColor(AppColors.primaryStrong)
-                    }
-
-                    if let error = profileStore.errorMessage {
-                        Text(error)
-                            .foregroundColor(AppColors.danger)
-                            .font(.callout)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
-                    }
-                }
-
-                Text("Supports EIR format v1.0 (.eir, .yaml)")
-                    .font(.caption)
+            VStack(spacing: 16) {
+                Image(systemName: "doc.badge.plus")
+                    .font(.system(size: 32))
                     .foregroundColor(AppColors.textSecondary)
-                    .padding(.bottom, 16)
+
+                Text("Open your .eir or .yaml file to get started")
+                    .font(.headline)
+                    .foregroundColor(AppColors.text)
+
+                Button {
+                    showFilePicker = true
+                } label: {
+                    Label("Choose File", systemImage: "folder")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppColors.primary)
+
+                Button {
+                    show1177Browser = true
+                } label: {
+                    Label("Hämta journal från 1177", systemImage: "cross.case")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppColors.green)
+
+                Button {
+                    showQRScanner = true
+                } label: {
+                    Label("Scan from Mac", systemImage: "qrcode.viewfinder")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.bordered)
+                .tint(AppColors.primary)
+
+                if HKHealthStore.isHealthDataAvailable() {
+                    Button {
+                        showHealthKitImport = true
+                    } label: {
+                        Label("Import from Apple Health", systemImage: "heart.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(AppColors.pink)
+                }
             }
-            .padding(.bottom, 24)
-        }
-        .background {
-            ZStack {
-                AppColors.background.ignoresSafeArea()
-                AppColors.pageGlow
-                    .ignoresSafeArea()
-                AppColors.auraSubtle
-                    .opacity(0.45)
-                    .ignoresSafeArea()
+            .padding(24)
+            .background(AppColors.card)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(AppColors.border, lineWidth: 1)
+            )
+            .padding(.horizontal, 32)
+
+            // Sample data button
+            Button {
+                loadSampleData()
+            } label: {
+                Label("Try with Sample Data", systemImage: "doc.text")
+                    .font(.subheadline)
             }
+            .foregroundColor(AppColors.primary)
+
+            if let error = profileStore.errorMessage {
+                Text(error)
+                    .foregroundColor(AppColors.red)
+                    .font(.callout)
+                    .padding(.horizontal, 40)
+            }
+
+            Spacer()
+
+            Text("Supports EIR format v1.0 (.eir, .yaml)")
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
+                .padding(.bottom, 16)
         }
+        .background(AppColors.background)
         .fileImporter(
             isPresented: $showFilePicker,
             allowedContentTypes: [
@@ -179,60 +159,6 @@ struct WelcomeView: View {
             showQRScanner = false
             showHealthKitImport = false
             show1177Browser = false
-        }
-    }
-
-    @ViewBuilder
-    private func actionButton(
-        title: String,
-        subtitle: String,
-        systemImage: String,
-        tint: Color,
-        isVisible: Bool = true,
-        action: @escaping () -> Void
-    ) -> some View {
-        if isVisible {
-            Button(action: action) {
-                HStack(spacing: 14) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(tint.opacity(0.12))
-                            .frame(width: 46, height: 46)
-
-                        Image(systemName: systemImage)
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(tint)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(title)
-                            .font(.headline)
-                            .foregroundColor(AppColors.text)
-                            .multilineTextAlignment(.leading)
-
-                        Text(subtitle)
-                            .font(.subheadline)
-                            .foregroundColor(AppColors.textSecondary)
-                            .multilineTextAlignment(.leading)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "arrow.up.right")
-                        .font(.callout.weight(.semibold))
-                        .foregroundColor(AppColors.textTertiary)
-                }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(AppColors.backgroundMuted)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(AppColors.border, lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
         }
     }
 

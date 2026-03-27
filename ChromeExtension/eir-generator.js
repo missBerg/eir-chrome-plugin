@@ -30,8 +30,8 @@ function generateEIRContent(entries) {
       source: "1177.se Journal",
       patient: {
         name: patientName,
-        birth_date: "1970-01-01", // This would need to be extracted from the page
-        personal_number: "19700101-0000" // This would need to be extracted from the page
+        birth_date: "1986-02-28", // This would need to be extracted from the page
+        personal_number: "19860228-0250" // This would need to be extracted from the page
       },
       export_info: {
         total_entries: entries.length,

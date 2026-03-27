@@ -2,10 +2,10 @@ import Foundation
 import Network
 import SwiftUI
 
-// MARK: - Transfer Server (macOS sends, iOS receives)
+// MARK: - Transfer Server
 
 /// Lightweight HTTP server that serves an EIR file over the local network.
-/// Used on macOS to share files to iOS via QR code.
+/// Used to share an EIR file from the current device to another device via QR code.
 @MainActor
 class LocalTransferServer: ObservableObject {
     @Published var isRunning = false
@@ -112,9 +112,9 @@ class LocalTransferServer: ObservableObject {
                 var responseData = header.data(using: .utf8) ?? Data()
                 responseData.append(fileData)
 
-                connection.send(content: responseData, completion: .contentProcessed { _ in
+                connection.send(content: responseData, completion: .contentProcessed { [weak self] _ in
                     connection.cancel()
-                    Task { @MainActor in
+                    Task { @MainActor [weak self] in
                         self?.transferComplete = true
                     }
                 })
@@ -125,7 +125,7 @@ class LocalTransferServer: ObservableObject {
     }
 }
 
-// MARK: - Transfer Client (iOS downloads from macOS)
+// MARK: - Transfer Client
 
 @MainActor
 class LocalTransferClient: ObservableObject {

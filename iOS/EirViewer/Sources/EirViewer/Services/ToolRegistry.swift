@@ -161,7 +161,7 @@ actor ToolRegistry {
             if let summary = entry.content?.summary {
                 output += " — \(summary)"
             }
-            output += " <JOURNAL_ENTRY id=\"\(entry.id)\"/>\n"
+            output += " `<JOURNAL_ENTRY id=\"\(entry.id)\"/>`\n"
         }
 
         return ToolResult(toolCallId: callId, content: output)
@@ -236,27 +236,27 @@ actor ToolRegistry {
                 || ($0.category ?? "").localizedCaseInsensitiveContains("läkemedel") }
             output += "### Medications (\(meds.count) entries)\n"
             for entry in meds.prefix(30) {
-                output += "- \(entry.date ?? "?") — \(entry.content?.summary ?? "No summary") <JOURNAL_ENTRY id=\"\(entry.id)\"/>\n"
+                output += "- \(entry.date ?? "?") — \(entry.content?.summary ?? "No summary") `<JOURNAL_ENTRY id=\"\(entry.id)\"/>`\n"
             }
 
         case "recent":
             output += "### Recent Entries (last 20)\n"
             for entry in doc.entries.prefix(20) {
-                output += "- \(entry.date ?? "?") [\(entry.category ?? "?")] — \(entry.content?.summary ?? "No summary") <JOURNAL_ENTRY id=\"\(entry.id)\"/>\n"
+                output += "- \(entry.date ?? "?") [\(entry.category ?? "?")] — \(entry.content?.summary ?? "No summary") `<JOURNAL_ENTRY id=\"\(entry.id)\"/>`\n"
             }
 
         case "labs", "lab":
             let labs = doc.entries.filter { ($0.category ?? "").localizedCaseInsensitiveContains("lab") }
             output += "### Lab Results (\(labs.count) entries)\n"
             for entry in labs.prefix(30) {
-                output += "- \(entry.date ?? "?") — \(entry.content?.summary ?? "No summary") <JOURNAL_ENTRY id=\"\(entry.id)\"/>\n"
+                output += "- \(entry.date ?? "?") — \(entry.content?.summary ?? "No summary") `<JOURNAL_ENTRY id=\"\(entry.id)\"/>`\n"
             }
 
         case "diagnoses", "diagnoser":
             let diags = doc.entries.filter { ($0.category ?? "").localizedCaseInsensitiveContains("diagnos") }
             output += "### Diagnoses (\(diags.count) entries)\n"
             for entry in diags.prefix(30) {
-                output += "- \(entry.date ?? "?") — \(entry.content?.summary ?? "No summary") <JOURNAL_ENTRY id=\"\(entry.id)\"/>\n"
+                output += "- \(entry.date ?? "?") — \(entry.content?.summary ?? "No summary") `<JOURNAL_ENTRY id=\"\(entry.id)\"/>`\n"
             }
 
         default: // "all"
