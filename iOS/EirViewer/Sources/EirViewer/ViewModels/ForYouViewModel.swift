@@ -280,12 +280,23 @@ final class ForYouViewModel: ObservableObject {
     }
 
     private func decodeBatch(from rawResponse: String) throws -> ForYouGeneratedBatch {
-        guard let json = extractJSONObject(from: rawResponse),
-              let data = json.data(using: .utf8),
-              let decoded = try? JSONDecoder().decode(ForYouGeneratedBatch.self, from: data) else {
-            throw LLMError.requestFailed("The feed generator returned a format the app could not use.")
+        for candidate in jsonCandidates(from: rawResponse) {
+            if let data = candidate.data(using: .utf8),
+               let decoded = try? JSONDecoder().decode(ForYouGeneratedBatch.self, from: data) {
+                return decoded
+            }
+
+            if let data = candidate.data(using: .utf8),
+               let normalized = decodeNormalizedBatch(from: data) {
+                return normalized
+            }
         }
-        return decoded
+
+        if let fallback = fallbackBatch(from: rawResponse) {
+            return fallback
+        }
+
+        throw LLMError.requestFailed("The feed generator returned a format the app could not use.")
     }
 
     private func buildCard(
@@ -527,6 +538,196 @@ final class ForYouViewModel: ObservableObject {
             return nil
         }
         return String(trimmed[start...end])
+    }
+
+    private func extractJSONArray(from rawResponse: String) -> String? {
+        let trimmed = rawResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let start = trimmed.firstIndex(of: "["),
+              let end = trimmed.lastIndex(of: "]") else {
+            return nil
+        }
+        return String(trimmed[start...end])
+    }
+
+    private func jsonCandidates(from rawResponse: String) -> [String] {
+        let trimmed = rawResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+        let unwrapped = stripMarkdownFences(from: trimmed)
+        return Array(Set([
+            trimmed,
+            unwrapped,
+            extractJSONObject(from: trimmed),
+            extractJSONObject(from: unwrapped),
+            extractJSONArray(from: trimmed),
+            extractJSONArray(from: unwrapped)
+        ].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }))
+    }
+
+    private func stripMarkdownFences(from rawResponse: String) -> String {
+        var text = rawResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.hasPrefix("```") {
+            text = text.replacingOccurrences(of: #"^```[a-zA-Z0-9_-]*\s*"#, with: "", options: .regularExpression)
+            text = text.replacingOccurrences(of: #"\s*```$"#, with: "", options: .regularExpression)
+        }
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func decodeNormalizedBatch(from data: Data) -> ForYouGeneratedBatch? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) else { return nil }
+
+        if let object = json as? [String: Any] {
+            if let cards = object["cards"] as? [[String: Any]] {
+                return normalizeBatch(cards)
+            }
+            if let cards = object["items"] as? [[String: Any]] {
+                return normalizeBatch(cards)
+            }
+        }
+
+        if let cards = json as? [[String: Any]] {
+            return normalizeBatch(cards)
+        }
+
+        return nil
+    }
+
+    private func normalizeBatch(_ rawCards: [[String: Any]]) -> ForYouGeneratedBatch? {
+        let cards = rawCards.compactMap(normalizeCardSpec)
+        guard !cards.isEmpty else { return nil }
+        return ForYouGeneratedBatch(cards: cards)
+    }
+
+    private func normalizeCardSpec(_ raw: [String: Any]) -> ForYouGeneratedCardSpec? {
+        let kind = stringValue(raw["kind"]) ?? stringValue(raw["type"]) ?? "action"
+        let title = stringValue(raw["title"]) ?? stringValue(raw["name"]) ?? ""
+        let summary = stringValue(raw["summary"]) ?? stringValue(raw["description"]) ?? stringValue(raw["subtitle"]) ?? ""
+
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+
+        let breathingSource = (raw["breathing"] as? [String: Any]) ?? raw["meditation"] as? [String: Any]
+
+        return ForYouGeneratedCardSpec(
+            kind: kind,
+            title: title,
+            eyebrow: stringValue(raw["eyebrow"]) ?? stringValue(raw["tag"]) ?? stringValue(raw["label"]),
+            summary: summary,
+            durationMinutes: intValue(raw["durationMinutes"]) ?? intValue(raw["duration"]) ?? intValue(raw["minutes"]),
+            actionCategory: stringValue(raw["actionCategory"]) ?? stringValue(raw["category"]),
+            insight: stringValue(raw["insight"]) ?? stringValue(raw["why"]),
+            benefits: stringList(raw["benefits"]) ?? stringList(raw["outcomes"]),
+            steps: stringList(raw["steps"]) ?? stringList(raw["instructions"]),
+            quizQuestion: stringValue(raw["quizQuestion"]) ?? stringValue(raw["question"]),
+            quizOptions: quizOptions(raw["quizOptions"]) ?? quizOptions(raw["options"]),
+            quizSuccessTitle: stringValue(raw["quizSuccessTitle"]) ?? stringValue(raw["successTitle"]),
+            readingKicker: stringValue(raw["readingKicker"]) ?? stringValue(raw["kicker"]),
+            readingParagraphs: stringList(raw["readingParagraphs"]) ?? stringList(raw["paragraphs"]) ?? stringList(raw["content"]),
+            reflectionPrompt: stringValue(raw["reflectionPrompt"]) ?? stringValue(raw["prompt"]),
+            reflectionPlaceholder: stringValue(raw["reflectionPlaceholder"]) ?? stringValue(raw["placeholder"]),
+            breathing: breathingSpec(breathingSource)
+        )
+    }
+
+    private func fallbackBatch(from rawResponse: String) -> ForYouGeneratedBatch? {
+        let lines = stripMarkdownFences(from: rawResponse)
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        let titles = lines
+            .map { $0.replacingOccurrences(of: #"^[-*\d\.\)\s]+"#, with: "", options: .regularExpression) }
+            .filter { $0.count > 6 }
+
+        guard !titles.isEmpty else { return nil }
+
+        let cards = Array(titles.prefix(5)).map { title in
+            ForYouGeneratedCardSpec(
+                kind: "action",
+                title: title,
+                eyebrow: "Try now",
+                summary: "A short health action to help you reset, reflect, or feel a little better today.",
+                durationMinutes: 3,
+                actionCategory: "recovery",
+                insight: "Small actions are easier to follow through on when the next step is clear.",
+                benefits: ["Reduces friction", "Supports consistency"],
+                steps: ["Pause for a moment.", "Do this one small step now.", "Notice how you feel after."],
+                quizQuestion: nil,
+                quizOptions: nil,
+                quizSuccessTitle: nil,
+                readingKicker: nil,
+                readingParagraphs: nil,
+                reflectionPrompt: nil,
+                reflectionPlaceholder: nil,
+                breathing: nil
+            )
+        }
+
+        return cards.isEmpty ? nil : ForYouGeneratedBatch(cards: cards)
+    }
+
+    private func stringValue(_ value: Any?) -> String? {
+        if let string = value as? String {
+            let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        return nil
+    }
+
+    private func intValue(_ value: Any?) -> Int? {
+        if let int = value as? Int { return int }
+        if let string = value as? String {
+            let digits = string.trimmingCharacters(in: .whitespacesAndNewlines)
+            return Int(digits)
+        }
+        return nil
+    }
+
+    private func stringList(_ value: Any?) -> [String]? {
+        if let strings = value as? [String] {
+            let cleaned = strings.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            return cleaned.isEmpty ? nil : cleaned
+        }
+        if let string = value as? String {
+            let cleaned = string
+                .components(separatedBy: CharacterSet.newlines.union(CharacterSet(charactersIn: "•-")))
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            return cleaned.isEmpty ? nil : cleaned
+        }
+        return nil
+    }
+
+    private func quizOptions(_ value: Any?) -> [ForYouGeneratedQuizOption]? {
+        guard let rawOptions = value as? [[String: Any]] else { return nil }
+        let options = rawOptions.compactMap { option -> ForYouGeneratedQuizOption? in
+            guard let title = stringValue(option["title"]) ?? stringValue(option["text"]),
+                  let feedback = stringValue(option["feedback"]) ?? stringValue(option["explanation"]) ?? stringValue(option["reason"]) else {
+                return nil
+            }
+
+            let isCorrect: Bool
+            if let bool = option["isCorrect"] as? Bool {
+                isCorrect = bool
+            } else if let bool = option["correct"] as? Bool {
+                isCorrect = bool
+            } else {
+                isCorrect = false
+            }
+
+            return ForYouGeneratedQuizOption(title: title, feedback: feedback, isCorrect: isCorrect)
+        }
+        return options.isEmpty ? nil : options
+    }
+
+    private func breathingSpec(_ value: Any?) -> ForYouGeneratedBreathing? {
+        guard let raw = value as? [String: Any],
+              let inhale = intValue(raw["inhaleSeconds"]) ?? intValue(raw["inhale"]),
+              let exhale = intValue(raw["exhaleSeconds"]) ?? intValue(raw["exhale"]),
+              let rounds = intValue(raw["rounds"]) ?? intValue(raw["cycles"]) else {
+            return nil
+        }
+        return ForYouGeneratedBreathing(inhaleSeconds: inhale, exhaleSeconds: exhale, rounds: rounds)
     }
 
     private func normalizedTitle(_ title: String) -> String {
