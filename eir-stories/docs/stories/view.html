@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story | Eir Stories</title>
+    <meta name="description" content="A public health story on Eir Stories.">
+    <link rel="icon" href="https://eir-design-system.netlify.app/icon-teal.png">
+    <link rel="stylesheet" href="../stories-ui.css">
+    <style>@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');</style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="shell site-header__inner">
+            <a class="brand" href="../index.html" aria-label="Eir Stories home">
+                <span class="brand__mark" aria-hidden="true"><img src="https://eir-design-system.netlify.app/icon-white.png" alt=""></span>
+                <span><span class="brand__eyebrow">stories.eir.space</span><span class="brand__name">Eir Stories</span></span>
+            </a>
+            <nav class="nav" aria-label="Primary">
+                <a href="./index.html">Browse</a>
+                <a href="../topics/index.html">Topics</a>
+                <a href="../messages/index.html">Inbox</a>
+                <a id="createNavLink" href="../app/index.html">App</a>
+                <a id="sessionNavCta" class="nav__cta" href="../app/index.html">Start your story</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="page-hero">
+            <div class="shell">
+                <article id="storyRoot" class="surface story-header"></article>
+            </div>
+        </section>
+        <section>
+            <div class="shell story-layout">
+                <div class="story-main">
+                    <article class="surface section-card">
+                        <h2>The story</h2>
+                        <div id="storyBody" class="stack"></div>
+                    </article>
+                    <article class="surface section-card">
+                        <h2>What helped</h2>
+                        <div id="storyHelped" class="story-chip-list"></div>
+                    </article>
+                    <article class="surface section-card">
+                        <h2>Lessons to borrow</h2>
+                        <div id="storyLessons" class="stack"></div>
+                    </article>
+                    <article class="surface section-card">
+                        <h2>Timeline</h2>
+                        <div id="storyTimeline" class="timeline-list"></div>
+                    </article>
+                    <article class="surface section-card">
+                        <div class="section-card__head">
+                            <h2>Comments</h2>
+                            <div id="commentStatus" class="field-note"></div>
+                        </div>
+                        <form id="commentForm" class="comment-form">
+                            <textarea id="commentInput" placeholder="Respond with what resonated, what helped you, or what you wish someone had known earlier."></textarea>
+                            <div class="comment-form__actions">
+                                <div id="commentPrompt" class="field-note">Log in to comment and support other people on the platform.</div>
+                                <button id="commentSubmit" class="button button--primary" type="submit">Post comment</button>
+                            </div>
+                        </form>
+                        <div id="storyComments" class="comments-list"></div>
+                    </article>
+                </div>
+                <aside class="story-sidebar">
+                    <article class="sidebar-card">
+                        <h3>Story profile</h3>
+                        <ul id="storyMeta"></ul>
+                    </article>
+                    <article class="sidebar-card" id="storySourceCard" style="display:none;">
+                        <h3>Source</h3>
+                        <p id="storySourceText"></p>
+                        <blockquote id="storySourceExcerpt" style="display:none; margin:14px 0 0; padding:14px 16px; border-left:3px solid rgba(30,148,168,0.38); background:rgba(30,148,168,0.06); border-radius:12px; color:var(--muted);"></blockquote>
+                        <p id="storySourceLinkWrap" style="display:none; margin:14px 0 0;">
+                            <a id="storySourceLink" class="button button--secondary" target="_blank" rel="noreferrer">Read the original story</a>
+                        </p>
+                    </article>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const API_BASE = (() => {
+            const { protocol, hostname, port } = window.location;
+            if ((hostname === "127.0.0.1" || hostname === "localhost") && port && port !== "4181") {
+                return `${protocol}//127.0.0.1:4181`;
+            }
+            return "";
+        })();
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function slugFromQuery() {
+            return new URLSearchParams(window.location.search).get("slug");
+        }
+
+        let currentUser = null;
+        let currentStorySlug = null;
+
+        async function applySessionUi() {
+            try {
+                const response = await fetch(`${API_BASE}/api/me`, { credentials: "same-origin" });
+                if (!response.ok) {
+                    updateCommentUi();
+                    return;
+                }
+                const payload = await response.json();
+                currentUser = payload.user;
+                document.getElementById("sessionNavCta").textContent = payload.user.display_name;
+                document.getElementById("sessionNavCta").href = "../app/index.html";
+                document.getElementById("createNavLink").textContent = "Write";
+                document.getElementById("createNavLink").href = "../app/index.html";
+                updateCommentUi();
+            } catch {}
+        }
+
+        function updateCommentUi() {
+            const prompt = document.getElementById("commentPrompt");
+            const submit = document.getElementById("commentSubmit");
+            if (currentUser) {
+                prompt.textContent = `Commenting as ${currentUser.display_name}.`;
+                submit.disabled = false;
+                return;
+            }
+            prompt.textContent = "Log in to comment and support other people on the platform.";
+            submit.disabled = false;
+        }
+
+        function renderEmptyList(message) {
+            return `<p>${escapeHtml(message)}</p>`;
+        }
+
+        async function loadStory() {
+            const slug = slugFromQuery();
+            currentStorySlug = slug;
+            if (!slug) {
+                document.getElementById("storyRoot").innerHTML = "<h1>Story not found</h1>";
+                return;
+            }
+            const response = await fetch(`${API_BASE}/api/stories/${encodeURIComponent(slug)}`, { cache: "no-store" });
+            if (!response.ok) {
+                document.getElementById("storyRoot").innerHTML = "<h1>Story not found</h1>";
+                return;
+            }
+            const payload = await response.json();
+            const story = payload.story;
+            const comments = payload.comments || [];
+
+            document.title = `${story.title} | Eir Stories`;
+            document.getElementById("storyRoot").innerHTML = `
+                <div class="story-header__top">
+                    <span class="pill">${escapeHtml(story.country)}</span>
+                    <span class="pill">${escapeHtml(story.journey_stage)}</span>
+                    <span class="pill">${escapeHtml(story.comment_count || 0)} comments</span>
+                    ${story.source_label ? `<span class="pill">From ${escapeHtml(story.source_label)}</span>` : ""}
+                </div>
+                <h1>${escapeHtml(story.title)}</h1>
+                <p class="story-header__summary">${escapeHtml(story.summary)}</p>
+                <div class="story-actions">
+                    <a class="action-chip" href="../profiles/view.html?slug=${encodeURIComponent(story.author_slug)}">${escapeHtml(story.author_name)}</a>
+                    ${(story.conditions || []).map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join("")}
+                </div>
+            `;
+
+            document.getElementById("storyBody").innerHTML = (story.body || []).map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("");
+            document.getElementById("storyHelped").innerHTML = (story.helped || []).length
+                ? (story.helped || []).map((item) => `<span class="pill">${escapeHtml(item)}</span>`).join("")
+                : `<span class="pill">Still figuring it out</span>`;
+            document.getElementById("storyLessons").innerHTML = (story.lessons || []).length
+                ? (story.lessons || []).map((lesson) => `<p>${escapeHtml(lesson)}</p>`).join("")
+                : renderEmptyList("No explicit lessons yet. The story itself is still worth reading.");
+            document.getElementById("storyTimeline").innerHTML = (story.timeline || []).length
+                ? story.timeline.map((item) => `
+                    <div class="timeline-item">
+                        <div class="timeline-item__date">${escapeHtml(item.date)}</div>
+                        <div>
+                            <strong>${escapeHtml(item.label)}</strong>
+                            <p>${escapeHtml(item.details)}</p>
+                        </div>
+                    </div>
+                `).join("")
+                : `<p>No timeline entries yet.</p>`;
+
+            document.getElementById("storyComments").innerHTML = comments.length
+                ? comments.map((comment) => `
+                    <div class="comment">
+                        <div class="comment__meta">
+                            <span class="author-dot">${escapeHtml((comment.author_name || "?").slice(0, 2).toUpperCase())}</span>
+                            <span>${escapeHtml(comment.author_name)} • ${escapeHtml(comment.created_at.slice(0, 10))}</span>
+                        </div>
+                        <div class="comment__bubble">${escapeHtml(comment.body)}</div>
+                    </div>
+                `).join("")
+                : renderEmptyList("No comments yet. Be the first person to respond with something useful or encouraging.");
+
+            document.getElementById("storyMeta").innerHTML = `
+                <li>Author: ${escapeHtml(story.author_name)}</li>
+                <li>Country: ${escapeHtml(story.country)}</li>
+                <li>Current status: ${escapeHtml(story.journey_stage)}</li>
+                <li>Comment policy: open</li>
+            `;
+            const sourceCard = document.getElementById("storySourceCard");
+            const sourceText = document.getElementById("storySourceText");
+            const sourceExcerpt = document.getElementById("storySourceExcerpt");
+            const sourceLinkWrap = document.getElementById("storySourceLinkWrap");
+            const sourceLink = document.getElementById("storySourceLink");
+            if (story.source_label && story.source_url) {
+                sourceCard.style.display = "";
+                const isReddit = String(story.source_label).toLowerCase().includes("reddit") || String(story.source_url).includes("reddit.com");
+                sourceText.innerHTML = isReddit
+                    ? `This version is adapted from a public Reddit post.`
+                    : `This story was adapted from public reporting published by <a href="${escapeHtml(story.source_url)}" target="_blank" rel="noreferrer">${escapeHtml(story.source_label)}</a>.`;
+                if (story.source_excerpt && isReddit) {
+                    sourceExcerpt.style.display = "";
+                    sourceExcerpt.innerHTML = `&ldquo;${escapeHtml(story.source_excerpt)}&rdquo;`;
+                } else {
+                    sourceExcerpt.style.display = "none";
+                    sourceExcerpt.textContent = "";
+                }
+                sourceLinkWrap.style.display = "";
+                sourceLink.href = story.source_url;
+                sourceLink.textContent = isReddit ? "Read the original Reddit post" : "Read the original source";
+            } else {
+                sourceCard.style.display = "none";
+                sourceText.textContent = "";
+                sourceExcerpt.style.display = "none";
+                sourceExcerpt.textContent = "";
+                sourceLinkWrap.style.display = "none";
+                sourceLink.removeAttribute("href");
+            }
+        }
+
+        async function submitComment(event) {
+            event.preventDefault();
+            const status = document.getElementById("commentStatus");
+            const input = document.getElementById("commentInput");
+            const body = input.value.trim();
+            if (!currentUser) {
+                status.textContent = "Log in before posting a comment.";
+                return;
+            }
+            if (!body) {
+                status.textContent = "Write a comment first.";
+                return;
+            }
+            status.textContent = "Posting comment...";
+            try {
+                await fetch(`${API_BASE}/api/stories/${encodeURIComponent(currentStorySlug)}/comments`, {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ body }),
+                }).then(async (response) => {
+                    const text = await response.text();
+                    const payload = text ? JSON.parse(text) : {};
+                    if (!response.ok) {
+                        throw new Error(payload.error || "Failed to post comment.");
+                    }
+                    return payload;
+                });
+                input.value = "";
+                status.textContent = "Comment posted.";
+                await loadStory();
+            } catch (error) {
+                status.textContent = error.message;
+            }
+        }
+
+        document.getElementById("commentForm").addEventListener("submit", submitComment);
+        loadStory();
+        applySessionUi();
+    </script>
+</body>
+</html>

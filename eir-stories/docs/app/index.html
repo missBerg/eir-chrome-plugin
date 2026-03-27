@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eir Stories App</title>
+    <meta name="description" content="Start a health story, add health information only if it helps, and decide what to share when you are ready.">
+    <link rel="icon" href="https://eir-design-system.netlify.app/icon-teal.png">
+    <link rel="stylesheet" href="../stories-ui.css">
+    <style>
+        .health-app { padding: 44px 0 64px; }
+        .page-hero--app { padding-bottom: 24px; }
+        .page-hero__grid { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(340px, 0.98fr); gap: 24px; align-items: start; }
+        .page-hero__copy { display: grid; gap: 16px; }
+        .health-app__layout { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(340px, 0.98fr); gap: 24px; align-items: start; }
+        .health-app__grid, .health-form, .auth-stack, .import-list, .section-list, .example-list, .prompt-list { display: grid; gap: 12px; }
+        .health-card { padding: 24px; display: grid; gap: 16px; }
+        .health-card h2, .health-card h3 { margin: 0; }
+        .health-form input, .health-form textarea, .health-form select, .auth-stack input { width: 100%; min-height: 48px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,0.92); font: inherit; color: var(--ink); }
+        .health-form textarea { min-height: 124px; padding: 14px; resize: vertical; }
+        .import-item, .section-item, .example-item, .prompt-item { padding: 18px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255,255,255,0.82); }
+        .import-item__header, .example-item__header, .section-item__header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+        .visibility-picker { min-height: 36px; border-radius: 999px; border: 1px solid var(--line); padding: 0 10px; background: rgba(255,255,255,0.94); font: inherit; }
+        .markdown-block { margin: 0; padding: 16px; border-radius: 16px; background: rgba(61,58,54,0.04); white-space: pre-wrap; font: 500 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; overflow: auto; }
+        .inline-note { color: var(--muted); font-size: 14px; }
+        .hidden { display: none !important; }
+        .file-picker { display: grid; gap: 10px; }
+        .file-picker input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .file-picker__button { min-height: 56px; padding: 0 18px; border-radius: 18px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.92); border: 1px dashed rgba(30, 148, 168, 0.34); color: var(--teal-deep); font-weight: 700; cursor: pointer; }
+        .file-picker__button:hover { border-color: rgba(30, 148, 168, 0.56); background: rgba(30, 148, 168, 0.05); }
+        .file-picker__meta { color: var(--muted); font-size: 14px; }
+        .button[disabled], .file-picker__button--disabled { opacity: 0.65; pointer-events: none; }
+        .story-seed {
+            padding: 30px;
+            gap: 22px;
+        }
+        .story-seed__frame {
+            display: grid;
+            gap: 14px;
+            padding: 28px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(247,243,236,0.88));
+            border: 1px solid rgba(61,58,54,0.08);
+        }
+        .story-seed__label {
+            color: var(--muted);
+            font: 700 12px/1.2 "Geist", system-ui, sans-serif;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .story-seed__title,
+        .story-seed__body {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: var(--ink);
+            padding: 0;
+            outline: none;
+        }
+        .story-seed__title {
+            min-height: 132px;
+            resize: none;
+            overflow: hidden;
+            font: 700 clamp(1.85rem, 3vw, 2.9rem)/0.94 Georgia, "Times New Roman", serif;
+            letter-spacing: -0.05em;
+        }
+        .story-seed__body {
+            min-height: 220px;
+            resize: vertical;
+            font: 400 1.16rem/1.75 Georgia, "Times New Roman", serif;
+            color: #4a4640;
+        }
+        .story-seed__title::placeholder,
+        .story-seed__body::placeholder {
+            color: #a19a91;
+        }
+        .story-seed__help {
+            color: var(--muted);
+            font: 500 14px/1.6 "Geist", system-ui, sans-serif;
+        }
+        .story-seed__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        @media (max-width: 980px) {
+            .page-hero__grid,
+            .health-app__layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="shell site-header__inner">
+            <a class="brand" href="../index.html" aria-label="Eir Stories home">
+                <span class="brand__mark" aria-hidden="true"><img src="https://eir-design-system.netlify.app/icon-white.png" alt=""></span>
+                <span><span class="brand__eyebrow">stories.eir.space</span><span class="brand__name">Eir Stories</span></span>
+            </a>
+            <nav class="nav" aria-label="Primary">
+                <a href="../index.html">Home</a>
+                <a href="../stories/index.html">Stories</a>
+                <a href="./index.html">App</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="health-app">
+        <section class="page-hero page-hero--app">
+            <div class="shell">
+                <div class="page-hero__grid">
+                    <div class="page-hero__copy">
+                        <div class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span>Health discovery</div>
+                        <h1>Share your health journey. Help someone else navigate theirs.</h1>
+                        <p class="lede">Start with the story. Add health information later only if it makes the story clearer.</p>
+                    </div>
+
+                    <article class="surface health-card story-seed">
+                        <div class="story-seed__frame">
+                            <div class="story-seed__label">Start your story</div>
+                            <textarea id="storySeedTitle" class="story-seed__title" rows="2" placeholder="Give your story a title"></textarea>
+                            <textarea id="storySeedBody" class="story-seed__body" placeholder="What happened? Start writing here. When you upload your record, this draft continues with you into the story page so you can keep writing."></textarea>
+                        </div>
+                        <p class="story-seed__help">Begin with what changed, what was confusing, or what you wish someone had told you earlier. Your uploaded record can support the story later with private notes and references.</p>
+                        <div class="story-seed__actions">
+                            <button class="button button--primary" id="continueWritingButton" type="button">Continue writing</button>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="shell health-app__layout">
+                <div class="health-app__grid">
+                    <article class="surface health-card" id="uploadPanel">
+                        <div class="import-item__header">
+                            <div>
+                                <h2>Add health information if it helps</h2>
+                                <p class="inline-note">A story can stand on its own. If you do have a file, we open it privately in a journal-style viewer and let you decide later whether any of it should support the story.</p>
+                            </div>
+                            <button class="button button--secondary hidden" id="logoutButton" type="button">Log out</button>
+                        </div>
+                        <form class="health-form" id="uploadForm">
+                            <div class="file-picker">
+                                <button class="file-picker__button" id="filePickerButton" type="button">Choose a health record file</button>
+                                <input id="eirFile" type="file" accept=".eir,.yaml,.yml,text/plain" required>
+                                <div class="file-picker__meta" id="selectedFileName">No file selected yet.</div>
+                            </div>
+                            <button class="button button--primary" id="uploadButton" type="submit" disabled>Open private viewer</button>
+                            <button class="button button--secondary" id="storyOnlyButton" type="button">Start with story only</button>
+                        </form>
+                        <div id="messageBox" class="inline-note"></div>
+                    </article>
+
+                    <article class="surface health-card hidden" id="authPanel">
+                        <h2>Log in or create an account</h2>
+                        <p class="inline-note">After previewing your health story, sign in if you want to save it, manage visibility over time, and make it part of your profile.</p>
+                        <div class="auth-stack">
+                            <input id="loginEmail" type="email" placeholder="Email">
+                            <input id="loginPassword" type="password" placeholder="Password">
+                            <button class="button button--primary" id="loginButton" type="button">Log in</button>
+                        </div>
+                        <div class="auth-stack">
+                            <input id="signupEmail" type="email" placeholder="Email">
+                            <input id="signupPassword" type="password" placeholder="Password">
+                            <input id="signupDisplayName" type="text" placeholder="Display name">
+                            <input id="signupCountry" type="text" placeholder="Country">
+                            <input id="signupConcern" type="text" placeholder="Primary condition or concern">
+                            <button class="button button--secondary" id="signupButton" type="button">Create account</button>
+                        </div>
+                    </article>
+
+                    <article class="surface health-card hidden" id="profilePanel">
+                        <h2>Your health profile</h2>
+                        <div id="profileSummary" class="inline-note"></div>
+                        <div id="storyPrompts" class="prompt-list"></div>
+                    </article>
+
+                    <article class="surface health-card hidden" id="importsPanel">
+                        <h2>Private record library</h2>
+                        <div id="importsList" class="import-list"></div>
+                    </article>
+                </div>
+
+                <aside class="health-app__grid">
+                    <article class="surface health-card hidden" id="publicPreviewPanel">
+                        <h3>What other people could see</h3>
+                        <p class="inline-note">This preview shows the parts of your health story that are currently shareable.</p>
+                        <div id="publicPreview"></div>
+                    </article>
+
+                    <article class="surface health-card">
+                        <h3>What gets redacted</h3>
+                        <ul>
+                            <li>Patient name is replaced with a pseudonymous patient label in the public layer.</li>
+                            <li>Healthcare worker names are removed from public summaries.</li>
+                            <li>Clinic names are generalized into provider types such as primary care or genetics clinic.</li>
+                            <li>You still decide which sections or examples become public at all.</li>
+                        </ul>
+                    </article>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script src="./app.js"></script>
+</body>
+</html>

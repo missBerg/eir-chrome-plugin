@@ -1,0 +1,9 @@
+{
+  "name": "eir-stories",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Eir Stories marketing site and product docs.",
+  "scripts": {
+    "dev": "python3 -m http.server 4173 -d docs"
+  }
+}

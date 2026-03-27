@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eir Stories Editor</title>
+    <meta name="description" content="Write a health story in your own words, with optional inline notes from your records.">
+    <link rel="icon" href="https://eir-design-system.netlify.app/icon-teal.png">
+    <link rel="stylesheet" href="/site/stories-ui.css">
+    <style>
+        body {
+            background: #f6f7f4;
+            color: #181818;
+            font-family: Georgia, "Times New Roman", serif;
+        }
+        .site-header {
+            background: rgba(246, 247, 244, 0.94);
+            border-bottom: 1px solid #e6e2d9;
+            backdrop-filter: blur(12px);
+        }
+        .brand__mark {
+            background: #173f4a;
+            border: 0;
+            box-shadow: none;
+        }
+        .brand__eyebrow,
+        .nav a,
+        .helper-line,
+        .story-tools,
+        .record-list__intro,
+        .save-copy,
+        .field-note,
+        .modal-copy {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .brand__eyebrow,
+        .nav a,
+        .helper-line,
+        .record-list__intro,
+        .field-note,
+        .modal-copy {
+            color: #6f6a61;
+        }
+        .story-page {
+            padding: 32px 0 88px;
+        }
+        .story-shell {
+            width: min(860px, calc(100vw - 32px));
+            margin: 0 auto;
+            display: grid;
+            gap: 28px;
+        }
+        .story-stage {
+            display: grid;
+            gap: 22px;
+        }
+        .story-editor {
+            display: grid;
+            gap: 18px;
+        }
+        .story-title-input,
+        .story-body-input {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: #181818;
+            padding: 0;
+            outline: none;
+        }
+        .story-title-input {
+            font: 700 clamp(2.2rem, 5vw, 3.8rem)/0.98 Georgia, "Times New Roman", serif;
+            letter-spacing: -0.05em;
+        }
+        .story-title-input::placeholder,
+        .story-body-input::placeholder {
+            color: #a19a91;
+        }
+        .story-body-input {
+            min-height: 360px;
+            resize: vertical;
+            font: 400 1.35rem/1.8 Georgia, "Times New Roman", serif;
+        }
+        .story-tools {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 14px;
+        }
+        .story-tool-pill,
+        .visibility-pill {
+            min-height: 32px;
+            padding: 0 12px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            font: 700 12px/1 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .story-tool-pill {
+            border: 1px solid #dfd9cf;
+            background: #fff;
+            color: #5d5952;
+        }
+        .visibility-pill--private {
+            background: #ece9e2;
+            color: #3e3a35;
+        }
+        .visibility-pill--public {
+            background: #e5f1ea;
+            color: #2f5b40;
+        }
+        .article-preview,
+        .record-drawer,
+        .save-panel {
+            background: #fff;
+            border: 1px solid #e6e2d9;
+            border-radius: 24px;
+            box-shadow: 0 18px 42px rgba(32, 28, 22, 0.06);
+        }
+        .article-preview {
+            padding: 38px 42px;
+            display: grid;
+            gap: 22px;
+        }
+        .article-preview__header {
+            display: grid;
+            gap: 12px;
+        }
+        .article-preview__title {
+            margin: 0;
+            font-size: clamp(2.5rem, 5vw, 4.2rem);
+            line-height: 0.98;
+            letter-spacing: -0.05em;
+            font-weight: 700;
+        }
+        .article-preview__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .article-preview__body {
+            display: grid;
+            gap: 20px;
+            font-size: 1.24rem;
+            line-height: 1.85;
+            color: #26221e;
+        }
+        .article-preview__body p {
+            margin: 0;
+        }
+        .record-drawer,
+        .save-panel {
+            padding: 22px 24px;
+            display: grid;
+            gap: 16px;
+        }
+        .record-list {
+            display: grid;
+            gap: 12px;
+        }
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: center;
+            padding: 14px 16px;
+            border: 1px solid #ece7de;
+            border-radius: 16px;
+            background: #fcfbf8;
+        }
+        .record-item__body {
+            display: grid;
+            gap: 6px;
+        }
+        .record-item__title {
+            margin: 0;
+            font: 700 1rem/1.3 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #27231f;
+        }
+        .record-item__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .record-action {
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1px solid #dfd9cf;
+            background: #fff;
+            font: 700 13px/1 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #403b35;
+        }
+        .inline-note-card {
+            display: grid;
+            gap: 10px;
+            padding: 18px 18px 16px;
+            border-radius: 20px;
+            border: 1px solid #cfe0df;
+            background: linear-gradient(135deg, #f2f8f8 0%, #f8fbfa 100%);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+        }
+        .inline-note-card__top {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+        }
+        .inline-note-card__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .inline-note-card__eyebrow {
+            font: 700 11px/1 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #1b5f6f;
+        }
+        .inline-note-card__title {
+            margin: 0;
+            font: 700 1.05rem/1.25 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #173f4a;
+        }
+        .inline-note-card__text {
+            margin: 0;
+            font: 400 1rem/1.7 Georgia, "Times New Roman", serif;
+            color: #2f474d;
+        }
+        .inline-note-card__action {
+            min-height: 38px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1px solid #b9d4d8;
+            background: rgba(255,255,255,0.9);
+            font: 700 13px/1 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #1b5f6f;
+        }
+        .save-panel {
+            grid-template-columns: 1fr auto;
+            align-items: center;
+        }
+        .save-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .button--primary,
+        .button--secondary {
+            min-height: 44px;
+            padding: 0 16px;
+            border-radius: 999px;
+            font: 700 14px/1 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .button--primary {
+            background: #181818;
+            color: #fff !important;
+            border: 1px solid #181818;
+        }
+        .button--secondary {
+            background: #fff;
+            border: 1px solid #dfd9cf;
+            color: #403b35;
+        }
+        .auth-fields {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .auth-fields input {
+            min-height: 48px;
+            padding: 0 14px;
+            border-radius: 14px;
+            border: 1px solid #dfd9cf;
+            background: #fff;
+            font: 500 14px/1 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #27231f;
+        }
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background: rgba(24, 24, 24, 0.28);
+            z-index: 90;
+        }
+        .modal {
+            width: min(760px, 100%);
+            max-height: calc(100vh - 48px);
+            overflow: auto;
+            background: #fff;
+            border: 1px solid #e6e2d9;
+            border-radius: 24px;
+            padding: 24px;
+            display: grid;
+            gap: 16px;
+            box-shadow: 0 24px 60px rgba(24, 24, 24, 0.14);
+        }
+        .modal__header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .modal__title {
+            margin: 0;
+            font-size: 1.8rem;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+        }
+        .modal__close {
+            min-width: 44px;
+            min-height: 44px;
+            border-radius: 999px;
+            border: 1px solid #dfd9cf;
+            background: #fff;
+            font: 600 13px/1 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .hidden {
+            display: none !important;
+        }
+        @media (max-width: 760px) {
+            .article-preview,
+            .record-drawer,
+            .save-panel {
+                padding: 24px 20px;
+            }
+            .save-panel {
+                grid-template-columns: 1fr;
+            }
+            .save-actions {
+                justify-content: flex-start;
+            }
+            .record-item {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="shell site-header__inner">
+            <a class="brand" href="/site/index.html" aria-label="Eir Stories home">
+                <span class="brand__mark" aria-hidden="true"><img src="https://eir-design-system.netlify.app/icon-white.png" alt=""></span>
+                <span><span class="brand__eyebrow">stories.eir.space</span><span class="brand__name">Eir Stories</span></span>
+            </a>
+            <nav class="nav" aria-label="Primary">
+                <a href="/site/index.html">Home</a>
+                <a href="/site/stories/index.html">Stories</a>
+                <a href="/site/app/index.html">App</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="story-page">
+        <section class="story-shell">
+            <div id="viewerRoot" class="story-stage hidden">
+                <section class="story-editor">
+                    <div class="helper-line">Private draft</div>
+                    <input id="storyTitleInput" class="story-title-input" type="text" placeholder="Give this story a title">
+                    <textarea id="storyBodyInput" class="story-body-input" placeholder="What happened?"></textarea>
+                    <div class="story-tools">
+                        <div>
+                            <span class="story-tool-pill">Command: /note Title | Full note</span>
+                        </div>
+                        <div>
+                            <span class="visibility-pill visibility-pill--private">Story: private by default</span>
+                        </div>
+                    </div>
+                </section>
+
+                <article class="article-preview">
+                    <div class="article-preview__header">
+                        <div class="article-preview__meta">
+                            <span class="visibility-pill visibility-pill--private">Private</span>
+                            <span id="storySourcePill" class="story-tool-pill"></span>
+                        </div>
+                        <h2 id="previewTitle" class="article-preview__title"></h2>
+                    </div>
+                    <div id="previewBody" class="article-preview__body"></div>
+                </article>
+
+                <section class="record-drawer">
+                    <div>
+                        <h2>Record notes</h2>
+                        <p class="record-list__intro">Use these only when they support the story. Clicking `Insert /note` adds a private inline note.</p>
+                    </div>
+                    <div id="recordList" class="record-list"></div>
+                </section>
+
+                <section class="save-panel">
+                    <div>
+                        <h2>Keep or publish later</h2>
+                        <p class="save-copy">Save this as one story in your profile. You can write more than one story over time.</p>
+                        <div id="saveBox"></div>
+                    </div>
+                    <div class="save-actions">
+                        <button id="saveDraftButton" class="button button--secondary" type="button">Save draft</button>
+                        <button id="publishStoryButton" class="button button--primary" type="button">Publish story</button>
+                    </div>
+                </section>
+            </div>
+
+            <article id="emptyState" class="article-preview hidden">
+                <h2 class="article-preview__title">No story draft yet.</h2>
+                <p>Start a story from the app, with or without health notes, and it will open here.</p>
+                <div><a class="button button--primary" href="/site/app/index.html">Go to app</a></div>
+            </article>
+        </section>
+    </main>
+
+    <div id="noteModalBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="noteModalTitle">
+            <div class="modal__header">
+                <div>
+                    <div id="noteModalMeta" class="article-preview__meta"></div>
+                    <h2 id="noteModalTitle" class="modal__title"></h2>
+                </div>
+                <button id="noteModalClose" class="modal__close" type="button">Close</button>
+            </div>
+            <div id="noteModalBody" class="modal-copy"></div>
+        </div>
+    </div>
+
+    <script src="/site/app/story-view.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profiles | Eir Stories</title>
+    <meta name="description" content="Browse public health profiles on Eir Stories.">
+    <link rel="icon" href="https://eir-design-system.netlify.app/icon-teal.png">
+    <link rel="stylesheet" href="../stories-ui.css">
+    <style>@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');</style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="shell site-header__inner">
+            <a class="brand" href="../index.html" aria-label="Eir Stories home">
+                <span class="brand__mark" aria-hidden="true"><img src="https://eir-design-system.netlify.app/icon-white.png" alt=""></span>
+                <span><span class="brand__eyebrow">stories.eir.space</span><span class="brand__name">Eir Stories</span></span>
+            </a>
+            <nav class="nav" aria-label="Primary">
+                <a href="../stories/index.html">Stories</a>
+                <a href="../topics/index.html">Topics</a>
+                <a href="./index.html">Profiles</a>
+                <a href="../messages/index.html">Inbox</a>
+                <a id="createNavLink" href="../app/index.html">App</a>
+                <a id="sessionNavCta" class="nav__cta" href="../app/index.html">Start your story</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <section class="page-hero">
+            <div class="shell">
+                <div class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span>Public profiles</div>
+                <h1>Follow people, not just individual posts.</h1>
+                <p class="lede">Profiles are where you understand how someone thinks about their health journey over time: what they write about, what they are open to, and whether they want conversation, comments, or quiet reading.</p>
+            </div>
+        </section>
+        <section>
+            <div class="shell">
+                <div id="profilesGrid" class="stories-grid"></div>
+            </div>
+        </section>
+    </main>
+    <script>
+        const API_BASE = (() => {
+            const { protocol, hostname, port } = window.location;
+            if ((hostname === "127.0.0.1" || hostname === "localhost") && port && port !== "4181") {
+                return `${protocol}//127.0.0.1:4181`;
+            }
+            return "";
+        })();
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        async function applySessionUi() {
+            try {
+                const response = await fetch(`${API_BASE}/api/me`, { credentials: "same-origin" });
+                if (!response.ok) {
+                    return;
+                }
+                const payload = await response.json();
+                document.getElementById("sessionNavCta").textContent = payload.user.display_name;
+                document.getElementById("sessionNavCta").href = "../app/index.html";
+                document.getElementById("createNavLink").textContent = "My app";
+                document.getElementById("createNavLink").href = "../app/index.html";
+            } catch {}
+        }
+
+        async function loadProfiles() {
+            const response = await fetch(`${API_BASE}/api/profiles`, { cache: "no-store", credentials: "same-origin" });
+            const profiles = await response.json();
+            const grid = document.getElementById("profilesGrid");
+            grid.innerHTML = profiles.map((profile) => `
+                <a class="story-card" href="./view.html?slug=${encodeURIComponent(profile.slug)}">
+                    <div class="story-card__author">
+                        <span class="author-dot">${escapeHtml((profile.display_name || "?").slice(0, 2).toUpperCase())}</span>
+                        <span>${escapeHtml(profile.display_name)}</span>
+                    </div>
+                    <div class="story-card__meta">
+                        <span class="pill">${escapeHtml(profile.primary_concern || "Health journey")}</span>
+                        <span class="pill">${escapeHtml(profile.country || "Global")}</span>
+                    </div>
+                    <div>
+                        <h3>${escapeHtml(profile.bio || "Writes openly about a health journey and what others may learn from it.")}</h3>
+                    </div>
+                    <div class="story-card__tags">
+                        <span class="pill">${escapeHtml(profile.follower_count)} followers</span>
+                        <span class="pill">${escapeHtml(profile.story_count)} stories</span>
+                        <span class="pill">${escapeHtml(profile.messaging_policy)}</span>
+                    </div>
+                    <div class="timeline-preview">
+                        ${(profile.conditions || []).slice(0, 2).map((item) => `
+                            <div class="timeline-preview__row">
+                                <strong>Focus</strong>
+                                <span>${escapeHtml(item)}</span>
+                            </div>
+                        `).join("")}
+                    </div>
+                </a>
+            `).join("");
+        }
+
+        loadProfiles();
+        applySessionUi();
+    </script>
+</body>
+</html>

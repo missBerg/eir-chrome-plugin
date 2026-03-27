@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbox | Eir Stories</title>
+    <meta name="description" content="Read and manage private messages on Eir Stories.">
+    <link rel="icon" href="https://eir-design-system.netlify.app/icon-teal.png">
+    <link rel="stylesheet" href="../stories-ui.css">
+    <style>@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');</style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="shell site-header__inner">
+            <a class="brand" href="../index.html" aria-label="Eir Stories home">
+                <span class="brand__mark" aria-hidden="true"><img src="https://eir-design-system.netlify.app/icon-white.png" alt=""></span>
+                <span><span class="brand__eyebrow">stories.eir.space</span><span class="brand__name">Eir Stories</span></span>
+            </a>
+            <nav class="nav" aria-label="Primary">
+                <a href="../stories/index.html">Stories</a>
+                <a href="../topics/index.html">Topics</a>
+                <a href="../profiles/index.html">Profiles</a>
+                <a href="./index.html">Inbox</a>
+                <a id="createNavLink" href="../app/index.html">App</a>
+                <a id="sessionNavCta" class="nav__cta" href="../app/index.html">Start your story</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <section class="page-hero">
+            <div class="shell">
+                <div class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span>Private messages</div>
+                <h1>Keep the conversation going when a story opens the right door.</h1>
+                <p class="lede">Messages are for thoughtful follow-up: asking how someone framed a pattern, thanking them for a useful story, or continuing a conversation that should not live in public comments.</p>
+            </div>
+        </section>
+        <section>
+            <div class="shell story-layout">
+                <div class="story-main">
+                    <article class="surface section-card">
+                        <div class="section-card__head">
+                            <h2>Inbox</h2>
+                            <div id="inboxStatus" class="field-note"></div>
+                        </div>
+                        <div id="messagesList" class="comments-list"></div>
+                    </article>
+                </div>
+                <aside class="story-sidebar">
+                    <article class="sidebar-card">
+                        <h3>What belongs here</h3>
+                        <ul>
+                            <li>Thoughtful questions after reading someone’s story</li>
+                            <li>Thank-yous that do not need to be public</li>
+                            <li>Requests for practical detail about what helped</li>
+                        </ul>
+                    </article>
+                </aside>
+            </div>
+        </section>
+    </main>
+    <script>
+        const API_BASE = (() => {
+            const { protocol, hostname, port } = window.location;
+            if ((hostname === "127.0.0.1" || hostname === "localhost") && port && port !== "4181") {
+                return `${protocol}//127.0.0.1:4181`;
+            }
+            return "";
+        })();
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        async function applySessionUi() {
+            try {
+                const response = await fetch(`${API_BASE}/api/me`, { credentials: "same-origin" });
+                if (!response.ok) {
+                    document.getElementById("inboxStatus").textContent = "Log in to view your inbox.";
+                    return false;
+                }
+                const payload = await response.json();
+                document.getElementById("sessionNavCta").textContent = payload.user.display_name;
+                document.getElementById("sessionNavCta").href = "../app/index.html";
+                document.getElementById("createNavLink").textContent = "My app";
+                document.getElementById("createNavLink").href = "../app/index.html";
+                return true;
+            } catch {
+                document.getElementById("inboxStatus").textContent = "Log in to view your inbox.";
+                return false;
+            }
+        }
+
+        async function loadMessages() {
+            const ready = await applySessionUi();
+            if (!ready) {
+                document.getElementById("messagesList").innerHTML = `<p>Messages appear here after you log in.</p>`;
+                return;
+            }
+            const response = await fetch(`${API_BASE}/api/messages`, { cache: "no-store", credentials: "same-origin" });
+            if (!response.ok) {
+                document.getElementById("inboxStatus").textContent = "Could not load messages.";
+                return;
+            }
+            const messages = await response.json();
+            const list = document.getElementById("messagesList");
+            list.innerHTML = messages.length ? messages.map((message) => `
+                <div class="comment">
+                    <div class="comment__meta">
+                        <span class="author-dot">${escapeHtml((message.sender_name || "?").slice(0, 2).toUpperCase())}</span>
+                        <span>${escapeHtml(message.direction === "inbound" ? message.sender_name : `To ${message.recipient_name}`)} • ${escapeHtml(message.created_at.slice(0, 10))}</span>
+                    </div>
+                    <div class="comment__bubble">${escapeHtml(message.body)}</div>
+                </div>
+            `).join("") : `<p>No messages yet.</p>`;
+        }
+
+        loadMessages();
+    </script>
+</body>
+</html>

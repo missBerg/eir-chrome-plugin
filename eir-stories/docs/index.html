@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eir Stories</title>
+    <meta name="description" content="Share your health journey. Help someone else navigate theirs. Eir Stories is a calmer, privacy-conscious place for health journeys, with optional health context and evidence.">
+    <meta name="theme-color" content="#fafaf7">
+    <link rel="icon" href="https://eir-design-system.netlify.app/icon-teal.png">
+    <meta property="og:title" content="Eir Stories">
+    <meta property="og:description" content="Share your health journey. Help someone else navigate theirs.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://stories.eir.space/">
+    <meta property="og:image" content="https://stories.eir.space/stories-social-preview.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Eir Stories. Share your health journey. Help someone else navigate theirs.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Eir Stories">
+    <meta name="twitter:description" content="Share your health journey. Help someone else navigate theirs.">
+    <meta name="twitter:image" content="https://stories.eir.space/stories-social-preview.png">
+    <link rel="stylesheet" href="./stories-ui.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
+
+        .home-hero {
+            padding: 54px 0 26px;
+        }
+
+        .home-hero__wrap {
+            display: grid;
+            grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        .home-hero h1 {
+            margin-top: 22px;
+            max-width: 8.3ch;
+            font-size: clamp(3.2rem, 7vw, 5.8rem);
+            line-height: 0.92;
+            font-weight: 800;
+            letter-spacing: -0.07em;
+        }
+
+        .home-hero h1 span {
+            background: var(--aura);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .home-hero__lede {
+            margin: 18px 0 24px;
+            max-width: 31ch;
+            color: var(--muted);
+            font-size: 1.12rem;
+            line-height: 1.38;
+        }
+
+        .home-hero__actions {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .home-hero__value-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .hero-story-card {
+            padding: 28px;
+            display: grid;
+            gap: 18px;
+            align-content: start;
+            min-height: 100%;
+        }
+
+        .hero-story-card__eyebrow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .hero-story-card h2 {
+            font-size: clamp(2.1rem, 4vw, 3.4rem);
+            line-height: 0.94;
+            letter-spacing: -0.07em;
+        }
+
+        .hero-story-card__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .hero-story-card__excerpt {
+            margin: 0;
+            color: var(--muted);
+            font-size: 1rem;
+            line-height: 1.56;
+        }
+
+        .hero-story-card__footer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .home-story-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .home-story-grid--two {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .home-story-card {
+            padding: 24px;
+            display: grid;
+            gap: 16px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .home-story-card__top {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .home-story-card h3 {
+            font-size: 1.55rem;
+            line-height: 0.98;
+        }
+
+        .home-story-card__summary,
+        .home-story-card__excerpt {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.55;
+        }
+
+        .home-story-card__footer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .home-story-card__footer strong {
+            font-size: 13px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--teal-deep);
+        }
+
+        .home-network {
+            padding: 26px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .home-network__cluster {
+            display: grid;
+            grid-template-columns: 0.92fr 1.08fr;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .home-note__profile,
+        .home-note__story,
+        .home-note__thread,
+        .home-note__dm {
+            padding: 18px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.88);
+            border: 1px solid var(--line);
+        }
+
+        .home-note__profile {
+            display: grid;
+            gap: 12px;
+        }
+
+        .home-note__story {
+            min-height: 220px;
+            display: grid;
+            align-content: space-between;
+        }
+
+        .home-note__header {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .home-note__avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            background: var(--aura);
+            display: grid;
+            place-items: center;
+            color: white;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .home-note__name {
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        .home-note__meta {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .home-note__row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .home-note__thread p,
+        .home-note__dm p,
+        .home-note__profile p,
+        .home-note__story p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .home-note__thread strong,
+        .home-note__dm strong,
+        .home-note__story strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .home-note__story h3 {
+            margin: 0 0 8px;
+            font-size: 1.34rem;
+            line-height: 1.02;
+        }
+
+        .home-note__footer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .auth-card {
+            padding: 28px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .auth-card h2 {
+            font-size: 2rem;
+            line-height: 0.98;
+            max-width: 11ch;
+        }
+
+        .auth-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .auth-card__form {
+            display: grid;
+            gap: 14px;
+        }
+
+        .auth-card__field input {
+            width: 100%;
+            min-height: 56px;
+            padding: 0 18px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.92);
+            font: inherit;
+            color: var(--ink);
+        }
+
+        .auth-card__submit,
+        .auth-card__create {
+            width: 100%;
+            min-height: 54px;
+            justify-content: center;
+            border-radius: 18px;
+        }
+
+        .auth-card__submit {
+            background: var(--teal-deep);
+            color: white !important;
+        }
+
+        .auth-card__forgot {
+            text-align: center;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .auth-card__divider {
+            height: 1px;
+            background: var(--line);
+        }
+
+        .auth-card__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .network-proof {
+            padding: 24px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .network-proof__hero {
+            display: grid;
+            gap: 12px;
+        }
+
+        .network-proof__hero h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            line-height: 0.98;
+            max-width: 11ch;
+        }
+
+        .network-proof__hero p,
+        .network-proof__item p,
+        .network-proof__item li {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .network-proof__grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .network-proof__item {
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.82);
+        }
+
+        .network-proof__item strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .home-section {
+            padding: 18px 0 34px;
+        }
+
+        .home-section__head {
+            margin-bottom: 20px;
+        }
+
+        .home-section__head h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            line-height: 1.02;
+            max-width: 13ch;
+        }
+
+        .home-section__head p {
+            margin: 12px 0 0;
+            max-width: 56ch;
+            color: var(--muted);
+        }
+
+        .simple-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .simple-card {
+            padding: 22px;
+        }
+
+        .simple-card h3 {
+            margin-bottom: 8px;
+            font-size: 1.15rem;
+        }
+
+        .simple-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .network-grid {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr;
+            gap: 18px;
+        }
+
+        .network-stack {
+            display: grid;
+            gap: 18px;
+        }
+
+        .community-card {
+            padding: 24px;
+        }
+
+        .community-card h3 {
+            margin-bottom: 10px;
+            font-size: 1.15rem;
+        }
+
+        .community-card p,
+        .community-card li {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .community-card ul {
+            margin: 14px 0 0;
+            padding-left: 18px;
+        }
+
+        .community-card ul li + li {
+            margin-top: 8px;
+        }
+
+        .story-purpose-grid {
+            display: grid;
+            grid-template-columns: 1.08fr 0.92fr;
+            gap: 18px;
+        }
+
+        .story-purpose-card {
+            padding: 26px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .story-purpose-card h3 {
+            font-size: 1.4rem;
+            line-height: 1.02;
+        }
+
+        .story-purpose-card p,
+        .story-purpose-card li {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .story-purpose-card ul {
+            margin: 0;
+            padding-left: 18px;
+            display: grid;
+            gap: 8px;
+        }
+
+        @media (max-width: 980px) {
+            .home-hero__wrap,
+            .simple-grid,
+            .network-grid,
+            .story-purpose-grid,
+            .home-story-grid,
+            .home-story-grid--two {
+                grid-template-columns: 1fr;
+            }
+
+            .home-network__cluster {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="shell site-header__inner">
+            <a class="brand" href="./index.html" aria-label="Eir Stories home">
+                <span class="brand__mark" aria-hidden="true"><img src="https://eir-design-system.netlify.app/icon-white.png" alt=""></span>
+                <span>
+                    <span class="brand__eyebrow">stories.eir.space</span>
+                    <span class="brand__name">Eir Stories</span>
+                </span>
+            </a>
+            <nav class="nav" aria-label="Primary">
+                <a href="./stories/index.html">Stories</a>
+                <a href="./topics/index.html">Topics</a>
+                <a href="./profiles/index.html">Profiles</a>
+                <a id="appNavLink" href="./app/index.html">App</a>
+                <a id="createNavLink" href="./app/index.html">Create</a>
+                <a href="https://github.com/eir-space/eir-stories">GitHub</a>
+                <a id="sessionNavCta" class="nav__cta" href="./app/index.html">Create account</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="home-hero">
+            <div class="shell home-hero__wrap">
+                <div>
+                    <div class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span>The first social network for health journeys</div>
+                    <h1>Share your health journey. Help someone else navigate theirs.</h1>
+                    <p class="home-hero__lede">
+                        Read how other people made sense of symptoms, diagnosis, recovery, and the tools that helped when ordinary explanations were not enough.
+                    </p>
+                    <div class="home-hero__actions">
+                        <a class="button button--primary" href="./app/index.html">Start your story</a>
+                        <a class="button button--secondary" href="./stories/index.html">Explore stories</a>
+                    </div>
+                    <div class="home-hero__value-row">
+                        <span class="pill">Share what helped</span>
+                        <span class="pill">Read longer stories</span>
+                        <span class="pill">Stories about using AI for health</span>
+                    </div>
+                </div>
+                <aside id="heroStoryCard" class="surface hero-story-card"></aside>
+            </div>
+        </section>
+
+        <section class="home-section">
+            <div class="shell">
+                <div class="home-section__head">
+                    <div class="brand__eyebrow">Featured stories</div>
+                    <h2>Start by reading someone else's journey.</h2>
+                </div>
+                <div id="homeFeaturedStories" class="home-story-grid" aria-label="Featured stories"></div>
+            </div>
+        </section>
+
+        <section class="home-section">
+            <div class="shell">
+                <div class="home-section__head">
+                    <div class="brand__eyebrow">AI for health</div>
+                    <h2>People are already using AI in the messiest parts of care.</h2>
+                </div>
+                <div id="homeAiStories" class="home-story-grid home-story-grid--two" aria-label="AI for health stories"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell site-footer__panel">
+            <div>
+                <div class="brand__eyebrow" style="color:#86efc5;">Eir Stories</div>
+                <h3 style="margin:10px 0 12px; max-width:16ch;">Share your health journey. Help someone else navigate theirs.</h3>
+            </div>
+            <div class="site-footer__links">
+                <a href="./stories/index.html">Browse stories</a>
+                <a href="./app/index.html">Start your story</a>
+                <a href="https://github.com/eir-space/eir-stories">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE = (() => {
+            const { protocol, hostname, port } = window.location;
+            if ((hostname === "127.0.0.1" || hostname === "localhost") && port && port !== "4181") {
+                return `${protocol}//127.0.0.1:4181`;
+            }
+            return "";
+        })();
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        async function applySessionUi() {
+            try {
+                const response = await fetch(`${API_BASE}/api/me`, { credentials: "same-origin" });
+                if (!response.ok) {
+                    return;
+                }
+                const payload = await response.json();
+                document.getElementById("sessionNavCta").textContent = payload.user.display_name;
+                document.getElementById("sessionNavCta").href = "./app/index.html";
+                document.getElementById("createNavLink").textContent = "Write";
+                document.getElementById("createNavLink").href = "./app/index.html";
+                document.getElementById("appNavLink").textContent = "My app";
+            } catch {}
+        }
+
+        function excerptFromStory(story) {
+            return (story.body && story.body[0]) || story.summary || "";
+        }
+
+        function renderHomeCard(story) {
+            return `
+                <a class="surface home-story-card" href="./stories/view.html?slug=${encodeURIComponent(story.slug)}">
+                    <div class="home-story-card__top">
+                        <span>${escapeHtml(story.author_name || "Anonymous")} • ${escapeHtml(story.journey_stage || "Ongoing")}</span>
+                        ${story.source_label ? `<span class="pill">From ${escapeHtml(story.source_label)}</span>` : `<span class="pill">${escapeHtml(story.country)}</span>`}
+                    </div>
+                    <div>
+                        <h3>${escapeHtml(story.title)}</h3>
+                        <p class="home-story-card__summary">${escapeHtml(story.summary)}</p>
+                    </div>
+                    <p class="home-story-card__excerpt">${escapeHtml(excerptFromStory(story))}</p>
+                    <div class="home-story-card__footer">
+                        ${(story.conditions || []).slice(0, 2).map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join("")}
+                        ${(story.helped || []).slice(0, 1).map((tag) => `<span class="pill">Helped: ${escapeHtml(tag)}</span>`).join("")}
+                        <strong>Read story</strong>
+                    </div>
+                </a>
+            `;
+        }
+
+        async function loadHomeStories() {
+            const response = await fetch(`${API_BASE}/api/stories`, { cache: "no-store" });
+            const stories = await response.json();
+            const sourcedStories = stories.filter((story) => story.source_kind && story.source_kind !== "native");
+            const nativeStories = stories.filter((story) => !story.source_kind || story.source_kind === "native");
+            const aiStories = sourcedStories.filter((story) => {
+                const haystack = [
+                    story.title,
+                    story.summary,
+                    ...(story.body || []),
+                    ...(story.helped || []),
+                    ...(story.lessons || []),
+                    ...(story.conditions || []),
+                ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .toLowerCase();
+                return haystack.includes("chatgpt") || haystack.includes("ai ");
+            });
+
+            const heroStory = stories.find((story) => story.slug === "chatgpt-helped-me-push-back-when-my-symptoms-were-dismissed")
+                || aiStories[0]
+                || sourcedStories[0]
+                || nativeStories[0]
+                || stories[0];
+            const featuredStories = nativeStories.slice(0, 3);
+            const homeAiStories = aiStories.slice(0, 4);
+
+            document.getElementById("heroStoryCard").innerHTML = heroStory ? `
+                <div class="hero-story-card__eyebrow">
+                    <span>Read this first</span>
+                    ${heroStory.source_label ? `<span class="pill">From ${escapeHtml(heroStory.source_label)}</span>` : `<span class="pill">${escapeHtml(heroStory.country)}</span>`}
+                </div>
+                <h2>${escapeHtml(heroStory.title)}</h2>
+                <p class="hero-story-card__excerpt">${escapeHtml(excerptFromStory(heroStory))}</p>
+                <div class="hero-story-card__meta">
+                    <span class="pill">${escapeHtml(heroStory.author_name || "Anonymous")}</span>
+                    <span class="pill">${escapeHtml(heroStory.journey_stage || "Ongoing")}</span>
+                    ${(heroStory.conditions || []).slice(0, 2).map((tag) => `<span class="pill">${escapeHtml(tag)}</span>`).join("")}
+                </div>
+                <div class="hero-story-card__footer">
+                    <a class="button button--primary" href="./stories/view.html?slug=${encodeURIComponent(heroStory.slug)}">Read story</a>
+                    <a class="button button--secondary" href="./stories/index.html">Browse all stories</a>
+                </div>
+            ` : "";
+
+            document.getElementById("homeFeaturedStories").innerHTML = featuredStories.map(renderHomeCard).join("");
+            document.getElementById("homeAiStories").innerHTML = homeAiStories.map(renderHomeCard).join("");
+        }
+
+        loadHomeStories();
+        applySessionUi();
+    </script>
+</body>
+</html>
