@@ -5,10 +5,13 @@ import SwiftUI
 import DeviceCheck
 #endif
 
+private let managedCloudKeyVersion = "v2"
+
 @MainActor
 class SettingsViewModel: ObservableObject {
     static let eirTrialRequestsPerToken = 100
     static let eirTrialDailyTokenGrant = 10
+    static let hostedClientKeyVersion = managedCloudKeyVersion
 
     @Published var providers: [LLMProviderConfig]
     @Published var activeProviderType: LLMProviderType
@@ -297,11 +300,11 @@ class SettingsViewModel: ObservableObject {
     }
 
     private func managedAccessTokenKey(for type: LLMProviderType) -> String {
-        "eir_managed_cloud_token_\(type.storageSlug)"
+        "eir_managed_cloud_token_\(type.storageSlug)_\(Self.hostedClientKeyVersion)"
     }
 
     private func trialStartedAtKey(for type: LLMProviderType) -> String {
-        "eir_managed_cloud_trial_started_at_\(type.storageSlug)"
+        "eir_managed_cloud_trial_started_at_\(type.storageSlug)_\(Self.hostedClientKeyVersion)"
     }
 
     func eirTrialBalance(for snapshot: ManagedCloudAccessSnapshot, type: LLMProviderType, now: Date = Date()) -> EirTrialBalance {
@@ -610,8 +613,8 @@ private struct ManagedCloudBootstrapContext {
 }
 
 private enum ManagedCloudBootstrapClient {
-    private static let installIDKey = "eir_managed_cloud_install_id"
-    private static let appAttestKeyIDKey = "eir_managed_cloud_app_attest_key_id"
+    private static let installIDKey = "eir_managed_cloud_install_id_\(managedCloudKeyVersion)"
+    private static let appAttestKeyIDKey = "eir_managed_cloud_app_attest_key_id_\(managedCloudKeyVersion)"
 
     private struct RequestBody: Encodable {
         let installId: String

@@ -7,6 +7,7 @@ final class ForYouViewModel: ObservableObject {
     @Published private(set) var reflectionDrafts: [String: String] = [:]
     @Published private(set) var isLoadingMore = false
     @Published private(set) var loadMoreError: String?
+    @Published var pendingCloudConsent: LLMProviderType?
 
     private var currentProfileID: UUID?
     private var currentSignature: String?
@@ -47,6 +48,20 @@ final class ForYouViewModel: ObservableObject {
     ) async {
         guard !isLoadingMore else { return }
         await loadMore(settingsVM: settingsVM, localModelManager: localModelManager)
+    }
+
+    func consentGrantedAndLoadMore(
+        settingsVM: SettingsViewModel,
+        localModelManager: LocalModelManager
+    ) async {
+        guard let provider = pendingCloudConsent else { return }
+        ChatViewModel.grantCloudConsent(for: provider)
+        pendingCloudConsent = nil
+        await loadMore(settingsVM: settingsVM, localModelManager: localModelManager)
+    }
+
+    func consentDenied() {
+        pendingCloudConsent = nil
     }
 
     func isFavorite(_ card: ForYouCard) -> Bool {
@@ -102,6 +117,17 @@ final class ForYouViewModel: ObservableObject {
         settingsVM: SettingsViewModel,
         localModelManager: LocalModelManager
     ) async {
+        guard let config = settingsVM.activeProvider else {
+            loadMoreError = readableLoadMoreError(for: LLMError.noProvider)
+            return
+        }
+
+        if !config.type.isLocal && !ChatViewModel.hasCloudConsent(for: config.type) {
+            pendingCloudConsent = config.type
+            loadMoreError = nil
+            return
+        }
+
         isLoadingMore = true
         loadMoreError = nil
         defer { isLoadingMore = false }
@@ -124,12 +150,8 @@ final class ForYouViewModel: ObservableObject {
         settingsVM: SettingsViewModel,
         localModelManager: LocalModelManager
     ) async throws -> [ForYouCard] {
-        guard let config = settingsVM.activeProvider else {
+        guard settingsVM.activeProvider != nil else {
             throw LLMError.noProvider
-        }
-
-        if !config.type.isLocal && !ChatViewModel.hasCloudConsent(for: config.type) {
-            throw LLMError.requestFailed("Allow cloud AI for Eir to keep the feed going.")
         }
 
         var accepted: [ForYouCard] = []

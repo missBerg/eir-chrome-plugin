@@ -3,6 +3,7 @@ import UIKit
 
 struct ForYouView: View {
     @EnvironmentObject var actionsVM: ActionsViewModel
+    @EnvironmentObject var chatVM: ChatViewModel
     @EnvironmentObject var documentVM: DocumentViewModel
     @EnvironmentObject var profileStore: ProfileStore
     @EnvironmentObject var forYouVM: ForYouViewModel
@@ -47,6 +48,27 @@ struct ForYouView: View {
         }
         .task {
             syncFeed()
+        }
+        .alert(
+            "Share Data with \(forYouVM.pendingCloudConsent?.displayName ?? "Cloud Provider")?",
+            isPresented: Binding(
+                get: { forYouVM.pendingCloudConsent != nil },
+                set: { if !$0 { forYouVM.consentDenied() } }
+            )
+        ) {
+            Button("Cancel", role: .cancel) {
+                forYouVM.consentDenied()
+            }
+            Button("I Agree") {
+                Task {
+                    await forYouVM.consentGrantedAndLoadMore(
+                        settingsVM: settingsVM,
+                        localModelManager: localModelManager
+                    )
+                }
+            }
+        } message: {
+            Text("Your records will be sent to \(forYouVM.pendingCloudConsent?.displayName ?? "the selected provider") to generate more cards for For You. This data may include health information. On-device models keep everything on your phone.")
         }
         .onChange(of: profileStore.selectedProfileID) {
             syncFeed()

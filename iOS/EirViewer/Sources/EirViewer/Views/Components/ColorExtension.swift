@@ -25,120 +25,51 @@ extension Color {
 }
 
 enum AppColors {
-    // MARK: - Brand
+    static let primary = Color(hex: "6366F1")
+    static let primaryLight = Color(hex: "818CF8")
+    static let primarySoft = Color(hex: "EEF2FF")
+    static let primaryStrong = Color(hex: "4F46E5")
 
-    static let primary = Color(hex: "1E94A8")
-    static let primaryStrong = Color(hex: "197A8E")
-    static let primaryDeep = Color(hex: "1C5260")
-    static let primaryLight = Color(hex: "D5EFF4")
-    static let primarySoft = Color(hex: "F0FAFB")
-
-    static let ai = Color(hex: "D4A76A")
-    static let aiStrong = Color(hex: "96703E")
-    static let aiSoft = Color(hex: "FFF9F0")
-
-    static let info = Color(hex: "4A8DB4")
-    static let infoSoft = Color(hex: "F0F7FB")
-
-    static let success = Color(hex: "22C55E")
-    static let successSoft = Color(hex: "F0FDF4")
-    static let warning = Color(hex: "F59E0B")
-    static let warningSoft = Color(hex: "FFFBEB")
-    static let danger = Color(hex: "EF4444")
-    static let dangerSoft = Color(hex: "FEF2F2")
-
-    // MARK: - Surfaces
-
-    static let background = Color(hex: "FAFAF7")
-    static let backgroundElevated = Color.white
-    static let backgroundMuted = Color(hex: "F5F4F0")
-    static let backgroundStrong = Color(hex: "E8E6E1")
+    static let background = Color(hex: "FAFAF9")
+    static let backgroundMuted = Color(hex: "F5F5F4")
+    static let text = Color(hex: "1C1917")
+    static let textSecondary = Color(hex: "78716C")
     static let card = Color.white
-    static let border = Color(hex: "E8E6E1")
-    static let divider = Color(hex: "F5F4F0")
-    static let shadow = Color.black.opacity(0.06)
-    static let shadowStrong = Color.black.opacity(0.12)
+    static let border = Color(hex: "E7E5E4")
+    static let divider = Color(hex: "F5F5F4")
 
-    // MARK: - Text
-
-    static let text = Color(hex: "3D3A36")
-    static let textSecondary = Color(hex: "7A766F")
-    static let textTertiary = Color(hex: "A8A49E")
-    static let textOnBrand = Color.white
-
-    // Compatibility aliases for existing views.
-    static let green = success
-    static let orange = warning
-    static let red = danger
-    static let blue = info
-    static let teal = primary
-    static let pink = ai
-    static let yellow = warning
-    static let purple = aiStrong
-
-    // MARK: - Decorative
-
-    static let auraStart = Color(hex: "D4A76A")
-    static let auraMidWarm = Color(hex: "C9B88A")
-    static let auraMidCool = Color(hex: "A8C5D4")
-    static let auraEnd = Color(hex: "8BB8CE")
-
-    static let aura = LinearGradient(
-        colors: [auraStart, auraMidWarm, auraMidCool, auraEnd],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let auraVertical = LinearGradient(
-        colors: [auraStart, auraMidCool, auraEnd],
-        startPoint: .top,
-        endPoint: .bottom
-    )
+    static let red = Color(hex: "EF4444")
+    static let green = Color(hex: "22C55E")
+    static let purple = Color(hex: "A855F7")
+    static let orange = Color(hex: "F97316")
+    static let blue = Color(hex: "3B82F6")
+    static let teal = Color(hex: "14B8A6")
+    static let pink = Color(hex: "EC4899")
+    static let yellow = Color(hex: "EAB308")
+    static let aiSoft = Color(hex: "FFF9F0")
+    static let aiStrong = Color(hex: "A16207")
+    static let danger = red
 
     static let auraSubtle = LinearGradient(
         colors: [
-            auraStart.opacity(0.14),
-            auraMidCool.opacity(0.08),
-            auraEnd.opacity(0.12)
+            Color(hex: "FDE68A").opacity(0.24),
+            Color(hex: "E9D5FF").opacity(0.18)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
-    )
-
-    static let pageGlow = RadialGradient(
-        colors: [
-            auraStart.opacity(0.16),
-            auraEnd.opacity(0.10),
-            .clear
-        ],
-        center: .topLeading,
-        startRadius: 40,
-        endRadius: 420
     )
 
     static func categoryColor(for category: String) -> Color {
         switch category.lowercased() {
-        case "lab", "labresultat":
-            return info
-        case "recept", "läkemedel":
-            return success
-        case "diagnoser", "conditions":
-            return ai
-        case "allergier":
-            return danger
-        case "hälsodata", "vitaler", "vitals":
-            return primary
-        case "vaccinationer", "immunizations":
-            return Color(hex: "8BC4E3")
-        case "vårdkontakter", "remisser":
-            return primaryStrong
-        case "anteckningar":
-            return aiStrong
+        case "vårdkontakter": return primary
+        case "anteckningar": return purple
+        case "diagnoser": return red
+        case "vaccinationer": return green
+        case "recept", "läkemedel": return orange
+        case "lab", "labresultat": return blue
+        case "remisser": return teal
+        case "hälsodata": return pink
         default: return textSecondary
         }
-    }
-
-    static func tagBackground(for color: Color) -> Color {
-        color.opacity(0.12)
     }
 }

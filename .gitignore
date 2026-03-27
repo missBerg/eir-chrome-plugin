@@ -2,8 +2,15 @@
 *.log
 .build/
 Desktop/EirViewer/.build/
+iOS/EirViewer/.swiftpm/
+iOS/EirViewer/build/
+iOS/EirViewer/EirViewer.xcodeproj/project.xcworkspace/
+iOS/EirViewer/EirViewer.xcodeproj/xcuserdata/
 find-api.js
 scrape-clinics.js
 healthcare-clinics.csv
 healthcare-clinics.json
 data/
+eir-stories/node_modules/
+eir-stories/storage/
+eir-stories/rust-backend/target/

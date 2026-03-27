@@ -1,6 +1,5 @@
+import Charts
 import SwiftUI
-import CoreImage.CIFilterBuiltins
-import UIKit
 
 struct JournalView: View {
     @EnvironmentObject var documentVM: DocumentViewModel
@@ -24,6 +23,10 @@ struct JournalView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 16) {
+                        if let summary = appleHealthSummary {
+                            appleHealthOverview(summary)
+                        }
+
                         ForEach(documentVM.groupedEntries, id: \.key) { group in
                             Section {
                                 ForEach(group.entries) { entry in
@@ -200,138 +203,200 @@ struct JournalView: View {
     private func showSelectedProfileQRCode() {
         qrExportURL = selectedProfileFileURL
     }
-}
 
-private struct ActivityView: UIViewControllerRepresentable {
-    let activityItems: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    private var appleHealthSummary: AppleHealthSummary? {
+        guard let document = documentVM.document else { return nil }
+        return AppleHealthSummary(document: document)
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
+    private func appleHealthOverview(_ summary: AppleHealthSummary) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Apple Health Overview")
+                        .font(.headline.weight(.semibold))
+                        .foregroundColor(AppColors.text)
+                    Text("Imported activity data is summarized here before the full journal timeline.")
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary)
+                }
 
-private struct FileTransferQRCodeView: View {
-    let fileURL: URL
-    @Environment(\.dismiss) private var dismiss
-    @StateObject private var transferServer = LocalTransferServer()
-    @State private var copiedLink = false
+                Spacer()
 
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                if transferServer.transferComplete {
-                    completionState
-                } else if transferServer.isRunning, let url = transferServer.transferURL {
-                    qrState(url: url)
-                } else if let error = transferServer.errorMessage {
-                    errorState(message: error)
-                } else {
-                    ProgressView("Startar export...")
-                        .tint(AppColors.primary)
+                Text("HealthKit")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(AppColors.aiStrong)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(AppColors.aiSoft)
+                    .clipShape(Capsule())
+            }
+
+            HStack(spacing: 10) {
+                summaryTile(title: "Tracked days", value: "\(summary.daysTracked)", tint: AppColors.primary)
+                summaryTile(title: "Metrics", value: "\(summary.metricCount)", tint: AppColors.blue)
+                summaryTile(title: "Entries", value: "\(summary.entryCount)", tint: AppColors.green)
+            }
+
+            if !summary.stepTrend.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Recent steps")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppColors.text)
+
+                    Chart(summary.stepTrend) { point in
+                        BarMark(
+                            x: .value("Date", point.date),
+                            y: .value("Steps", point.value)
+                        )
+                        .foregroundStyle(AppColors.primary.gradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading) { value in
+                            AxisValueLabel {
+                                if let intValue = value.as(Int.self) {
+                                    Text(intValue.formatted(.number.notation(.compactName)))
+                                        .font(.caption2)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                                .foregroundStyle(AppColors.border)
+                        }
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                            AxisValueLabel {
+                                if let date = value.as(Date.self) {
+                                    Text(date, format: .dateTime.day().month(.abbreviated))
+                                        .font(.caption2)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+                        }
+                    }
+                    .frame(height: 180)
                 }
             }
-            .padding(24)
-            .navigationTitle("QR-export")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Stang") { dismiss() }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(summary.metricBreakdown, id: \.metric) { item in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(AppColors.categoryColor(for: item.metric))
+                                .frame(width: 8, height: 8)
+                            Text(item.metric)
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(AppColors.text)
+                            Text("\(item.count)")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(AppColors.backgroundMuted)
+                        .clipShape(Capsule())
+                    }
                 }
             }
         }
-        .onAppear {
-            transferServer.start(fileURL: fileURL)
-        }
-        .onDisappear {
-            transferServer.stop()
-        }
+        .padding(18)
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
     }
 
-    private func qrState(url: String) -> some View {
-        VStack(spacing: 16) {
-            if let qrImage = generateQRCode(from: url) {
-                Image(uiImage: qrImage)
-                    .interpolation(.none)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 240, height: 240)
-                    .background(Color.white)
-                    .cornerRadius(16)
-            }
-
-            Text("Skanna QR-koden for att ladda ner exportfilen.")
-                .font(.headline)
-                .multilineTextAlignment(.center)
-
-            Text("Bada enheterna maste vara pa samma Wi-Fi.")
+    private func summaryTile(title: String, value: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(value)
+                .font(.system(.title3, design: .rounded, weight: .bold))
+                .foregroundColor(tint)
+            Text(title)
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(AppColors.backgroundMuted)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
 
-            Text(fileURL.lastPathComponent)
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
+private struct AppleHealthSummary {
+    struct BreakdownItem {
+        let metric: String
+        let count: Int
+    }
 
-            Button(copiedLink ? "Lank kopierad" : "Kopiera lank") {
-                UIPasteboard.general.string = url
-                copiedLink = true
+    struct TrendPoint: Identifiable {
+        let id = UUID()
+        let date: Date
+        let value: Int
+    }
+
+    let entryCount: Int
+    let daysTracked: Int
+    let metricCount: Int
+    let metricBreakdown: [BreakdownItem]
+    let stepTrend: [TrendPoint]
+
+    init?(document: EirDocument) {
+        let entries = document.entries.filter { entry in
+            entry.tags?.contains("apple-health") == true
+                || entry.provider?.name == "Apple Health"
+                || document.metadata.source == "Apple Health"
+        }
+
+        guard !entries.isEmpty else { return nil }
+
+        entryCount = entries.count
+        daysTracked = Set(entries.compactMap(\.date)).count
+
+        let groupedMetrics = Dictionary(grouping: entries) { $0.type ?? $0.category ?? "Unknown" }
+        metricBreakdown = groupedMetrics
+            .map { BreakdownItem(metric: $0.key, count: $0.value.count) }
+            .sorted { lhs, rhs in
+                lhs.count == rhs.count ? lhs.metric < rhs.metric : lhs.count > rhs.count
             }
-            .buttonStyle(.bordered)
-        }
-    }
+        metricCount = groupedMetrics.count
 
-    private var completionState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 56))
-                .foregroundColor(AppColors.green)
-
-            Text("Nedladdning slutford")
-                .font(.title3)
-                .fontWeight(.bold)
-
-            Text("Exportfilen hamtades fran den har enheten.")
-                .multilineTextAlignment(.center)
-                .foregroundColor(AppColors.textSecondary)
-        }
-    }
-
-    private func errorState(message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
-                .foregroundColor(AppColors.orange)
-
-            Text("Kunde inte starta QR-export")
-                .font(.headline)
-
-            Text(message)
-                .multilineTextAlignment(.center)
-                .foregroundColor(AppColors.textSecondary)
-
-            Button("Forsok igen") {
-                copiedLink = false
-                transferServer.start(fileURL: fileURL)
+        let stepEntries = entries
+            .filter {
+                ($0.type ?? "").localizedCaseInsensitiveContains("steg")
+                    || ($0.category ?? "").localizedCaseInsensitiveContains("steg")
             }
-            .buttonStyle(.borderedProminent)
-            .tint(AppColors.primary)
+            .sorted { ($0.date ?? "") < ($1.date ?? "") }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        stepTrend = stepEntries.suffix(14).compactMap { entry in
+            guard
+                let date = entry.date.flatMap(formatter.date(from:)),
+                let rawValue = entry.content?.summary.flatMap(Self.firstNumericValue)
+            else {
+                return nil
+            }
+
+            return TrendPoint(date: date, value: Int(rawValue.rounded()))
         }
     }
 
-    private func generateQRCode(from string: String) -> UIImage? {
-        let context = CIContext()
-        let filter = CIFilter.qrCodeGenerator()
-        filter.message = Data(string.utf8)
-        filter.correctionLevel = "M"
-
-        guard let ciImage = filter.outputImage else { return nil }
-        let transformed = ciImage.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
-        guard let cgImage = context.createCGImage(transformed, from: transformed.extent) else {
+    private static func firstNumericValue(in text: String) -> Double? {
+        let pattern = #"[0-9]+(?:[.,][0-9]+)?"#
+        guard
+            let regex = try? NSRegularExpression(pattern: pattern),
+            let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+            let range = Range(match.range, in: text)
+        else {
             return nil
         }
 
-        return UIImage(cgImage: cgImage)
+        return Double(text[range].replacingOccurrences(of: ",", with: "."))
     }
 }
