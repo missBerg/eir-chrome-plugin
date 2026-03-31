@@ -1,26 +1,172 @@
 import Charts
 import SwiftUI
 
+extension Notification.Name {
+    static let openJournalImport = Notification.Name("openJournalImport")
+}
+
+private enum JournalMode: String, CaseIterable, Identifiable {
+    case entries = "Journal"
+    case state = "State"
+    case assessments = "Assessments"
+    case importData = "Import"
+
+    var id: String { rawValue }
+
+    var symbolName: String {
+        switch self {
+        case .entries:
+            return "doc.text"
+        case .state:
+            return "waveform.path.ecg"
+        case .assessments:
+            return "checklist"
+        case .importData:
+            return "square.and.arrow.down"
+        }
+    }
+}
+
 struct JournalView: View {
     @EnvironmentObject var documentVM: DocumentViewModel
     @EnvironmentObject var profileStore: ProfileStore
+    @EnvironmentObject var settingsVM: SettingsViewModel
+    @EnvironmentObject var localModelManager: LocalModelManager
 
-    @State private var showingAddPerson = false
+    @State private var mode: JournalMode = .entries
+    @StateObject private var assessmentStore = AssessmentHistoryStore()
+    @StateObject private var stateStore = StateCheckInStore()
+    @State private var showingHealthKitImport = false
     @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
     @State private var qrExportURL: URL?
 
     var body: some View {
         Group {
-            if documentVM.document == nil {
-                VStack(spacing: 12) {
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 48))
-                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
-                    Text("No records loaded")
-                        .foregroundColor(AppColors.textSecondary)
-                }
+            if mode == .entries {
+                journalTimeline
+                    .searchable(text: $documentVM.searchText, prompt: "Search entries...")
+            } else if mode == .state {
+                stateScreen
+            } else if mode == .assessments {
+                assessmentsScreen
             } else {
+                importScreen
+            }
+        }
+        .navigationTitle(profileStore.selectedProfile?.displayName ?? "Journal")
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                journalModeMenu
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                if mode == .entries, selectedProfileFileURL != nil {
+                    Menu {
+                        Button {
+                            shareSelectedProfile()
+                        } label: {
+                            Label("Export File", systemImage: "square.and.arrow.up")
+                        }
+
+                        Button {
+                            showSelectedProfileQRCode()
+                        } label: {
+                            Label("Show QR Code", systemImage: "qrcode")
+                        }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(AppColors.primary)
+                    }
+                }
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                if mode == .entries {
+                    Menu {
+                        Menu("Category") {
+                            Button("All Categories") {
+                                documentVM.selectedCategory = nil
+                            }
+                            ForEach(documentVM.categories, id: \.self) { cat in
+                                Button {
+                                    documentVM.selectedCategory = cat
+                                } label: {
+                                    HStack {
+                                        Text(cat)
+                                        if documentVM.selectedCategory == cat {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Menu("Provider") {
+                            Button("All Providers") {
+                                documentVM.selectedProvider = nil
+                            }
+                            ForEach(documentVM.providers, id: \.self) { prov in
+                                Button {
+                                    documentVM.selectedProvider = prov
+                                } label: {
+                                    HStack {
+                                        Text(prov)
+                                        if documentVM.selectedProvider == prov {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if documentVM.selectedCategory != nil || documentVM.selectedProvider != nil {
+                            Divider()
+                            Button("Clear Filters", role: .destructive) {
+                                documentVM.clearFilters()
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .foregroundColor(
+                                documentVM.selectedCategory != nil || documentVM.selectedProvider != nil
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary
+                            )
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingHealthKitImport) {
+            HealthKitImportView()
+                .environmentObject(profileStore)
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ActivityView(activityItems: shareItems)
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { qrExportURL != nil },
+                set: { if !$0 { qrExportURL = nil } }
+            )
+        ) {
+            if let qrExportURL {
+                FileTransferQRCodeView(fileURL: qrExportURL)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openJournalImport)) { _ in
+            mode = .importData
+        }
+        .task(id: profileStore.selectedProfileID) {
+            assessmentStore.load(for: profileStore.selectedProfileID)
+            stateStore.load(for: profileStore.selectedProfileID)
+        }
+        .background(AppColors.background)
+    }
+
+    private var journalTimeline: some View {
+        Group {
+            if hasEntries {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 16) {
                         if let summary = appleHealthSummary {
@@ -53,145 +199,148 @@ struct JournalView: View {
                         EntryDetailView(entry: entry)
                     }
                 }
+            } else {
+                emptyJournalState
             }
         }
-        .navigationTitle(profileStore.selectedProfile?.displayName ?? "Journal")
-        .searchable(text: $documentVM.searchText, prompt: "Search entries...")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if selectedProfileFileURL != nil {
-                    Menu {
-                        Button {
-                            shareSelectedProfile()
-                        } label: {
-                            Label("Export File", systemImage: "square.and.arrow.up")
-                        }
+    }
 
-                        Button {
-                            showSelectedProfileQRCode()
-                        } label: {
-                            Label("Show QR Code", systemImage: "qrcode")
-                        }
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .foregroundColor(AppColors.primary)
-                    }
-                }
-            }
+    private var importScreen: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            importIntroCard
+            HealthDataBrowserView(displayMode: .embedded)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .padding()
+    }
 
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    // Category filter
-                    Menu("Category") {
-                        Button("All Categories") {
-                            documentVM.selectedCategory = nil
-                        }
-                        ForEach(documentVM.categories, id: \.self) { cat in
-                            Button {
-                                documentVM.selectedCategory = cat
-                            } label: {
-                                HStack {
-                                    Text(cat)
-                                    if documentVM.selectedCategory == cat {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                    }
+    private var assessmentsScreen: some View {
+        AssessmentsView(store: assessmentStore)
+            .environmentObject(profileStore)
+            .environmentObject(settingsVM)
+            .environmentObject(localModelManager)
+    }
 
-                    // Provider filter
-                    Menu("Provider") {
-                        Button("All Providers") {
-                            documentVM.selectedProvider = nil
-                        }
-                        ForEach(documentVM.providers, id: \.self) { prov in
-                            Button {
-                                documentVM.selectedProvider = prov
-                            } label: {
-                                HStack {
-                                    Text(prov)
-                                    if documentVM.selectedProvider == prov {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                    }
+    private var stateScreen: some View {
+        StateCheckInView(store: stateStore)
+            .environmentObject(profileStore)
+    }
 
-                    if documentVM.selectedCategory != nil || documentVM.selectedProvider != nil {
-                        Divider()
-                        Button("Clear Filters", role: .destructive) {
-                            documentVM.clearFilters()
-                        }
-                    }
+    private var journalModeMenu: some View {
+        Menu {
+            ForEach(JournalMode.allCases) { item in
+                Button {
+                    mode = item
                 } label: {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .foregroundColor(
-                            documentVM.selectedCategory != nil || documentVM.selectedProvider != nil
-                                ? AppColors.primary
-                                : AppColors.textSecondary
-                        )
+                    Label(item.rawValue, systemImage: item.symbolName)
                 }
             }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: mode.symbolName)
+                    .font(.caption.weight(.bold))
+                Text(mode.rawValue)
+                    .font(.caption.weight(.semibold))
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.bold))
+            }
+            .foregroundStyle(AppColors.text)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(AppColors.backgroundMuted)
+            .clipShape(Capsule())
+        }
+    }
 
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    // Person list
-                    ForEach(profileStore.profiles) { profile in
-                        Button {
-                            profileStore.selectProfile(profile.id)
-                        } label: {
-                            HStack {
-                                Text(profile.displayName)
-                                if let count = profile.totalEntries {
-                                    Text("(\(count))")
-                                }
-                                if profile.id == profileStore.selectedProfileID {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                    Divider()
-                    Button {
-                        showingAddPerson = true
-                    } label: {
-                        Label("Add Person...", systemImage: "person.badge.plus")
-                    }
+    private var emptyJournalState: some View {
+        VStack(spacing: 18) {
+            Spacer()
+
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 48))
+                .foregroundColor(AppColors.textSecondary.opacity(0.5))
+
+            Text("No journal entries yet")
+                .font(.title3.weight(.bold))
+                .foregroundColor(AppColors.text)
+
+            Text("Import from 1177 or Apple Health to start building this timeline.")
+                .font(.subheadline)
+                .foregroundColor(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            Button {
+                mode = .importData
+            } label: {
+                Label("Go to Import", systemImage: "arrow.right.circle.fill")
+                    .font(.headline)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
+                    .background(AppColors.primary)
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var importIntroCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Import into this journal")
+                .font(.headline.weight(.semibold))
+                .foregroundColor(AppColors.text)
+
+            Text("Use the 1177 browser below to download your records, or pull in Apple Health data for this selected profile.")
+                .font(.subheadline)
+                .foregroundColor(AppColors.textSecondary)
+
+            HStack(spacing: 10) {
+                Button {
+                    showingHealthKitImport = true
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "person.crop.circle")
-                        if profileStore.profiles.count > 1 {
-                            Text(profileStore.selectedProfile?.initials ?? "")
-                                .font(.caption2)
-                                .fontWeight(.semibold)
-                        }
-                    }
+                    Label("Apple Health", systemImage: "heart.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(AppColors.pink)
+                        .clipShape(Capsule())
                 }
+                .buttonStyle(.plain)
+
+                Button {
+                    mode = .entries
+                } label: {
+                    Label("Back to Journal", systemImage: "doc.text")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppColors.text)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(AppColors.backgroundMuted)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
         }
-        .sheet(isPresented: $showingAddPerson) {
-            AddPersonSheet()
-        }
-        .sheet(isPresented: $showShareSheet) {
-            ActivityView(activityItems: shareItems)
-        }
-        .sheet(
-            isPresented: Binding(
-                get: { qrExportURL != nil },
-                set: { if !$0 { qrExportURL = nil } }
-            )
-        ) {
-            if let qrExportURL {
-                FileTransferQRCodeView(fileURL: qrExportURL)
-            }
-        }
-        .background(AppColors.background)
+        .padding(18)
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
     }
 
     private var selectedProfileFileURL: URL? {
         profileStore.selectedProfile?.fileURL
+    }
+
+    private var hasEntries: Bool {
+        !(documentVM.document?.entries.isEmpty ?? true)
     }
 
     private func shareSelectedProfile() {

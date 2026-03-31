@@ -144,7 +144,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .navigationTitle("Settings")
+        .navigationTitle("Profile")
         .sheet(isPresented: $showingAddPerson) {
             AddPersonSheet()
         }

@@ -57,6 +57,7 @@ final class ActionsViewModel: ObservableObject {
     func toggleCompletedToday(_ action: HealthAction) {
         var next = state(for: action)
         let stamp = dayStamp(for: Date())
+        let wasCompleted = next.completionDayStamps.contains(stamp)
         if next.completionDayStamps.contains(stamp) {
             next.completionDayStamps.removeAll { $0 == stamp }
         } else {
@@ -65,6 +66,9 @@ final class ActionsViewModel: ObservableObject {
         }
         states[action.id] = next
         saveStates()
+        if !wasCompleted, let currentProfileID {
+            StateActionLearningEngine.recordActionCompletion(profileID: currentProfileID, actionID: action.id)
+        }
         objectWillChange.send()
     }
 
