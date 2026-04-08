@@ -215,7 +215,7 @@ struct JournalView: View {
     private var importScreen: some View {
         VStack(alignment: .leading, spacing: 16) {
             importIntroCard
-            HealthDataBrowserView(displayMode: .embedded)
+            HealthDataBrowserView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding()
@@ -778,6 +778,14 @@ private enum DigitalUsageCategory: String, CaseIterable, Identifiable {
 }
 
 private final class DigitalWellbeingTracker: ObservableObject {
+    private static let placeholderUsage: [DigitalUsageCategory: Double] = [
+        .social: 40,
+        .productivity: 50,
+        .entertainment: 45,
+        .learning: 20,
+        .doingNothing: 10
+    ]
+
     @Published private(set) var usage: [DigitalUsageCategory: Double]
     @Published private(set) var sessionCount: Int
     @Published private(set) var nothingPoints: Int
@@ -900,8 +908,7 @@ private final class DigitalWellbeingTracker: ObservableObject {
 
     private func loadUsage() {
         guard let stored = defaults.dictionary(forKey: usageKey) as? [String: Double] else {
-            usage = [.social: 40, .productivity: 50, .entertainment: 45, .learning: 20, .doingNothing: 10]
-            persistUsage()
+            usage = Dictionary(uniqueKeysWithValues: DigitalUsageCategory.allCases.map { ($0, 0) })
             return
         }
 
@@ -909,6 +916,14 @@ private final class DigitalWellbeingTracker: ObservableObject {
         for category in DigitalUsageCategory.allCases {
             loaded[category] = stored[category.rawValue, default: 0]
         }
+
+        // Migrate away from the old placeholder seed data so users start from real quiet-time history.
+        if loaded == Self.placeholderUsage && sessionCount == 0 && nothingPoints == 0 {
+            usage = Dictionary(uniqueKeysWithValues: DigitalUsageCategory.allCases.map { ($0, 0) })
+            persistUsage()
+            return
+        }
+
         usage = loaded
     }
 
