@@ -1,4 +1,5 @@
 import Charts
+import Combine
 import SwiftUI
 
 extension Notification.Name {
@@ -7,6 +8,7 @@ extension Notification.Name {
 
 private enum JournalMode: String, CaseIterable, Identifiable {
     case entries = "Journal"
+    case digital = "Digital"
     case state = "State"
     case assessments = "Assessments"
     case importData = "Import"
@@ -17,6 +19,8 @@ private enum JournalMode: String, CaseIterable, Identifiable {
         switch self {
         case .entries:
             return "doc.text"
+        case .digital:
+            return "sparkles.rectangle.stack"
         case .state:
             return "waveform.path.ecg"
         case .assessments:
@@ -40,12 +44,15 @@ struct JournalView: View {
     @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
     @State private var qrExportURL: URL?
+    @StateObject private var digitalTracker = DigitalWellbeingTracker()
 
     var body: some View {
         Group {
             if mode == .entries {
                 journalTimeline
                     .searchable(text: $documentVM.searchText, prompt: "Search entries...")
+            } else if mode == .digital {
+                digitalScreen
             } else if mode == .state {
                 stateScreen
             } else if mode == .assessments {
@@ -221,6 +228,17 @@ struct JournalView: View {
             .environmentObject(localModelManager)
     }
 
+    private var digitalScreen: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                digitalHero
+                digitalSummarySection
+                mindfulPauseStudio
+            }
+            .padding()
+        }
+    }
+
     private var stateScreen: some View {
         StateCheckInView(store: stateStore)
             .environmentObject(profileStore)
@@ -270,18 +288,42 @@ struct JournalView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
 
-            Button {
-                mode = .importData
-            } label: {
-                Label("Go to Import", systemImage: "arrow.right.circle.fill")
-                    .font(.headline)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 12)
-                    .background(AppColors.primary)
-                    .foregroundColor(.white)
-                    .clipShape(Capsule())
+            VStack(spacing: 10) {
+                Button {
+                    mode = .importData
+                } label: {
+                    Label("Go to Import", systemImage: "arrow.right.circle.fill")
+                        .font(.headline)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(AppColors.primary)
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    mode = .digital
+                } label: {
+                    Label("Open Digital", systemImage: "sparkles.rectangle.stack")
+                        .font(.headline)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(AppColors.backgroundMuted)
+                        .foregroundColor(AppColors.text)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+
+            Text("Digital is now its own Journal space for screen-use logging and mindful pause sessions.")
+                .font(.footnote)
+                .foregroundColor(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 28)
 
             Spacer()
         }
@@ -473,6 +515,414 @@ struct JournalView: View {
         .padding(14)
         .background(AppColors.backgroundMuted)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private var digitalHero: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Doing nothing")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundColor(AppColors.text)
+
+                if digitalTracker.isTrackingNothing {
+                    Text("Live")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppColors.teal)
+                }
+            }
+
+            Spacer()
+
+            Text("\(digitalTracker.nothingPoints) pts")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(AppColors.aiStrong)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(AppColors.aiSoft)
+                .clipShape(Capsule())
+        }
+    }
+
+    private var digitalSummarySection: some View {
+        HStack(spacing: 20) {
+            minimalMetric(
+                title: "Points",
+                value: "\(digitalTracker.nothingPoints)"
+            )
+            Divider()
+            minimalMetric(
+                title: "Sessions",
+                value: "\(digitalTracker.sessionCount)"
+            )
+            Divider()
+            minimalMetric(
+                title: "Quiet",
+                value: "\(Int(digitalTracker.doingNothingMinutes.rounded()))m"
+            )
+        }
+        .foregroundColor(AppColors.border)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(
+            LinearGradient(
+                colors: [
+                    AppColors.aiSoft.opacity(0.7),
+                    AppColors.card
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
+    }
+
+    private func minimalMetric(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundColor(AppColors.text)
+            Text(title)
+                .font(.caption.weight(.medium))
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var mindfulPauseStudio: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            doingNothingStage
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text(digitalTracker.isTrackingNothing ? "Next point" : "Rate")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                    Text(digitalTracker.nextPointCountdownLabel)
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppColors.text)
+                }
+
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(AppColors.backgroundMuted)
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [AppColors.aiStrong, AppColors.teal],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: max(10, proxy.size.width * digitalTracker.progressToNextPoint))
+                    }
+                }
+                .frame(height: 6)
+            }
+
+            HStack(spacing: 12) {
+                compactMetric(
+                    title: "Pending",
+                    value: "\(digitalTracker.currentSessionPendingPoints)"
+                )
+                compactMetric(
+                    title: "Rate",
+                    value: "1 / 5m"
+                )
+            }
+
+            Button {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.82)) {
+                    digitalTracker.toggleDoingNothingSession()
+                }
+            } label: {
+                Label(
+                    digitalTracker.isTrackingNothing
+                        ? "End session"
+                        : "Start session",
+                    systemImage: digitalTracker.isTrackingNothing ? "pause.fill" : "play.fill"
+                )
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .foregroundColor(.white)
+                .background(digitalTracker.isTrackingNothing ? AppColors.text : AppColors.teal)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(28)
+        .background(
+            LinearGradient(
+                colors: [
+                    AppColors.card,
+                    AppColors.aiSoft.opacity(0.35)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
+    }
+
+    private func compactMetric(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(value)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundColor(AppColors.text)
+            Text(title)
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(AppColors.backgroundMuted)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private var doingNothingStage: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !digitalTracker.isTrackingNothing)) { timeline in
+            let time = timeline.date.timeIntervalSinceReferenceDate
+            let breath = digitalTracker.isTrackingNothing ? (sin(time * 0.85 - (.pi / 2)) + 1) / 2 : 0
+
+            ZStack {
+                if digitalTracker.isTrackingNothing {
+                    Circle()
+                        .stroke(AppColors.aiStrong.opacity(0.10), lineWidth: 26)
+                        .frame(width: 210, height: 210)
+                        .blur(radius: 10)
+                        .scaleEffect(0.94 + CGFloat(breath) * 0.08)
+                }
+
+                Circle()
+                    .stroke(digitalTracker.isTrackingNothing ? AppColors.teal.opacity(0.24) : AppColors.border, lineWidth: 1)
+                    .frame(width: 220, height: 220)
+                    .scaleEffect(digitalTracker.isTrackingNothing ? 0.98 + CGFloat(breath) * 0.08 : 1)
+                    .opacity(digitalTracker.isTrackingNothing ? 0.9 - breath * 0.18 : 1)
+
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                AppColors.card,
+                                AppColors.card,
+                                digitalTracker.isTrackingNothing ? AppColors.aiSoft : AppColors.aiSoft.opacity(0.55)
+                            ],
+                            center: .center,
+                            startRadius: 10,
+                            endRadius: 100
+                        )
+                    )
+                    .frame(width: 168, height: 168)
+                    .scaleEffect(0.98 + CGFloat(breath) * 0.05)
+                    .shadow(
+                        color: digitalTracker.isTrackingNothing ? AppColors.aiStrong.opacity(0.08) : AppColors.blue.opacity(0.04),
+                        radius: 18,
+                        y: 6
+                    )
+
+                VStack(spacing: 6) {
+                    Text(digitalTracker.isTrackingNothing ? digitalTracker.elapsedLabel : "00:00")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(AppColors.text)
+                    Text(digitalTracker.isTrackingNothing ? "Breathe." : "Ready.")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 340)
+        }
+    }
+}
+
+private enum DigitalUsageCategory: String, CaseIterable, Identifiable {
+    case social
+    case productivity
+    case entertainment
+    case learning
+    case doingNothing
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .social: return "Social"
+        case .productivity: return "Productivity"
+        case .entertainment: return "Entertainment"
+        case .learning: return "Learning"
+        case .doingNothing: return "Doing Nothing"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .social: return AppColors.purple
+        case .productivity: return AppColors.blue
+        case .entertainment: return AppColors.orange
+        case .learning: return AppColors.teal
+        case .doingNothing: return AppColors.green
+        }
+    }
+}
+
+private final class DigitalWellbeingTracker: ObservableObject {
+    @Published private(set) var usage: [DigitalUsageCategory: Double]
+    @Published private(set) var sessionCount: Int
+    @Published private(set) var nothingPoints: Int
+    @Published private(set) var isTrackingNothing = false
+    @Published private(set) var elapsedSeconds: TimeInterval = 0
+
+    private let usageKey = "journal.digital.usage.minutes"
+    private let sessionCountKey = "journal.digital.nothing.session.count"
+    private let nothingPointsKey = "journal.digital.nothing.points"
+    private let nothingPointInterval: TimeInterval = 5 * 60
+    private var activeStart: Date?
+    private var timerCancellable: AnyCancellable?
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        self.usage = [:]
+        self.sessionCount = defaults.integer(forKey: sessionCountKey)
+        self.nothingPoints = defaults.integer(forKey: nothingPointsKey)
+        loadUsage()
+    }
+
+    deinit {
+        timerCancellable?.cancel()
+    }
+
+    var doingNothingMinutes: Double {
+        minutes(for: .doingNothing)
+    }
+
+    var currentSessionPendingPoints: Int {
+        guard isTrackingNothing else { return 0 }
+        return Int(elapsedSeconds / nothingPointInterval)
+    }
+
+    var progressToNextPoint: Double {
+        guard isTrackingNothing else { return 0.02 }
+        let remainder = elapsedSeconds.truncatingRemainder(dividingBy: nothingPointInterval)
+        return max(0.02, remainder / nothingPointInterval)
+    }
+
+    var nextPointCountdownLabel: String {
+        guard isTrackingNothing else { return "Start a session to earn points" }
+        let remainder = elapsedSeconds.truncatingRemainder(dividingBy: nothingPointInterval)
+        let remaining = remainder == 0 && elapsedSeconds >= nothingPointInterval
+            ? nothingPointInterval
+            : nothingPointInterval - remainder
+        return "Next point in \(shortDurationLabel(seconds: remaining))"
+    }
+
+    var currentSessionRewardLabel: String {
+        guard isTrackingNothing else { return "Earn 1 Nothing Point for every 5 full minutes of real downtime." }
+        if currentSessionPendingPoints > 0 {
+            return "This session has \(currentSessionPendingPoints) pending Nothing Point\(currentSessionPendingPoints == 1 ? "" : "s")."
+        }
+        return "Stay with the pause for 5 full minutes to earn your first Nothing Point."
+    }
+
+    var nothingPointsStatus: String {
+        if nothingPoints == 0 {
+            return "No points yet. Your first five-minute pause unlocks the first one."
+        }
+        if nothingPoints < 10 {
+            return "You are building an early calm streak with \(nothingPoints) Nothing Point\(nothingPoints == 1 ? "" : "s")."
+        }
+        return "You have banked \(nothingPoints) Nothing Points by making space for quiet."
+    }
+
+    var elapsedLabel: String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute, .second]
+        formatter.unitsStyle = .positional
+        formatter.zeroFormattingBehavior = [.pad]
+        return formatter.string(from: elapsedSeconds) ?? "00:00:00"
+    }
+
+    func minutes(for category: DigitalUsageCategory) -> Double {
+        usage[category, default: 0]
+    }
+
+    func toggleDoingNothingSession() {
+        isTrackingNothing ? stopDoingNothingSession() : startDoingNothingSession()
+    }
+
+    private func startDoingNothingSession() {
+        activeStart = Date()
+        elapsedSeconds = 0
+        isTrackingNothing = true
+
+        timerCancellable?.cancel()
+        timerCancellable = Timer.publish(every: 1, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] now in
+                guard let self, let activeStart else { return }
+                elapsedSeconds = now.timeIntervalSince(activeStart)
+            }
+    }
+
+    private func stopDoingNothingSession() {
+        defer {
+            timerCancellable?.cancel()
+            timerCancellable = nil
+            elapsedSeconds = 0
+            activeStart = nil
+            isTrackingNothing = false
+        }
+
+        guard let activeStart else { return }
+
+        let duration = Date().timeIntervalSince(activeStart)
+        let minutes = max(1, duration / 60)
+        let awardedPoints = Int(duration / nothingPointInterval)
+        usage[.doingNothing, default: 0] += minutes
+        sessionCount += 1
+        nothingPoints += awardedPoints
+        persistUsage()
+        defaults.set(sessionCount, forKey: sessionCountKey)
+        defaults.set(nothingPoints, forKey: nothingPointsKey)
+    }
+
+    private func loadUsage() {
+        guard let stored = defaults.dictionary(forKey: usageKey) as? [String: Double] else {
+            usage = [.social: 40, .productivity: 50, .entertainment: 45, .learning: 20, .doingNothing: 10]
+            persistUsage()
+            return
+        }
+
+        var loaded: [DigitalUsageCategory: Double] = [:]
+        for category in DigitalUsageCategory.allCases {
+            loaded[category] = stored[category.rawValue, default: 0]
+        }
+        usage = loaded
+    }
+
+    private func persistUsage() {
+        let encoded = Dictionary(uniqueKeysWithValues: usage.map { ($0.key.rawValue, $0.value) })
+        defaults.set(encoded, forKey: usageKey)
+    }
+
+    private func shortDurationLabel(seconds: TimeInterval) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = seconds >= 3600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.unitsStyle = .positional
+        formatter.zeroFormattingBehavior = [.pad]
+        return formatter.string(from: max(1, seconds)) ?? "00:00"
     }
 }
 
