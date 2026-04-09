@@ -10,6 +10,32 @@ enum ForYouCardGenerator {
 
         if let primaryAction {
             cards.append(actionCard(primaryAction, sortOrder: 0, theme: .ember, eyebrow: "Best next step"))
+        } else {
+            cards.append(
+                ForYouCard(
+                    id: "loop-start",
+                    sortOrder: 0,
+                    kind: .reading,
+                    theme: .meadow,
+                    eyebrow: "Start here",
+                    title: "Begin the State -> Action -> Reward loop",
+                    summary: "Notice how you feel, try one small action, and let Eir learn what helps.",
+                    durationLabel: "1 min",
+                    symbolName: "arrow.trianglehead.clockwise",
+                    action: nil,
+                    quiz: nil,
+                    reading: ForYouReading(
+                        kicker: "You do not need a full history to get started.",
+                        paragraphs: [
+                            "Begin with one honest snapshot of how you feel today, even if it is brief or incomplete.",
+                            "Then try one small action you can finish today. The first useful loop matters more than perfect tracking.",
+                            "As you add check-ins, actions, and signals, Eir gets better at showing what improves your health."
+                        ]
+                    ),
+                    reflection: nil,
+                    breathing: nil
+                )
+            )
         }
 
         cards.append(
@@ -19,8 +45,10 @@ enum ForYouCardGenerator {
                 kind: .meditation,
                 theme: .tide,
                 eyebrow: "Reset",
-                title: context.hasStressSignals ? "One-minute reset" : "Slow your pace",
-                summary: "A guided breathing minute to steady your body before the next thing.",
+                title: context.hasStressSignals ? "One-minute reset" : (context.hasRecords ? "Slow your pace" : "Start with one calm minute"),
+                summary: context.hasRecords
+                    ? "A guided breathing minute to steady your body before the next thing."
+                    : "A guided breathing minute to help you settle before choosing your next step.",
                 durationLabel: "1 min",
                 symbolName: "wind",
                 action: nil,
@@ -80,8 +108,10 @@ enum ForYouCardGenerator {
                 kind: .reading,
                 theme: .coral,
                 eyebrow: "2-minute read",
-                title: context.hasAppointments ? "Take one better question to care" : "Use small questions well",
-                summary: "A short piece on how one prepared question can improve a visit or follow-up.",
+                title: context.hasAppointments ? "Take one better question to care" : (context.hasRecords ? "Use small questions well" : "Ask one useful question"),
+                summary: context.hasRecords
+                    ? "A short piece on how one prepared question can improve a visit or follow-up."
+                    : "A short piece on using one simple question to understand your state better.",
                 durationLabel: "2 min",
                 symbolName: "book.pages.fill",
                 action: nil,

@@ -29,14 +29,15 @@ targets:
         INFOPLIST_FILE: Info.plist
         CODE_SIGN_ENTITLEMENTS: EirViewer.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: com.eir.viewer
-        MARKETING_VERSION: "1.0.2"
-        CURRENT_PROJECT_VERSION: "9"
+        MARKETING_VERSION: "1.0.3"
+        CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: YJ9A3JT299
         INFOPLIST_KEY_NSMicrophoneUsageDescription: Eir uses the microphone so you can dictate questions and notes for AI assistance.
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: Eir uses speech recognition to turn voice check-ins into text.
     dependencies:
       - package: Yams
       - package: mlx-swift-lm
@@ -46,6 +47,7 @@ targets:
       - package: mlx-swift
         product: MLX
       - sdk: HealthKit.framework
+      - sdk: Speech.framework
 
   EirViewerTests:
     type: bundle.unit-test

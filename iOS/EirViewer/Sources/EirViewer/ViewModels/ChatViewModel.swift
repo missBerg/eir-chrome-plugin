@@ -338,7 +338,7 @@ class ChatViewModel: ObservableObject {
         }
 
         guard config.type.usesManagedTrialAccess else {
-            errorMessage = "Voice notes are currently available with Free Trial for Eir."
+            errorMessage = "Voice transcription currently uses Eir Speech in Free Trial for Eir."
             return
         }
 

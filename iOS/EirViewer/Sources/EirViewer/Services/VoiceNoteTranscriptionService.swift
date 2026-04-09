@@ -16,7 +16,7 @@ struct VoiceNoteTranscriptionService {
         }
 
         guard config.type.usesManagedTrialAccess else {
-            throw LLMError.requestFailed("Voice notes are currently available with Free Trial for Eir.")
+            throw LLMError.requestFailed("Voice transcription currently uses Eir Speech in Free Trial for Eir.")
         }
 
         let token = try await settingsVM.resolvedCredential(for: config)

@@ -81,6 +81,8 @@
 	<string>Eir uses your camera to scan QR codes for transferring medical records from your Mac.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Eir uses the microphone so you can dictate questions and notes for AI assistance.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Eir uses speech recognition to turn voice check-ins into text.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Eir uses Calendar so you can schedule health actions and keep them visible in your day.</string>
 	<key>NSLocalNetworkUsageDescription</key>

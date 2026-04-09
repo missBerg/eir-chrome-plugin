@@ -140,8 +140,17 @@ struct ForYouView: View {
 
                 HStack(spacing: 10) {
                     feedMetric(value: "\(actionsVM.completedTodayCount)", label: "Done")
-                    feedMetric(value: "\(actionsVM.scheduledActions.count)", label: "Later")
+                    feedMetric(value: "\(actionsVM.scheduledActions.count)", label: "Planned")
                 }
+
+                Text(
+                    documentVM.document == nil
+                        ? "Your feed can bootstrap the loop with starter actions, reflection, and small resets."
+                        : "Your feed adapts to your state, actions, and health context."
+                )
+                .font(.caption.weight(.medium))
+                .foregroundStyle(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
@@ -1301,7 +1310,7 @@ private enum ActionLibraryMode: String, CaseIterable, Identifiable {
     var heroTitle: String {
         switch self {
         case .quickStarts: return "Start with something small."
-        case .everyday: return "Choose a concrete next action."
+        case .everyday: return "Choose what can improve health next."
         case .sound: return "Use sound as a reset tool."
         case .voice: return "Train your voice deliberately."
         case .programs: return "Work through a structured program."
@@ -1312,7 +1321,7 @@ private enum ActionLibraryMode: String, CaseIterable, Identifiable {
     var heroSummary: String {
         switch self {
         case .quickStarts: return "Low-friction options for moments when you want to do something useful right away."
-        case .everyday: return "Actions generated from your context that you can complete now or schedule for later."
+        case .everyday: return "Actions designed to improve health right now, then become habits you can schedule for later."
         case .sound: return "Offline sound sessions for focus, regulation, and simple daily recovery rituals."
         case .voice: return "A focused microphone-based practice area for pitch, breath-supported speech, and clarity."
         case .programs: return "Longer guided journeys that save progress and give you a structure to return to."
@@ -1483,7 +1492,7 @@ struct ActionLibraryView: View {
         case .everyday:
             section(title: "Everyday actions", subtitle: "Generated from your context and ready to schedule.") {
                 if actionsVM.actions.isEmpty {
-                    modeEmptyState
+                    starterActionBootstrap
                 } else {
                     VStack(spacing: 12) {
                         ForEach(actionsVM.actions) { action in
@@ -1672,6 +1681,37 @@ struct ActionLibraryView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(AppColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.88))
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
+    }
+
+    private var starterActionBootstrap: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Start the action loop")
+                    .font(.headline)
+                    .foregroundStyle(AppColors.text)
+                Text("You do not need imported records to begin. Start with one small action and let Eir learn what helps.")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(AppColors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            ForEach(ActionLibraryCatalog.quickExperiences.prefix(3)) { card in
+                Button {
+                    selectedQuickCard = card
+                } label: {
+                    quickExperienceCard(card)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)

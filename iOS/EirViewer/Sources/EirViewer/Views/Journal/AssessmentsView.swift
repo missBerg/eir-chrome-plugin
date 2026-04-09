@@ -1113,7 +1113,7 @@ private struct AssessmentResultView: View {
         Button {
             AssessmentNavigation.popToAssessmentsRoot()
         } label: {
-            Text("Back to Journal")
+            Text("Back to State")
                 .font(.headline.weight(.bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)

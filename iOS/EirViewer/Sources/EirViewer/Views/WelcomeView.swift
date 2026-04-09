@@ -23,7 +23,7 @@ struct WelcomeView: View {
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.text)
 
-            Text("View and explore your Swedish medical records")
+            Text("Understand your state, take action, and prepare for care.")
                 .font(.title3)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -34,7 +34,7 @@ struct WelcomeView: View {
                     .font(.system(size: 32))
                     .foregroundColor(AppColors.textSecondary)
 
-                Text("Open your .eir or .yaml file to get started")
+                Text("Start by importing records, Apple Health, or a sample profile.")
                     .font(.headline)
                     .foregroundColor(AppColors.text)
 
@@ -52,7 +52,7 @@ struct WelcomeView: View {
                 Button {
                     show1177Browser = true
                 } label: {
-                    Label("Hämta journal från 1177", systemImage: "cross.case")
+                    Label("Import from 1177", systemImage: "cross.case")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -97,7 +97,7 @@ struct WelcomeView: View {
             Button {
                 loadSampleData()
             } label: {
-                Label("Try with Sample Data", systemImage: "doc.text")
+                Label("Try with Sample Data", systemImage: "sparkles.rectangle.stack")
                     .font(.subheadline)
             }
             .foregroundColor(AppColors.primary)
@@ -111,7 +111,7 @@ struct WelcomeView: View {
 
             Spacer()
 
-            Text("Supports EIR format v1.0 (.eir, .yaml)")
+            Text("State -> Action -> Reward")
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
                 .padding(.bottom, 16)

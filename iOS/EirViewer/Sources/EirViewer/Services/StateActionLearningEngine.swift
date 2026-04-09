@@ -51,7 +51,8 @@ enum StateActionLearningEngine {
         guard let latestState = loadLatestState(profileID: profileID) else { return }
 
         var payload = loadPayload(profileID: profileID)
-        let calendar = Calendar.current
+        var calendar = Calendar.autoupdatingCurrent
+        calendar.timeZone = .autoupdatingCurrent
         let alreadyPending = payload.pending.contains {
             $0.actionID == actionID &&
             calendar.isDate($0.createdAt, inSameDayAs: Date())
@@ -140,8 +141,10 @@ enum StateActionLearningEngine {
         let payload = loadPayload(profileID: profileID)
         let actionLookup = Dictionary(uniqueKeysWithValues: actions.map { ($0.id, $0) })
         let totalExperienceCount = max(payload.experiences.count, 1)
+        let context = TimeAwareRecommendationContext.current()
+        let candidateActions = filteredActions(actions, for: context)
 
-        let ranked = actions.map { action -> (HealthAction, Double, [String], Int) in
+        let ranked = candidateActions.map { action -> (HealthAction, Double, [String], Int) in
             let heuristic = heuristicScore(for: action.category, scores: state.scores)
             let actionExperiences = payload.experiences.filter { $0.actionID == action.id }
             let categoryExperiences = payload.experiences.filter { experience in
@@ -155,19 +158,22 @@ enum StateActionLearningEngine {
                 sqrt(log(Double(totalExperienceCount) + 1) / Double(actionExperiences.count + 1)) * 0.18,
                 0.18
             )
+            let temporal = temporalAdjustment(for: action, context: context)
 
             let score =
                 (heuristic * 0.62) +
                 (normalizeReward(actionMean) * 0.22) +
                 (normalizeReward(categoryMean) * 0.08) +
-                exploration
+                exploration +
+                temporal
 
             return (
                 action,
                 score,
                 explanation(
                     for: action,
-                    scores: state.scores,
+                    state: state,
+                    context: context,
                     actionExperienceCount: actionExperiences.count,
                     actionMean: actionMean
                 ),
@@ -226,29 +232,81 @@ enum StateActionLearningEngine {
         return min(max(value, 0), 1)
     }
 
+    private static func filteredActions(
+        _ actions: [HealthAction],
+        for context: TimeAwareRecommendationContext
+    ) -> [HealthAction] {
+        let filtered = actions.filter { !isStrongTimeMismatch($0, context: context) }
+        return filtered.isEmpty ? actions : filtered
+    }
+
+    private static func isStrongTimeMismatch(
+        _ action: HealthAction,
+        context: TimeAwareRecommendationContext
+    ) -> Bool {
+        if action.id == "starter-daylight-walk" {
+            return context.isNight
+        }
+        return false
+    }
+
+    private static func temporalAdjustment(
+        for action: HealthAction,
+        context: TimeAwareRecommendationContext
+    ) -> Double {
+        if action.id == "starter-daylight-walk" {
+            if context.isNight { return -0.9 }
+            if context.isEvening { return -0.25 }
+            if context.isMorning || context.isDay { return 0.16 }
+        }
+
+        if action.id == "starter-evening-close" || action.id == "records-sleep-runway" {
+            if context.isEvening { return 0.24 }
+            if context.isNight { return 0.32 }
+            if context.isMorning { return -0.22 }
+            if context.isDay { return -0.12 }
+        }
+
+        switch action.category {
+        case .sleep:
+            if context.isEvening { return 0.18 }
+            if context.isNight { return 0.24 }
+            if context.isMorning { return -0.18 }
+            return -0.08
+        case .movement:
+            if context.isMorning || context.isDay { return 0.1 }
+            if context.isEvening { return -0.04 }
+            return -0.18
+        case .focus, .planning:
+            if context.isMorning || context.isDay { return 0.08 }
+            if context.isNight { return -0.16 }
+            return -0.04
+        case .breath, .recovery:
+            if context.isNight { return 0.1 }
+            if context.isEvening { return 0.06 }
+            return 0
+        case .hydration, .nutrition:
+            if context.isNight { return -0.04 }
+            return 0.02
+        }
+    }
+
     private static func explanation(
         for action: HealthAction,
-        scores: [String: Double],
+        state: StateCheckInRecord,
+        context: TimeAwareRecommendationContext,
         actionExperienceCount: Int,
         actionMean: Double
     ) -> [String] {
-        let topDrivers = stateDrivers(scores: scores)
         var reasons: [String] = []
+        reasons.append(overallStateReason(for: action, state: state))
 
-        if topDrivers.contains("stress") {
-            reasons.append("High pressure makes \(action.category.title.lowercased()) a good next move.")
+        if let noteReason = noteReason(for: action, note: state.note) {
+            reasons.append(noteReason)
         }
-        if topDrivers.contains("motivation") {
-            reasons.append("Lower drive suggests using an action with low start friction.")
-        }
-        if topDrivers.contains("mental") {
-            reasons.append("Mental energy looks reduced, so the recommendation leans restorative and clear.")
-        }
-        if topDrivers.contains("physical") {
-            reasons.append("Physical energy is down, so the action favors support over intensity.")
-        }
-        if reasons.isEmpty {
-            reasons.append("This action matches the shape of the current state better than the other available options.")
+
+        if let timeReason = timeOfDayReason(for: action, context: context) {
+            reasons.append(timeReason)
         }
 
         if actionExperienceCount > 0 {
@@ -266,20 +324,124 @@ enum StateActionLearningEngine {
         return Array(reasons.prefix(3))
     }
 
-    private static func stateDrivers(scores: [String: Double]) -> [String] {
-        let pairs: [(String, Double)] = [
-            ("stress", scores["stress_load"] ?? 0.5),
-            ("physical", 1 - (scores["physical_energy"] ?? 0.5)),
-            ("mental", 1 - (scores["mental_energy"] ?? 0.5)),
-            ("mood", 1 - (scores["mood"] ?? 0.5)),
-            ("motivation", 1 - (scores["motivation"] ?? 0.5)),
-            ("comfort", 1 - (scores["body_comfort"] ?? 0.5)),
-        ]
+    private static func overallStateReason(
+        for action: HealthAction,
+        state: StateCheckInRecord
+    ) -> String {
+        let level = overallFeelingLevel(for: state.scores)
+        let title = overallFeelingTitle(for: level).lowercased()
 
-        return pairs
-            .sorted { $0.1 > $1.1 }
-            .prefix(2)
-            .map(\.0)
+        switch action.category {
+        case .breath, .recovery, .sleep:
+            if level <= 3 {
+                return "You checked in feeling \(title), so this leans gentle and low-friction."
+            } else if level <= 6 {
+                return "You checked in around the middle, so this helps steady the system before adding more load."
+            } else {
+                return "You already have some room in the system, so this helps protect that steadier state."
+            }
+        case .movement, .focus, .planning:
+            if level <= 3 {
+                return "You checked in feeling \(title), so the recommendation favors a small doable step instead of something demanding."
+            } else if level <= 6 {
+                return "You checked in with a workable state, so this turns that into one concrete next move."
+            } else {
+                return "You checked in with more available energy, so this uses that momentum while it is there."
+            }
+        case .hydration, .nutrition:
+            if level <= 3 {
+                return "You checked in feeling \(title), so the recommendation starts with basic support before intensity."
+            } else {
+                return "You checked in with enough room for a simple supportive action right now."
+            }
+        }
+    }
+
+    private static func overallFeelingLevel(for scores: [String: Double]) -> Int {
+        let positiveIDs = ["physical_energy", "mental_energy", "mood", "motivation", "body_comfort"]
+        let positiveAverage = positiveIDs
+            .map { scores[$0] ?? 0.5 }
+            .reduce(0, +) / Double(positiveIDs.count)
+        let stress = scores["stress_load"] ?? 0.5
+        let combined = (positiveAverage * 0.72) + ((1 - stress) * 0.28)
+        return max(0, min(10, Int(round(combined * 10))))
+    }
+
+    private static func overallFeelingTitle(for level: Int) -> String {
+        switch max(0, min(10, level)) {
+        case 0: return "Awful"
+        case 1: return "Drained"
+        case 2: return "Heavy"
+        case 3: return "Fragile"
+        case 4: return "Uneven"
+        case 5: return "Okay"
+        case 6: return "Steady"
+        case 7: return "Good"
+        case 8: return "Light"
+        case 9: return "Strong"
+        default: return "Bright"
+        }
+    }
+
+    private static func noteReason(for action: HealthAction, note: String) -> String? {
+        let normalized = note.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalized.isEmpty else { return nil }
+
+        let stressedTerms = ["stress", "stressed", "overwhelmed", "panic", "panicked", "anxious", "rushed", "too much"]
+        let lowEnergyTerms = ["tired", "drained", "exhausted", "foggy", "heavy", "flat", "burned out", "burnt out"]
+        let positiveTerms = ["good", "clear", "steady", "light", "strong", "ready", "focused", "motivated"]
+
+        if stressedTerms.contains(where: normalized.contains) {
+            switch action.category {
+            case .breath, .recovery, .sleep:
+                return "Your note sounds pressured, so this aims to lower load before anything else."
+            default:
+                return "Your note sounds pressured, so this is framed as one contained next step rather than something bigger."
+            }
+        }
+
+        if lowEnergyTerms.contains(where: normalized.contains) {
+            switch action.category {
+            case .movement:
+                return "Your note sounds low-energy, so this keeps the activation light instead of pushing hard."
+            default:
+                return "Your note sounds low-energy, so this favors support over intensity."
+            }
+        }
+
+        if positiveTerms.contains(where: normalized.contains) {
+            switch action.category {
+            case .focus, .planning, .movement:
+                return "Your note sounds more available, so this uses that momentum in a directed way."
+            default:
+                return "Your note sounds fairly steady, so this helps consolidate that state."
+            }
+        }
+
+        return nil
+    }
+
+    private static func timeOfDayReason(
+        for action: HealthAction,
+        context: TimeAwareRecommendationContext
+    ) -> String? {
+        if action.id == "starter-daylight-walk", context.isMorning || context.isDay {
+            return "It fits the current local time, so the recommendation can safely lean on daylight and activation."
+        }
+
+        if (action.id == "starter-evening-close" || action.id == "records-sleep-runway"),
+           context.isEvening || context.isNight {
+            return "It matches the current local time, so the recommendation leans toward a softer evening landing."
+        }
+
+        switch action.category {
+        case .sleep where context.isEvening || context.isNight:
+            return "It suits the current local time, so winding down makes more sense than activating."
+        case .movement where context.isMorning || context.isDay:
+            return "It suits the current local time, so a little activation is more likely to help than late-night stimulation."
+        default:
+            return nil
+        }
     }
 
     private static func rewardScore(pre: [String: Double], post: [String: Double]) -> Double {
@@ -334,6 +496,23 @@ enum StateActionLearningEngine {
 
     private static func stateStorageKey(for profileID: UUID) -> String {
         "state_check_in_history_\(profileID.uuidString)"
+    }
+}
+
+private struct TimeAwareRecommendationContext {
+    let hour: Int
+    let timeZone: TimeZone
+
+    var isMorning: Bool { (6...10).contains(hour) }
+    var isDay: Bool { (11...16).contains(hour) }
+    var isEvening: Bool { (17...21).contains(hour) }
+    var isNight: Bool { hour >= 22 || hour <= 5 }
+
+    static func current(now: Date = Date(), timeZone: TimeZone = .autoupdatingCurrent) -> TimeAwareRecommendationContext {
+        var calendar = Calendar.autoupdatingCurrent
+        calendar.timeZone = timeZone
+        let hour = calendar.component(.hour, from: now)
+        return TimeAwareRecommendationContext(hour: hour, timeZone: timeZone)
     }
 }
 

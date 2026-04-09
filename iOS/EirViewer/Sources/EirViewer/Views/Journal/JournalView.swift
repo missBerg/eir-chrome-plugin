@@ -7,9 +7,10 @@ extension Notification.Name {
 }
 
 private enum JournalMode: String, CaseIterable, Identifiable {
-    case entries = "Journal"
+    case overview = "State"
+    case entries = "History"
     case digital = "Digital"
-    case state = "State"
+    case state = "Check-in"
     case assessments = "Assessments"
     case importData = "Import"
 
@@ -17,6 +18,8 @@ private enum JournalMode: String, CaseIterable, Identifiable {
 
     var symbolName: String {
         switch self {
+        case .overview:
+            return "waveform.path.ecg"
         case .entries:
             return "doc.text"
         case .digital:
@@ -37,7 +40,7 @@ struct JournalView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
     @EnvironmentObject var localModelManager: LocalModelManager
 
-    @State private var mode: JournalMode = .entries
+    @State private var mode: JournalMode = .overview
     @StateObject private var assessmentStore = AssessmentHistoryStore()
     @StateObject private var stateStore = StateCheckInStore()
     @State private var showingHealthKitImport = false
@@ -48,7 +51,9 @@ struct JournalView: View {
 
     var body: some View {
         Group {
-            if mode == .entries {
+            if mode == .overview {
+                stateOverviewScreen
+            } else if mode == .entries {
                 journalTimeline
                     .searchable(text: $documentVM.searchText, prompt: "Search entries...")
             } else if mode == .digital {
@@ -61,7 +66,7 @@ struct JournalView: View {
                 importScreen
             }
         }
-        .navigationTitle(profileStore.selectedProfile?.displayName ?? "Journal")
+        .navigationTitle(stateNavigationTitle)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 journalModeMenu
@@ -212,6 +217,23 @@ struct JournalView: View {
         }
     }
 
+    private var stateOverviewScreen: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                stateOverviewHero
+
+                if hasStateInputs {
+                    stateCurrentSection
+                    stateSignalsSection
+                    statePatternSection
+                } else {
+                    stateBootstrapSection
+                }
+            }
+            .padding()
+        }
+    }
+
     private var importScreen: some View {
         VStack(alignment: .leading, spacing: 16) {
             importIntroCard
@@ -278,11 +300,11 @@ struct JournalView: View {
                 .font(.system(size: 48))
                 .foregroundColor(AppColors.textSecondary.opacity(0.5))
 
-            Text("No journal entries yet")
+            Text("No history yet")
                 .font(.title3.weight(.bold))
                 .foregroundColor(AppColors.text)
 
-            Text("Import from 1177 or Apple Health to start building this timeline.")
+            Text("State can still start with a check-in, assessment, or quiet session before you import records.")
                 .font(.subheadline)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -319,7 +341,7 @@ struct JournalView: View {
             }
             .padding(.horizontal, 16)
 
-            Text("Digital is now its own Journal space for screen-use logging and mindful pause sessions.")
+            Text("Digital is one of the signal sources inside State, alongside check-ins, assessments, and imported health data.")
                 .font(.footnote)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -332,11 +354,11 @@ struct JournalView: View {
 
     private var importIntroCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Import into this journal")
+            Text("Import into State")
                 .font(.headline.weight(.semibold))
                 .foregroundColor(AppColors.text)
 
-            Text("Use the 1177 browser below to download your records, or pull in Apple Health data for this selected profile.")
+            Text("Bring in 1177 records or Apple Health data to enrich the state view with more signals and more history.")
                 .font(.subheadline)
                 .foregroundColor(AppColors.textSecondary)
 
@@ -355,9 +377,9 @@ struct JournalView: View {
                 .buttonStyle(.plain)
 
                 Button {
-                    mode = .entries
+                    mode = .overview
                 } label: {
-                    Label("Back to Journal", systemImage: "doc.text")
+                    Label("Back to State", systemImage: "waveform.path.ecg")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppColors.text)
                         .padding(.horizontal, 14)
@@ -377,8 +399,349 @@ struct JournalView: View {
         )
     }
 
+    private var latestStateRecord: StateCheckInRecord? {
+        stateStore.records.first
+    }
+
+    private var hasStateInputs: Bool {
+        latestStateRecord != nil
+            || !assessmentStore.records.isEmpty
+            || hasEntries
+            || appleHealthSummary != nil
+            || digitalTracker.sessionCount > 0
+            || digitalTracker.doingNothingMinutes > 0
+    }
+
+    private var stateSignalCount: Int {
+        [
+            latestStateRecord != nil,
+            !assessmentStore.records.isEmpty,
+            hasEntries,
+            appleHealthSummary != nil,
+            digitalTracker.sessionCount > 0 || digitalTracker.doingNothingMinutes > 0
+        ]
+        .filter { $0 }
+        .count
+    }
+
+    private var stateOverviewHero: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Understand your state.")
+                .font(.system(size: 31, weight: .bold, design: .rounded))
+                .foregroundStyle(AppColors.text)
+
+            Text("State brings together check-ins, assessments, imported records, Apple Health, and digital patterns so Eir can learn what improves your health.")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10)
+                ],
+                spacing: 10
+            ) {
+                summaryTile(title: "Check-ins", value: "\(stateStore.records.count)", tint: AppColors.teal)
+                summaryTile(title: "Assessments", value: "\(assessmentStore.records.count)", tint: AppColors.orange)
+                summaryTile(title: "Signals", value: "\(stateSignalCount)", tint: AppColors.primary)
+            }
+        }
+        .padding(22)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(hex: "F0FDFA"),
+                    Color(hex: "EFF6FF"),
+                    AppColors.card
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
+    }
+
+    private var stateCurrentSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Now")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(AppColors.text)
+
+            VStack(alignment: .leading, spacing: 14) {
+                if let latestStateRecord {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Latest check-in")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(AppColors.teal)
+                        Text(latestStateRecord.createdAt.formatted(date: .abbreviated, time: .shortened))
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(AppColors.text)
+                        Text("Top signals: \(latestStateRecord.topHighlights.joined(separator: ", "))")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(AppColors.textSecondary)
+                        if !latestStateRecord.note.isEmpty {
+                            Text(latestStateRecord.note)
+                                .font(.subheadline)
+                                .foregroundStyle(AppColors.text)
+                                .lineLimit(3)
+                        } else if !latestStateRecord.reflection.isEmpty {
+                            Text(latestStateRecord.reflection)
+                                .font(.subheadline)
+                                .foregroundStyle(AppColors.text)
+                                .lineLimit(3)
+                        }
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("No state snapshot yet")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(AppColors.text)
+                        Text("Start with one honest check-in. Eir can begin learning from a single snapshot.")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    stateShortcutButton(title: "Check in", systemImage: "waveform.path.ecg", mode: .state, fill: AppColors.teal)
+                    stateShortcutButton(title: "Assess", systemImage: "checklist", mode: .assessments, fill: AppColors.orange)
+                }
+            }
+            .padding(18)
+            .background(AppColors.card)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(AppColors.border, lineWidth: 1)
+            )
+        }
+    }
+
+    private var stateSignalsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Signals")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(AppColors.text)
+
+            VStack(spacing: 12) {
+                stateSignalRow(
+                    title: "History",
+                    value: "\(documentVM.document?.entries.count ?? 0) entries",
+                    summary: hasEntries ? "Imported records are available for trend spotting and context." : "No imported record history yet.",
+                    systemImage: "doc.text",
+                    targetMode: .entries
+                )
+
+                stateSignalRow(
+                    title: "Assessments",
+                    value: "\(assessmentStore.records.count) saved",
+                    summary: assessmentStore.records.isEmpty ? "Structured self-checks can help bootstrap your state." : "Assessment results are ready to compare over time.",
+                    systemImage: "checklist",
+                    targetMode: .assessments
+                )
+
+                stateSignalRow(
+                    title: "Digital",
+                    value: "\(digitalTracker.nothingPoints) pts",
+                    summary: digitalTracker.sessionCount == 0 ? "Quiet sessions can become one of your first reward signals." : "\(digitalTracker.sessionCount) quiet sessions logged so far.",
+                    systemImage: "sparkles.rectangle.stack",
+                    targetMode: .digital
+                )
+
+                stateSignalRow(
+                    title: "Import",
+                    value: appleHealthSummary == nil ? "Ready" : "Connected",
+                    summary: appleHealthSummary == nil ? "Add Apple Health or 1177 data when you want richer passive signals." : "Apple Health is already feeding passive signals into State.",
+                    systemImage: "square.and.arrow.down",
+                    targetMode: .importData
+                )
+            }
+        }
+    }
+
+    private var statePatternSection: some View {
+        let insights = statePatternInsights
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Patterns")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(AppColors.text)
+
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(insights, id: \.self) { insight in
+                    HStack(alignment: .top, spacing: 10) {
+                        Circle()
+                            .fill(AppColors.primarySoft)
+                            .frame(width: 24, height: 24)
+                            .overlay {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(AppColors.primary)
+                            }
+                        Text(insight)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(AppColors.text)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .padding(18)
+            .background(AppColors.card)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(AppColors.border, lineWidth: 1)
+            )
+        }
+    }
+
+    private var stateBootstrapSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Build your state")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(AppColors.text)
+
+            Text("You can bootstrap Eir without any imported health data. Start with a check-in, try an assessment, or log a quiet session and let the loop begin.")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 10) {
+                statePrimaryButton(title: "Start a check-in", systemImage: "waveform.path.ecg", mode: .state, fill: AppColors.teal)
+                statePrimaryButton(title: "Try an assessment", systemImage: "checklist", mode: .assessments, fill: AppColors.orange)
+                statePrimaryButton(title: "Open Digital", systemImage: "sparkles.rectangle.stack", mode: .digital, fill: AppColors.aiStrong)
+                statePrimaryButton(title: "Import signals", systemImage: "square.and.arrow.down", mode: .importData, fill: AppColors.primary)
+            }
+        }
+        .padding(22)
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
+    }
+
+    private var statePatternInsights: [String] {
+        var insights: [String] = []
+
+        if stateStore.records.count >= 3 {
+            insights.append("You have \(stateStore.records.count) state check-ins saved, which is enough to start noticing day-to-day changes.")
+        } else if stateStore.records.count > 0 {
+            insights.append("Your first state snapshots are in place. A few more check-ins will make patterns easier to spot.")
+        }
+
+        if !assessmentStore.records.isEmpty {
+            insights.append("Assessments are giving you more structured signal than a freeform note alone, which strengthens the State layer.")
+        }
+
+        if appleHealthSummary != nil {
+            insights.append("Apple Health is adding passive signals, so State is no longer relying only on self-report.")
+        }
+
+        if digitalTracker.sessionCount > 0 || digitalTracker.nothingPoints > 0 {
+            insights.append("Quiet sessions are already feeding the reward loop with Nothing Points and calm-time history.")
+        }
+
+        if insights.isEmpty {
+            insights.append("As you add check-ins, assessments, quiet sessions, and imported records, Eir will get better at linking state to what helps.")
+        }
+
+        return insights
+    }
+
+    private func stateSignalRow(
+        title: String,
+        value: String,
+        summary: String,
+        systemImage: String,
+        targetMode: JournalMode
+    ) -> some View {
+        Button {
+            mode = targetMode
+        } label: {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(AppColors.primary)
+                    .frame(width: 40, height: 40)
+                    .background(AppColors.primarySoft)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(AppColors.text)
+                    Text(value)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppColors.primary)
+                    Text(summary)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(AppColors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppColors.textSecondary)
+                    .padding(.top, 4)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppColors.card)
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(AppColors.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func stateShortcutButton(title: String, systemImage: String, mode: JournalMode, fill: Color) -> some View {
+        Button {
+            self.mode = mode
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(fill)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func statePrimaryButton(title: String, systemImage: String, mode: JournalMode, fill: Color) -> some View {
+        Button {
+            self.mode = mode
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(fill)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var selectedProfileFileURL: URL? {
         profileStore.selectedProfile?.fileURL
+    }
+
+    private var stateNavigationTitle: String {
+        guard let name = profileStore.selectedProfile?.displayName else { return "State" }
+        return name.localizedCaseInsensitiveContains("sample") ? "Sample Data" : name
     }
 
     private var hasEntries: Bool {
@@ -423,7 +786,13 @@ struct JournalView: View {
                     .clipShape(Capsule())
             }
 
-            HStack(spacing: 10) {
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10)
+                ],
+                spacing: 10
+            ) {
                 summaryTile(title: "Tracked days", value: "\(summary.daysTracked)", tint: AppColors.primary)
                 summaryTile(title: "Metrics", value: "\(summary.metricCount)", tint: AppColors.blue)
                 summaryTile(title: "Entries", value: "\(summary.entryCount)", tint: AppColors.green)

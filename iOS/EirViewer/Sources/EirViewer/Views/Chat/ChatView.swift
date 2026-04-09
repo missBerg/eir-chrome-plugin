@@ -23,13 +23,19 @@ struct ChatView: View {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .font(.system(size: 48))
                         .foregroundColor(AppColors.textSecondary.opacity(0.5))
-                    Text("Ask questions about your medical records")
+                    Text("Talk through your state, next actions, or care questions")
                         .foregroundColor(AppColors.textSecondary)
                         .multilineTextAlignment(.center)
                     if documentVM.document != nil {
-                        Text("Your records are loaded as context for the AI")
+                        Text("Your records are loaded as context, but you can also use Chat to reflect, plan, and prepare for care.")
                             .font(.caption)
                             .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                            .multilineTextAlignment(.center)
+                    } else {
+                        Text("Try: \"How should I get started?\" or \"Help me describe how I feel today.\"")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                            .multilineTextAlignment(.center)
                     }
                 }
                 .padding(.horizontal, 32)

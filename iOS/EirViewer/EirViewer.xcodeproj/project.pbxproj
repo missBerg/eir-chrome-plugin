@@ -76,6 +76,7 @@
 		CC1B91744F3AD79993D57044 /* CategoryBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB40951059FDE72D983CFB3 /* CategoryBadge.swift */; };
 		CDBAA28BDE6379C2029DDFB8 /* PersonProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F4115FBB641F7CF33A000B /* PersonProfile.swift */; };
 		D50F1EAFB087BAD39799BB27 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = C87CDCC4773E86F931FCFE2A /* MLXLLM */; };
+		D5DB5FBC04E93591FB6EFC41 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6AA80107E445F21C5E14336 /* Speech.framework */; };
 		D798E5C3A18ED55C592F4672 /* AgentMemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46E484C23AF332B0D081CEF /* AgentMemoryStore.swift */; };
 		DE5D9699E48C9139BD211C6B /* EntryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D52174202074B6F98FF6185A /* EntryDetailView.swift */; };
 		DF9EB9E13118F54F4B2D3615 /* EncryptedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0642B699BCEB214F64366D9D /* EncryptedStore.swift */; };
@@ -96,6 +97,7 @@
 		FAAF03C135FA6196A229F224 /* AgentMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A67A5A760AEC759E2D04BE2 /* AgentMemory.swift */; };
 		FD138F81380B7E80878F2622 /* HealthActionGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B836B5D91462233049438F30 /* HealthActionGenerator.swift */; };
 		FE8B61C82F8D58EBB7A6D702 /* JournalEntryLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FB3F018C828B97817906708 /* JournalEntryLink.swift */; };
+		FFD55003553E8EA8D29DC0A0 /* AppleSpeechTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19396AF3111F422DB55B2DB8 /* AppleSpeechTranscriptionService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -119,6 +121,7 @@
 		14BAAC14014C60D244FFD006 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouCardGenerator.swift; sourceTree = "<group>"; };
 		1747584B59A65BEDE4A45CCD /* ConversationListSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationListSheet.swift; sourceTree = "<group>"; };
+		19396AF3111F422DB55B2DB8 /* AppleSpeechTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSpeechTranscriptionService.swift; sourceTree = "<group>"; };
 		1D2235C2F4DCCC22A5119DAD /* CareSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareSuggestion.swift; sourceTree = "<group>"; };
 		289D41DC298A152E56FD349A /* VoiceNoteRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteRecorder.swift; sourceTree = "<group>"; };
 		2A674C7371CB370B78831BBC /* ForYouCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouCard.swift; sourceTree = "<group>"; };
@@ -194,6 +197,7 @@
 		EE50C9BE181F2E693BE17FF0 /* VoiceNoteTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteTranscriptionService.swift; sourceTree = "<group>"; };
 		F69371C2EFD97FBA6D9E4176 /* SelfReferralClinicSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfReferralClinicSheet.swift; sourceTree = "<group>"; };
 		F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViewModel.swift; sourceTree = "<group>"; };
+		F6AA80107E445F21C5E14336 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		FCEF7290519C860F7514159C /* ActionSoundSessionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionSoundSessionEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -215,6 +219,7 @@
 				D50F1EAFB087BAD39799BB27 /* MLXLLM in Frameworks */,
 				6A68ECEDDDD1BF98820A64B1 /* MLX in Frameworks */,
 				6F2963E5566D72046E6C9E8C /* HealthKit.framework in Frameworks */,
+				D5DB5FBC04E93591FB6EFC41 /* Speech.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,6 +250,7 @@
 			isa = PBXGroup;
 			children = (
 				50DB1027E7C1FA9DD4B4165A /* HealthKit.framework */,
+				F6AA80107E445F21C5E14336 /* Speech.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -273,6 +279,7 @@
 				FCEF7290519C860F7514159C /* ActionSoundSessionEngine.swift */,
 				DA43867A7EA5302BF2DFD82E /* ActionVoiceTrainingService.swift */,
 				30F85BD291BABC62454B4DBB /* AgentDefaults.swift */,
+				19396AF3111F422DB55B2DB8 /* AppleSpeechTranscriptionService.swift */,
 				DDDD9A98A16DE81625130468 /* EirParser.swift */,
 				0642B699BCEB214F64366D9D /* EncryptedStore.swift */,
 				1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */,
@@ -599,6 +606,7 @@
 				79495FD4216EE0E46C0E58AF /* AgentDefaults.swift in Sources */,
 				FAAF03C135FA6196A229F224 /* AgentMemory.swift in Sources */,
 				D798E5C3A18ED55C592F4672 /* AgentMemoryStore.swift in Sources */,
+				FFD55003553E8EA8D29DC0A0 /* AppleSpeechTranscriptionService.swift in Sources */,
 				7A4FDC33ADB27985B8A2E140 /* AssessmentsView.swift in Sources */,
 				24A4D2946B8C9E8C527A8437 /* CareSuggestion.swift in Sources */,
 				CC1B91744F3AD79993D57044 /* CategoryBadge.swift in Sources */,
@@ -705,15 +713,16 @@
 				CODE_SIGN_ENTITLEMENTS = EirViewer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = YJ9A3JT299;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Eir uses the microphone so you can dictate questions and notes for AI assistance.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Eir uses speech recognition to turn voice check-ins into text.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.eir.viewer;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
@@ -865,15 +874,16 @@
 				CODE_SIGN_ENTITLEMENTS = EirViewer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = YJ9A3JT299;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Eir uses the microphone so you can dictate questions and notes for AI assistance.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Eir uses speech recognition to turn voice check-ins into text.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.eir.viewer;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;

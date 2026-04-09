@@ -166,11 +166,11 @@ struct FindCareView: View {
                     .tracking(0.8)
                     .foregroundStyle(AppColors.primary)
 
-                Text("Find clinics with verified egenremiss support on 1177.")
+                Text("Move from self-management into the healthcare system.")
                     .font(.title3.weight(.bold))
                     .foregroundStyle(AppColors.text)
 
-                Text("Browse the verified list, search by municipality or county, and jump straight into the clinic’s 1177 egenremiss flow.")
+                Text("Browse verified clinics, search by municipality or county, and move straight into the clinic’s 1177 egenremiss flow when you need care.")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(AppColors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -242,7 +242,7 @@ struct FindCareView: View {
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(AppColors.text)
 
-                    Text("Eir can turn your description into a clinic match, rank nearby options, and draft text for an egen vårdbegäran.")
+                    Text("Eir can turn your description into a care-path suggestion, rank nearby options, and help you prepare for contact with care.")
                         .font(.subheadline)
                         .foregroundStyle(AppColors.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -273,7 +273,7 @@ struct FindCareView: View {
                     .focused($focusedField, equals: .issueDescription)
 
                 if issueDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text("Example: I keep waking up exhausted and stressed, and I want help finding the right clinic close to me.")
+                    Text("Example: I keep waking up exhausted and stressed, and I want help finding the right clinic and what to say when I contact them.")
                         .font(.subheadline)
                         .foregroundStyle(AppColors.textSecondary.opacity(0.9))
                         .padding(.horizontal, 16)

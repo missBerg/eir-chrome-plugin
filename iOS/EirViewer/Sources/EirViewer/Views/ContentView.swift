@@ -3,7 +3,7 @@ import SwiftUI
 enum NavTab: String, CaseIterable, Identifiable {
     case forYou = "For You"
     case action = "Action"
-    case journal = "Journal"
+    case state = "State"
     case findCare = "Find Care"
     case chat = "Chat"
 
@@ -13,7 +13,7 @@ enum NavTab: String, CaseIterable, Identifiable {
         switch self {
         case .forYou: return "sparkles"
         case .action: return "figure.run.square.stack"
-        case .journal: return "doc.text"
+        case .state: return "waveform.path.ecg"
         case .findCare: return "cross.case"
         case .chat: return "bubble.left.and.bubble.right"
         }
@@ -54,8 +54,8 @@ struct ContentView: View {
                     JournalView()
                         .topLevelProfileToolbar()
                 }
-                .tabItem { Label("Journal", systemImage: "doc.text") }
-                .tag(NavTab.journal)
+                .tabItem { Label("State", systemImage: "waveform.path.ecg") }
+                .tag(NavTab.state)
 
                 NavigationStack {
                     FindCareView()
@@ -73,10 +73,10 @@ struct ContentView: View {
             }
             .tint(AppColors.primary)
             .overlay(alignment: .top) {
-                if healthDataExtractor.isExtracting && selectedTab != .journal {
+                if healthDataExtractor.isExtracting && selectedTab != .state {
                     Button {
                         NotificationCenter.default.post(name: .openJournalImport, object: nil)
-                        selectedTab = .journal
+                        selectedTab = .state
                     } label: {
                         HStack(spacing: 8) {
                             ProgressView()
@@ -111,14 +111,14 @@ struct ContentView: View {
                 loadSelectedProfile()
             }
             .onReceive(NotificationCenter.default.publisher(for: .profileDidLoad)) { _ in
-                // Switch to journal tab and reload when a profile is loaded
-                selectedTab = .journal
+                // Switch to the state tab and reload when a profile is loaded
+                selectedTab = .state
                 loadSelectedProfile()
             }
             .onReceive(NotificationCenter.default.publisher(for: .navigateToJournalEntry)) { notification in
                 if let entryID = notification.object as? String {
                     documentVM.selectedEntryID = entryID
-                    selectedTab = .journal
+                    selectedTab = .state
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .navigateToChat)) { _ in
