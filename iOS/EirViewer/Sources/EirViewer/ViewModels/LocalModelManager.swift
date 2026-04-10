@@ -7,6 +7,9 @@ struct LocalModel: Identifiable, Codable, Equatable {
 
 @MainActor
 class LocalModelManager: ObservableObject {
+    private static let modelsKey = "eir_local_models"
+    private static let preferredModelKey = "eir_preferred_local_model"
+
     enum ModelStatus: Equatable {
         case notDownloaded
         case downloading
@@ -30,6 +33,8 @@ class LocalModelManager: ObservableObject {
     }
 
     static let presets: [LocalModel] = [
+        LocalModel(id: "mlx-community/gemma-4-e2b-it-4bit", displayName: "Gemma 4 E2B"),
+        LocalModel(id: "mlx-community/gemma-4-e4b-it-4bit", displayName: "Gemma 4 E4B"),
         LocalModel(id: "mlx-community/Qwen3.5-0.8B-4bit", displayName: "Qwen 3.5 0.8B (Fast)"),
         LocalModel(id: "mlx-community/Qwen3.5-2B-4bit", displayName: "Qwen 3.5 2B (Balanced)"),
         LocalModel(id: "mlx-community/Qwen3.5-4B-4bit", displayName: "Qwen 3.5 4B (Quality)"),
@@ -39,6 +44,15 @@ class LocalModelManager: ObservableObject {
         didSet { saveModels() }
     }
     @Published var activeModelId: String?
+    @Published var preferredModelId: String? {
+        didSet {
+            if let preferredModelId {
+                UserDefaults.standard.set(preferredModelId, forKey: Self.preferredModelKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.preferredModelKey)
+            }
+        }
+    }
     @Published var status: ModelStatus = .notDownloaded
     @Published var downloadingModelId: String?
     @Published var downloadProgress: Double = 0
@@ -48,7 +62,7 @@ class LocalModelManager: ObservableObject {
     private var progressObserver: Any?
 
     init() {
-        if let data = UserDefaults.standard.data(forKey: "eir_local_models"),
+        if let data = UserDefaults.standard.data(forKey: Self.modelsKey),
            let saved = try? JSONDecoder().decode([LocalModel].self, from: data),
            !saved.isEmpty {
             // Merge in any new presets that were added since last save
@@ -58,6 +72,13 @@ class LocalModelManager: ObservableObject {
         } else {
             self.models = Self.presets
         }
+
+        let storedPreferred = UserDefaults.standard.string(forKey: Self.preferredModelKey)
+        if let storedPreferred, models.contains(where: { $0.id == storedPreferred }) {
+            self.preferredModelId = storedPreferred
+        } else {
+            self.preferredModelId = models.first?.id
+        }
     }
 
     // MARK: - Model Management
@@ -65,6 +86,9 @@ class LocalModelManager: ObservableObject {
     func addModel(id: String, displayName: String) {
         guard !models.contains(where: { $0.id == id }) else { return }
         models.append(LocalModel(id: id, displayName: displayName))
+        if preferredModelId == nil {
+            preferredModelId = id
+        }
     }
 
     func removeModel(_ id: String) {
@@ -72,6 +96,14 @@ class LocalModelManager: ObservableObject {
             unloadModel()
         }
         models.removeAll { $0.id == id }
+        if preferredModelId == id {
+            preferredModelId = models.first?.id
+        }
+    }
+
+    func selectModel(_ id: String) async {
+        preferredModelId = id
+        await loadModel(id)
     }
 
     // MARK: - Loading
@@ -107,6 +139,7 @@ class LocalModelManager: ObservableObject {
         do {
             try await service.loadModel(id: id)
             activeModelId = id
+            preferredModelId = id
             status = .ready
         } catch {
             status = .error(error.localizedDescription)
@@ -131,6 +164,10 @@ class LocalModelManager: ObservableObject {
     // MARK: - Convenience
 
     var isReady: Bool { status == .ready }
+    var preferredModel: LocalModel? {
+        guard let preferredModelId else { return nil }
+        return models.first(where: { $0.id == preferredModelId })
+    }
 
     func modelStatus(_ id: String) -> String {
         if activeModelId == id && status == .ready {
@@ -142,11 +179,52 @@ class LocalModelManager: ObservableObject {
         return "idle"
     }
 
+    func ensurePreferredModelLoaded() async throws {
+        let targetId = preferredModelId ?? models.first?.id
+        guard let targetId else {
+            throw LLMError.requestFailed("No on-device model is configured yet. Choose one in Settings.")
+        }
+
+        if activeModelId == targetId && status == .ready {
+            return
+        }
+
+        if downloadingModelId == targetId {
+            switch status {
+            case .downloading:
+                throw LLMError.requestFailed("The on-device model is still downloading.")
+            case .loading:
+                throw LLMError.requestFailed("The on-device model is still loading.")
+            default:
+                break
+            }
+        }
+
+        await loadModel(targetId)
+
+        if activeModelId == targetId && status == .ready {
+            return
+        }
+
+        if case .error(let message) = status {
+            throw LLMError.requestFailed(message)
+        }
+
+        throw LLMError.requestFailed("The on-device model could not be loaded.")
+    }
+
+    func prewarmPreferredModelIfNeeded(activeProviderType: LLMProviderType) async {
+        guard activeProviderType.isLocal else { return }
+        guard let targetId = preferredModelId ?? models.first?.id else { return }
+        guard !(activeModelId == targetId && status == .ready) else { return }
+        await loadModel(targetId)
+    }
+
     // MARK: - Persistence
 
     private func saveModels() {
         if let data = try? JSONEncoder().encode(models) {
-            UserDefaults.standard.set(data, forKey: "eir_local_models")
+            UserDefaults.standard.set(data, forKey: Self.modelsKey)
         }
     }
 }

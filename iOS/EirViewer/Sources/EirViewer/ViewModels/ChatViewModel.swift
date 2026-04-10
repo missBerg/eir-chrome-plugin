@@ -113,7 +113,7 @@ class ChatViewModel: ObservableObject {
 
         // Validate provider readiness
         if config.type.isLocal {
-            guard let manager = localModelManager, manager.isReady else {
+            guard localModelManager != nil else {
                 errorMessage = "On-device model not loaded. Download it in Settings first."
                 return
             }
@@ -164,7 +164,7 @@ class ChatViewModel: ObservableObject {
 
         if config.type.isLocal {
             // Local on-device inference — use ChatSession with KV cache for fast responses
-            let localService = localModelManager!.service
+            let manager = localModelManager!
             let userName = document?.metadata.patient?.name
             let activeVersion = settingsVM.activePromptVersion
             let localPrompt = SystemPrompt.buildLocal(document: document, userName: userName, promptVersion: activeVersion)
@@ -172,7 +172,9 @@ class ChatViewModel: ObservableObject {
 
             streamingTask = Task {
                 do {
-                    _ = try await localService.streamResponse(
+                    try await manager.ensurePreferredModelLoaded()
+
+                    _ = try await manager.service.streamResponse(
                         userMessage: text,
                         systemPrompt: localPrompt,
                         conversationId: conversationId
@@ -191,7 +193,7 @@ class ChatViewModel: ObservableObject {
                         self.generateLocalTitle(
                             for: threadID,
                             messages: chatThreadStore.messages,
-                            localService: localService,
+                            localService: manager.service,
                             chatThreadStore: chatThreadStore
                         )
                     }

@@ -26,6 +26,7 @@
 		3E2D05F86A0E4E06282AFD27 /* SystemPromptEvalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B5224AC43701680F835B69 /* SystemPromptEvalTests.swift */; };
 		3FF23216CD5FDD5C7639C22E /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2420C4DEBEEE4DA345D5DBC /* ChatViewModel.swift */; };
 		3FF47E8B50B02EE8841909DF /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8150635BB2A535271C6E9DF6 /* HealthKitService.swift */; };
+		442F40C9C5ABFE2D7FBE514A /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = ADA19A73E5F4591556183B40 /* HuggingFace */; };
 		468C6D68209A69E16056FC91 /* ToolRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7533EFA7AB708D1A74C75160 /* ToolRegistry.swift */; };
 		47D5D30C92775FECA4ED1E25 /* HealthAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = B53967D56CF2AFBD216E1586 /* HealthAction.swift */; };
 		4BB23ECD3576FECFE19B1374 /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33B9625F99E6780A6CC9B21 /* ProfileStore.swift */; };
@@ -40,7 +41,7 @@
 		643F5195244E6ED2119F2079 /* EirDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8434B44AEFD4017D0F72594F /* EirDocument.swift */; };
 		694DDE62F042C5C273B391D6 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19D96044A03BA979D89DCD8 /* LLMProvider.swift */; };
 		69B1E8CECA7ABE10058AEF5C /* self-referral-clinics-sweden.json in Resources */ = {isa = PBXBuildFile; fileRef = 859B60323E11A5E910BF961A /* self-referral-clinics-sweden.json */; };
-		6A68ECEDDDD1BF98820A64B1 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = 034BC3C922F5543C5E63B4C6 /* MLX */; };
+		6A68ECEDDDD1BF98820A64B1 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = E01FA90F6D6615BAA47E2B61 /* MLXHuggingFace */; };
 		6CA3F6F906A6F95E7A3C2FD2 /* LocalLLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB360D1D5BBF139F5A3AA997 /* LocalLLMService.swift */; };
 		6DEA0CFA214C00DD21CE0047 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 9392CA25F8B28A447679F331 /* Yams */; };
 		6F2963E5566D72046E6C9E8C /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50DB1027E7C1FA9DD4B4165A /* HealthKit.framework */; };
@@ -58,6 +59,7 @@
 		82119577800F83BC85E9457E /* NextBestHealthActionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76D14D4702966D448A8CA8BE /* NextBestHealthActionViewModel.swift */; };
 		85B604502C498F68DA68BAD7 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A7171AB56F25BA404CA5AB /* ChatMessage.swift */; };
 		896A8BD57D607DEAA95FCE55 /* ForYouCardGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */; };
+		8E48EB72F2725CB769F4B39F /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = 7022EFB9AAF98BDEEDBBF706 /* Tokenizers */; };
 		913B76B784FD4CB55B6385C4 /* QRTransferFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBB538AFDEEB8FD799CEF6A /* QRTransferFlowTests.swift */; };
 		957EA466B04F1EAFCF3DB1E5 /* ActionVoiceLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E18FF2BCF455C0A49B038B /* ActionVoiceLabView.swift */; };
 		A596E9A9FD380B1BA68FE2E4 /* DocumentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */; };
@@ -66,6 +68,7 @@
 		A8DF34CBEA259B33B5D5C236 /* SelfReferralClinic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEF9FA0F2C843319C2D3F52 /* SelfReferralClinic.swift */; };
 		ADD0986EC7DAC34E846FE7DB /* HealthActionScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F8FE8E9C075F8448EE3869 /* HealthActionScheduler.swift */; };
 		B12F24DE6232CED1EEAFF0C7 /* HealthDataExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BDAF9E392CFDC5898D1AA7 /* HealthDataExtractor.swift */; };
+		B1BF7912C6D4709B03E6D203 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = 034BC3C922F5543C5E63B4C6 /* MLX */; };
 		B4117C40077D7E12E35BA93D /* AgentConfigCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCED288BFC7AEA4BC087A84E /* AgentConfigCard.swift */; };
 		B647EFAE5C04335E4FA218B3 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14BAAC14014C60D244FFD006 /* ChatView.swift */; };
 		B9AF4343469CC22C7DDD233A /* ChatThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5CCD5E136F8474222C4DC6 /* ChatThread.swift */; };
@@ -217,7 +220,10 @@
 				6DEA0CFA214C00DD21CE0047 /* Yams in Frameworks */,
 				7E039A51B266CD38D090D288 /* MLXLMCommon in Frameworks */,
 				D50F1EAFB087BAD39799BB27 /* MLXLLM in Frameworks */,
-				6A68ECEDDDD1BF98820A64B1 /* MLX in Frameworks */,
+				6A68ECEDDDD1BF98820A64B1 /* MLXHuggingFace in Frameworks */,
+				B1BF7912C6D4709B03E6D203 /* MLX in Frameworks */,
+				442F40C9C5ABFE2D7FBE514A /* HuggingFace in Frameworks */,
+				8E48EB72F2725CB769F4B39F /* Tokenizers in Frameworks */,
 				6F2963E5566D72046E6C9E8C /* HealthKit.framework in Frameworks */,
 				D5DB5FBC04E93591FB6EFC41 /* Speech.framework in Frameworks */,
 			);
@@ -502,7 +508,10 @@
 				9392CA25F8B28A447679F331 /* Yams */,
 				F5EEA1ADC15ECA536512B4B7 /* MLXLMCommon */,
 				C87CDCC4773E86F931FCFE2A /* MLXLLM */,
+				E01FA90F6D6615BAA47E2B61 /* MLXHuggingFace */,
 				034BC3C922F5543C5E63B4C6 /* MLX */,
+				ADA19A73E5F4591556183B40 /* HuggingFace */,
+				7022EFB9AAF98BDEEDBBF706 /* Tokenizers */,
 			);
 			productName = EirViewer;
 			productReference = C841F863C754F6E65C76D14C /* EirViewer.app */;
@@ -557,6 +566,8 @@
 				6B71FA9CFB22B9E8525BB5BF /* XCRemoteSwiftPackageReference "Yams" */,
 				4A0CF45F71A711C8E89CBDCF /* XCRemoteSwiftPackageReference "mlx-swift" */,
 				F026A5B780777D9C4858F479 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
+				0068D7EB5516E2F219EB9352 /* XCRemoteSwiftPackageReference "swift-huggingface" */,
+				8C0C3A5028DD9AA984815299 /* XCRemoteSwiftPackageReference "swift-transformers" */,
 			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
@@ -924,6 +935,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		0068D7EB5516E2F219EB9352 /* XCRemoteSwiftPackageReference "swift-huggingface" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-huggingface";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		4A0CF45F71A711C8E89CBDCF /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ml-explore/mlx-swift";
@@ -940,12 +959,20 @@
 				minimumVersion = 5.0.0;
 			};
 		};
+		8C0C3A5028DD9AA984815299 /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-transformers";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		F026A5B780777D9C4858F479 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
 			requirement = {
-				branch = main;
-				kind = branch;
+				kind = revision;
+				revision = 68b82ece72d41c02170a1aa28dbbc2d36678e924;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -956,10 +983,20 @@
 			package = 4A0CF45F71A711C8E89CBDCF /* XCRemoteSwiftPackageReference "mlx-swift" */;
 			productName = MLX;
 		};
+		7022EFB9AAF98BDEEDBBF706 /* Tokenizers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C0C3A5028DD9AA984815299 /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Tokenizers;
+		};
 		9392CA25F8B28A447679F331 /* Yams */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 6B71FA9CFB22B9E8525BB5BF /* XCRemoteSwiftPackageReference "Yams" */;
 			productName = Yams;
+		};
+		ADA19A73E5F4591556183B40 /* HuggingFace */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0068D7EB5516E2F219EB9352 /* XCRemoteSwiftPackageReference "swift-huggingface" */;
+			productName = HuggingFace;
 		};
 		BBA73EAFCA7F8D248F80F1C0 /* Yams */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -970,6 +1007,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F026A5B780777D9C4858F479 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
 			productName = MLXLLM;
+		};
+		E01FA90F6D6615BAA47E2B61 /* MLXHuggingFace */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F026A5B780777D9C4858F479 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXHuggingFace;
 		};
 		F5EEA1ADC15ECA536512B4B7 /* MLXLMCommon */ = {
 			isa = XCSwiftPackageProductDependency;

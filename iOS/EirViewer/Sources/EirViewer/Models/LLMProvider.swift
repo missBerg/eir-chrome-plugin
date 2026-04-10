@@ -44,7 +44,7 @@ enum LLMProviderType: String, CaseIterable, Identifiable, Codable {
         case .anthropic: return "claude-sonnet-4-5-20250929"
         case .groq: return "llama-3.3-70b-versatile"
         case .custom: return ""
-        case .local: return "mlx-community/Qwen3.5-0.8B-4bit"
+        case .local: return "mlx-community/gemma-4-e2b-it-4bit"
         }
     }
 

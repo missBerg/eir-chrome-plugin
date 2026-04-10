@@ -32,6 +32,18 @@ struct EirViewerApp: App {
                 .environmentObject(forYouVM)
                 .environmentObject(nextBestActionVM)
                 .environmentObject(stateActionVM)
+                .task {
+                    await localModelManager.prewarmPreferredModelIfNeeded(
+                        activeProviderType: settingsVM.activeProviderType
+                    )
+                }
+                .onChange(of: settingsVM.activeProviderType) { _, providerType in
+                    Task {
+                        await localModelManager.prewarmPreferredModelIfNeeded(
+                            activeProviderType: providerType
+                        )
+                    }
+                }
                 .onOpenURL { url in
                     let ext = url.pathExtension.lowercased()
                     guard ext == "eir" || ext == "yaml" || ext == "yml" else { return }

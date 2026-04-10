@@ -861,7 +861,9 @@ struct FindCareView: View {
         do {
             let analysis: FindCareIssueAnalysis
             if config.type.isLocal {
-                guard localModelManager.isReady else {
+                do {
+                    try await localModelManager.ensurePreferredModelLoaded()
+                } catch {
                     analysis = Self.fallbackIssueAnalysis(from: trimmed)
                     applyIssueAnalysis(analysis)
                     return

@@ -1288,9 +1288,7 @@ private enum AssessmentInsightGenerator {
         }
 
         if config.type.isLocal {
-            guard localModelManager.isReady else {
-                return nil
-            }
+            try await localModelManager.ensurePreferredModelLoaded()
 
             let response = try await localModelManager.service.streamResponse(
                 userMessage: summary,

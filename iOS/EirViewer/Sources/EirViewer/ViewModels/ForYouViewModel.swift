@@ -254,9 +254,7 @@ final class ForYouViewModel: ObservableObject {
         """
 
         if config.type.isLocal {
-            guard localModelManager.isReady else {
-                throw LLMError.requestFailed("Load an on-device model or choose a cloud provider to generate more cards.")
-            }
+            try await localModelManager.ensurePreferredModelLoaded()
 
             nonisolated(unsafe) var response = ""
             _ = try await localModelManager.service.streamResponse(

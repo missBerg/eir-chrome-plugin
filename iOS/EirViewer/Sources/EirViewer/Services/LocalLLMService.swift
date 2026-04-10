@@ -1,7 +1,10 @@
 import Foundation
+import HuggingFace
+import MLXHuggingFace
 import MLXLMCommon
 import MLXLLM
 import MLX
+import Tokenizers
 
 actor LocalLLMService {
     private var modelContainer: ModelContainer?
@@ -13,10 +16,10 @@ actor LocalLLMService {
 
     func loadModel(id: String) async throws {
         // Set GPU cache limit for iOS memory constraints
-        MLX.GPU.set(cacheLimit: 512 * 1024 * 1024)
+        Memory.cacheLimit = 512 * 1024 * 1024
 
         let modelConfig = ModelConfiguration(id: id)
-        let container = try await LLMModelFactory.shared.loadContainer(configuration: modelConfig) { progress in
+        let container = try await #huggingFaceLoadModelContainer(configuration: modelConfig) { progress in
             Task { @MainActor in
                 NotificationCenter.default.post(
                     name: .localModelDownloadProgress,
@@ -101,7 +104,7 @@ actor LocalLLMService {
         modelContainer = nil
         currentModelId = nil
         currentConversationId = nil
-        MLX.GPU.clearCache()
+        Memory.clearCache()
     }
 }
 

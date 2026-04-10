@@ -189,6 +189,7 @@ private struct ProviderSection: View {
     let config: LLMProviderConfig
     @EnvironmentObject var settingsVM: SettingsViewModel
     @EnvironmentObject var purchaseManager: PurchaseManager
+    @EnvironmentObject var localModelManager: LocalModelManager
     @State private var apiKey: String = ""
     @State private var baseURL: String = ""
     @State private var model: String = ""
@@ -196,6 +197,7 @@ private struct ProviderSection: View {
     @State private var isProvisioningManagedAccess = false
     @State private var managedAccessSnapshot: ManagedCloudAccessSnapshot?
     @State private var managedAccessError: String?
+    @State private var isExpanded = false
 
     var isActive: Bool { settingsVM.activeProviderType == config.type }
     var hasKey: Bool { !apiKey.isEmpty }
@@ -212,116 +214,122 @@ private struct ProviderSection: View {
 
     var body: some View {
         Section {
-            // Status
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 8) {
-                        Text(config.type.displayName)
-                            .font(.headline)
-                        if isActive {
-                            Text("Active")
-                                .font(.caption2)
-                                .fontWeight(.semibold)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(AppColors.primary)
-                                .foregroundColor(.white)
-                                .cornerRadius(4)
-                        }
-                    }
-                    if config.type.isLocal {
-                        Text("Runs entirely on device — no data leaves your phone")
-                            .font(.caption2)
-                            .foregroundColor(AppColors.textSecondary)
-                            .lineLimit(2)
-                    } else {
-                        Text(usesManagedTrial ? "Eir-hosted cloud route" : config.type.defaultBaseURL)
-                            .font(.caption2)
-                            .foregroundColor(AppColors.textSecondary)
-                            .lineLimit(1)
-                    }
-                }
-
-                Spacer()
-
-                if !config.type.isLocal {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(isConfigured ? AppColors.green : AppColors.border)
-                            .frame(width: 8, height: 8)
-                        Text(statusText)
-                            .font(.caption)
-                            .foregroundColor(isConfigured ? AppColors.green : AppColors.textSecondary)
-                    }
-                }
-            }
-
-            if config.type.isLocal {
-                // Local model UI — handled by LocalModelSection
-                LocalModelSection()
-            } else if usesManagedTrial {
-                managedCloudSection
-            } else {
-                // API Key
-                HStack {
-                    if showKey {
-                        TextField("API Key", text: $apiKey)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                    } else {
-                        SecureField("API Key", text: $apiKey)
-                            .textInputAutocapitalization(.never)
-                    }
-
-                    Button {
-                        showKey.toggle()
-                    } label: {
-                        Image(systemName: showKey ? "eye.slash" : "eye")
-                            .foregroundColor(AppColors.textSecondary)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .onChange(of: apiKey) { _, newValue in
-                    settingsVM.setApiKey(newValue, for: config.type)
-                }
-
-                // Model
-                HStack {
-                    Text("Model")
-                        .foregroundColor(AppColors.textSecondary)
-                    Spacer()
-                    TextField("Model name", text: $model)
-                        .multilineTextAlignment(.trailing)
-                        .onChange(of: model) { _, newValue in
-                            var updated = config
-                            updated.model = newValue
-                            settingsVM.updateProvider(updated)
-                        }
-                }
-
-                // Custom base URL
-                if config.type == .custom {
+            DisclosureGroup(isExpanded: $isExpanded) {
+                if config.type.isLocal {
+                    LocalModelSection()
+                } else if usesManagedTrial {
+                    managedCloudSection
+                } else {
                     HStack {
-                        Text("Base URL")
+                        if showKey {
+                            TextField("API Key", text: $apiKey)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                        } else {
+                            SecureField("API Key", text: $apiKey)
+                                .textInputAutocapitalization(.never)
+                        }
+
+                        Button {
+                            showKey.toggle()
+                        } label: {
+                            Image(systemName: showKey ? "eye.slash" : "eye")
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .onChange(of: apiKey) { _, newValue in
+                        settingsVM.setApiKey(newValue, for: config.type)
+                    }
+
+                    HStack {
+                        Text("Model")
                             .foregroundColor(AppColors.textSecondary)
                         Spacer()
-                        TextField("https://api.example.com/v1", text: $baseURL)
+                        TextField("Model name", text: $model)
                             .multilineTextAlignment(.trailing)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .onChange(of: baseURL) { _, newValue in
+                            .onChange(of: model) { _, newValue in
                                 var updated = config
-                                updated.baseURL = newValue
+                                updated.model = newValue
                                 settingsVM.updateProvider(updated)
                             }
                     }
-                }
 
-                if !isActive && hasKey {
-                    Button("Use \(config.type.displayName)") {
-                        settingsVM.setActiveProvider(config.type)
+                    if config.type == .custom {
+                        HStack {
+                            Text("Base URL")
+                                .foregroundColor(AppColors.textSecondary)
+                            Spacer()
+                            TextField("https://api.example.com/v1", text: $baseURL)
+                                .multilineTextAlignment(.trailing)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .onChange(of: baseURL) { _, newValue in
+                                    var updated = config
+                                    updated.baseURL = newValue
+                                    settingsVM.updateProvider(updated)
+                                }
+                        }
                     }
-                    .foregroundColor(AppColors.primary)
+
+                    if !isActive && hasKey {
+                        Button("Use \(config.type.displayName)") {
+                            settingsVM.setActiveProvider(config.type)
+                        }
+                        .foregroundColor(AppColors.primary)
+                    }
+                }
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text(config.type.displayName)
+                                .font(.headline)
+                            if isActive {
+                                Text("Active")
+                                    .font(.caption2)
+                                    .fontWeight(.semibold)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(AppColors.primary)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(4)
+                            }
+                        }
+                        if config.type.isLocal {
+                            Text("Runs entirely on device")
+                                .font(.caption2)
+                                .foregroundColor(AppColors.textSecondary)
+                                .lineLimit(1)
+                        } else if usesManagedTrial {
+                            Text("Eir-hosted cloud route")
+                                .font(.caption2)
+                                .foregroundColor(AppColors.textSecondary)
+                                .lineLimit(1)
+                        } else {
+                            Text(config.model)
+                                .font(.caption2)
+                                .foregroundColor(AppColors.textSecondary)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    Spacer()
+
+                    if config.type.isLocal {
+                        Text(localModelManager.preferredModel?.displayName ?? "On device")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    } else {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(isConfigured ? AppColors.green : AppColors.border)
+                                .frame(width: 8, height: 8)
+                            Text(statusText)
+                                .font(.caption)
+                                .foregroundColor(isConfigured ? AppColors.green : AppColors.textSecondary)
+                        }
+                    }
                 }
             }
         }
@@ -330,6 +338,12 @@ private struct ProviderSection: View {
             baseURL = config.baseURL
             model = config.model
             managedAccessSnapshot = settingsVM.managedAccessSnapshot(for: config.type)
+            isExpanded = isActive || config.type.isLocal
+        }
+        .onChange(of: settingsVM.activeProviderType) { _, newValue in
+            if newValue == config.type {
+                isExpanded = true
+            }
         }
     }
 
@@ -339,7 +353,7 @@ private struct ProviderSection: View {
                 Text("Free Trial for Eir")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppColors.text)
-                Text("Your health data is sent over encrypted HTTPS through Eir-managed servers in the Stockholm Region. Eir is configured for zero Eir-side retention, and Berget provides the hosted inference.")
+                Text("Use daily credits to try Eir's hosted AI.")
                     .font(.caption)
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -347,15 +361,6 @@ private struct ProviderSection: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppColors.aiSoft)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-            HStack {
-                Text("Model")
-                    .foregroundColor(AppColors.textSecondary)
-                Spacer()
-                Text(config.model)
-                    .font(.subheadline.monospaced())
-                    .foregroundColor(AppColors.text)
-            }
 
             if let managedAccessSnapshot {
                 quotaView(snapshot: managedAccessSnapshot)
@@ -648,22 +653,36 @@ private struct LocalModelRow: View {
     @EnvironmentObject var localModelManager: LocalModelManager
 
     var isActive: Bool { localModelManager.activeModelId == model.id }
+    var isPreferred: Bool { localModelManager.preferredModelId == model.id }
     var isDownloading: Bool { localModelManager.downloadingModelId == model.id }
     var isLoading: Bool {
         isDownloading && localModelManager.status == .loading
     }
+    var hasMeaningfulProgress: Bool {
+        localModelManager.downloadProgress > 0.001
+    }
 
     var body: some View {
         Button {
-            guard !isActive else { return }
-            Task { await localModelManager.loadModel(model.id) }
+            Task { await localModelManager.selectModel(model.id) }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(model.displayName)
-                            .font(.subheadline)
-                            .foregroundColor(AppColors.text)
+                        HStack(spacing: 6) {
+                            Text(model.displayName)
+                                .font(.subheadline)
+                                .foregroundColor(AppColors.text)
+                            if isPreferred {
+                                Text("Preferred")
+                                    .font(.caption2)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(AppColors.primary.opacity(0.14))
+                                    .foregroundColor(AppColors.primary)
+                                    .clipShape(Capsule())
+                            }
+                        }
                         Text(model.id)
                             .font(.caption2)
                             .foregroundColor(AppColors.textSecondary)
@@ -690,9 +709,23 @@ private struct LocalModelRow: View {
                                 .foregroundColor(AppColors.textSecondary)
                         }
                     } else if isDownloading {
-                        Text("\(Int(localModelManager.downloadProgress * 100))%")
+                        if hasMeaningfulProgress {
+                            Text("\(Int(localModelManager.downloadProgress * 100))%")
+                                .font(.caption)
+                                .foregroundColor(AppColors.yellow)
+                        } else {
+                            HStack(spacing: 4) {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                                Text("Preparing...")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+                    } else if isPreferred {
+                        Text("Ready when needed")
                             .font(.caption)
-                            .foregroundColor(AppColors.yellow)
+                            .foregroundColor(AppColors.textSecondary)
                     } else {
                         Image(systemName: "arrow.down.circle")
                             .foregroundColor(AppColors.textSecondary)
@@ -701,8 +734,13 @@ private struct LocalModelRow: View {
 
                 // Download progress bar
                 if isDownloading && localModelManager.status == .downloading {
-                    ProgressView(value: localModelManager.downloadProgress)
-                        .tint(AppColors.primary)
+                    if hasMeaningfulProgress {
+                        ProgressView(value: localModelManager.downloadProgress)
+                            .tint(AppColors.primary)
+                    } else {
+                        ProgressView()
+                            .tint(AppColors.primary)
+                    }
                 }
             }
         }
@@ -716,65 +754,77 @@ private struct PromptStyleSection: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
     @State private var showCreatePrompt = false
     @State private var editingPrompt: PromptVersion?
+    @State private var isExpanded = false
 
     var body: some View {
         Section {
-            ForEach(settingsVM.allPromptVersions) { version in
-                Button {
-                    settingsVM.activePromptVersionId = version.id
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text(version.name)
-                                    .font(.body)
-                                    .foregroundColor(AppColors.text)
-                                if !version.isBuiltIn {
-                                    Text("Custom")
-                                        .font(.caption2)
-                                        .padding(.horizontal, 4)
-                                        .padding(.vertical, 1)
-                                        .background(AppColors.primary.opacity(0.15))
-                                        .foregroundColor(AppColors.primary)
-                                        .cornerRadius(3)
+            DisclosureGroup(isExpanded: $isExpanded) {
+                ForEach(settingsVM.allPromptVersions) { version in
+                    Button {
+                        settingsVM.activePromptVersionId = version.id
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text(version.name)
+                                        .font(.body)
+                                        .foregroundColor(AppColors.text)
+                                    if !version.isBuiltIn {
+                                        Text("Custom")
+                                            .font(.caption2)
+                                            .padding(.horizontal, 4)
+                                            .padding(.vertical, 1)
+                                            .background(AppColors.primary.opacity(0.15))
+                                            .foregroundColor(AppColors.primary)
+                                            .cornerRadius(3)
+                                    }
                                 }
+                                Text(version.description)
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
                             }
-                            Text(version.description)
-                                .font(.caption)
-                                .foregroundColor(AppColors.textSecondary)
+                            Spacer()
+                            if settingsVM.activePromptVersionId == version.id {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(AppColors.primary)
+                            }
                         }
-                        Spacer()
-                        if settingsVM.activePromptVersionId == version.id {
-                            Image(systemName: "checkmark")
-                                .foregroundColor(AppColors.primary)
+                    }
+                    .swipeActions(edge: .trailing) {
+                        if !version.isBuiltIn {
+                            Button(role: .destructive) {
+                                settingsVM.deleteCustomPrompt(version.id)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            Button {
+                                editingPrompt = version
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(AppColors.primary)
                         }
                     }
                 }
-                .swipeActions(edge: .trailing) {
-                    if !version.isBuiltIn {
-                        Button(role: .destructive) {
-                            settingsVM.deleteCustomPrompt(version.id)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        Button {
-                            editingPrompt = version
-                        } label: {
-                            Label("Edit", systemImage: "pencil")
-                        }
-                        .tint(AppColors.primary)
-                    }
-                }
-            }
 
-            Button {
-                showCreatePrompt = true
+                Button {
+                    showCreatePrompt = true
+                } label: {
+                    Label("Create Custom Style...", systemImage: "plus.circle")
+                }
+                .foregroundColor(AppColors.primary)
             } label: {
-                Label("Create Custom Style...", systemImage: "plus.circle")
+                HStack {
+                    Text("Prompt Style")
+                    Spacer()
+                    if let active = settingsVM.activePromptVersion {
+                        Text(active.name)
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
             }
-            .foregroundColor(AppColors.primary)
-        } header: {
-            Text("Prompt Style (On-Device)")
         }
         .sheet(isPresented: $showCreatePrompt) {
             PromptEditorSheet(settingsVM: settingsVM)
