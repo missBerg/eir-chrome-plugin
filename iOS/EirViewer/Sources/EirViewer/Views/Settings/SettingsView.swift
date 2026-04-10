@@ -579,6 +579,17 @@ private struct LocalModelSection: View {
     @State private var newModelId = ""
 
     var body: some View {
+        Toggle(isOn: $settingsVM.voiceTranscriptPolishEnabled) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Polish voice transcripts on-device")
+                    .foregroundColor(AppColors.text)
+                Text("Use the local model to clean up short voice notes before the app uses them.")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+        }
+        .tint(AppColors.primary)
+
         // Error banner
         if case .error(let msg) = localModelManager.status {
             HStack(spacing: 4) {
@@ -853,13 +864,14 @@ private struct PromptEditorSheet: View {
         _name = State(initialValue: editing?.name ?? "")
         _description = State(initialValue: editing?.description ?? "")
         _systemPrompt = State(initialValue: editing?.systemPrompt ?? """
-        You are Eir, a medical records assistant. Always respond in English. Records may be in Swedish — translate them. Be concise.
+        You are Eir, a helpful health companion. Respond in the same language the user writes in. Records may be in Swedish — translate them when useful. Be concise.
 
-        CRITICAL CONSTRAINTS:
-        1. Use ONLY information from the provided records. Never guess.
-        2. If the answer is not in the records, say so.
-        3. Never invent medications, dosages, or diagnoses.
-        4. Never provide definitive diagnoses.
+        Rules:
+        1. Use only the records for record-specific facts.
+        2. If the answer is not in the records, say so clearly.
+        3. You may still give general health guidance when the user asks broader questions.
+        4. Never invent medications, dosages, diagnoses, or results.
+        5. Never provide definitive diagnoses.
         """)
     }
 

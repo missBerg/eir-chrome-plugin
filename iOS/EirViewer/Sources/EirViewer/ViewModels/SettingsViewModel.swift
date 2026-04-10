@@ -12,12 +12,20 @@ class SettingsViewModel: ObservableObject {
     static let eirTrialRequestsPerToken = 100
     static let eirTrialDailyTokenGrant = 10
     static let hostedClientKeyVersion = managedCloudKeyVersion
+    private static let localDefaultMigrationKey = "eir_default_provider_local_migration_v1"
+    private static let providerSelectionKey = "eir_has_explicitly_selected_provider_v1"
+    private static let voiceTranscriptPolishKey = "eir_voice_transcript_polish_enabled_v1"
 
     @Published var providers: [LLMProviderConfig]
     @Published var activeProviderType: LLMProviderType
     @Published var activePromptVersionId: String {
         didSet {
             UserDefaults.standard.set(activePromptVersionId, forKey: "eir_active_prompt_version")
+        }
+    }
+    @Published var voiceTranscriptPolishEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(voiceTranscriptPolishEnabled, forKey: Self.voiceTranscriptPolishKey)
         }
     }
     @Published var customPrompts: [PromptVersion] {
@@ -31,8 +39,15 @@ class SettingsViewModel: ObservableObject {
         self.activeProviderType = Self.loadActiveProvider()
         self.activePromptVersionId = UserDefaults.standard.string(forKey: "eir_active_prompt_version")
             ?? PromptLibrary.defaultVersionId
+        self.voiceTranscriptPolishEnabled = UserDefaults.standard.object(forKey: Self.voiceTranscriptPolishKey) as? Bool ?? true
         self.customPrompts = Self.loadCustomPrompts()
         self.managedAccessSnapshots = Self.loadManagedAccessSnapshots()
+
+        if Self.shouldForceLocalDefault(current: activeProviderType) {
+            self.activeProviderType = .local
+            UserDefaults.standard.set(LLMProviderType.local.rawValue, forKey: "eir_active_provider")
+            UserDefaults.standard.set(true, forKey: Self.localDefaultMigrationKey)
+        }
     }
 
     var activeProvider: LLMProviderConfig? {
@@ -252,6 +267,7 @@ class SettingsViewModel: ObservableObject {
     func setActiveProvider(_ type: LLMProviderType) {
         activeProviderType = type
         UserDefaults.standard.set(type.rawValue, forKey: "eir_active_provider")
+        UserDefaults.standard.set(true, forKey: Self.providerSelectionKey)
     }
 
     private func saveProviders() {
@@ -291,7 +307,17 @@ class SettingsViewModel: ObservableObject {
            let type = LLMProviderType(rawValue: raw) {
             return type
         }
-        return .bergetTrial
+        return .local
+    }
+
+    private static func shouldForceLocalDefault(current: LLMProviderType) -> Bool {
+        if UserDefaults.standard.bool(forKey: Self.providerSelectionKey) {
+            return false
+        }
+        if UserDefaults.standard.bool(forKey: Self.localDefaultMigrationKey) {
+            return false
+        }
+        return current != .local
     }
 
     private func managedAccessToken(for type: LLMProviderType) -> String {

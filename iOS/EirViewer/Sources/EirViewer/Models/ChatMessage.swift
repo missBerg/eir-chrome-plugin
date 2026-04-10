@@ -8,6 +8,7 @@ struct ChatMessage: Identifiable, Codable {
     var toolCalls: [ToolCall]?
     var toolCallId: String?
     var voiceNote: VoiceNoteAttachment?
+    var followUpQuestions: [String]?
 
     enum Role: String, Codable {
         case user = "user"
@@ -24,6 +25,7 @@ struct ChatMessage: Identifiable, Codable {
         self.toolCalls = nil
         self.toolCallId = nil
         self.voiceNote = nil
+        self.followUpQuestions = nil
     }
 
     init(id: UUID, role: Role, content: String, timestamp: Date) {
@@ -34,6 +36,7 @@ struct ChatMessage: Identifiable, Codable {
         self.toolCalls = nil
         self.toolCallId = nil
         self.voiceNote = nil
+        self.followUpQuestions = nil
     }
 
     init(role: Role, content: String, toolCalls: [ToolCall]) {
@@ -44,6 +47,7 @@ struct ChatMessage: Identifiable, Codable {
         self.toolCalls = toolCalls
         self.toolCallId = nil
         self.voiceNote = nil
+        self.followUpQuestions = nil
     }
 
     init(role: Role, content: String, toolCallId: String) {
@@ -54,6 +58,7 @@ struct ChatMessage: Identifiable, Codable {
         self.toolCalls = nil
         self.toolCallId = toolCallId
         self.voiceNote = nil
+        self.followUpQuestions = nil
     }
 
     init(role: Role, content: String, voiceNote: VoiceNoteAttachment) {
@@ -64,5 +69,6 @@ struct ChatMessage: Identifiable, Codable {
         self.toolCalls = nil
         self.toolCallId = nil
         self.voiceNote = voiceNote
+        self.followUpQuestions = nil
     }
 }

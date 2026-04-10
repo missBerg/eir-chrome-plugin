@@ -813,7 +813,7 @@ struct FindCareView: View {
     }
 
     private func transcribeIssueVoiceNote(_ draft: RecordedVoiceNoteDraft) async {
-        var shouldDeleteRecording = true
+        let shouldDeleteRecording = true
         defer {
             if shouldDeleteRecording {
                 try? FileManager.default.removeItem(at: draft.fileURL)
@@ -826,7 +826,13 @@ struct FindCareView: View {
         defer { isTranscribingIssue = false }
 
         do {
-            let transcript = try await VoiceNoteTranscriptionService.transcribe(draft: draft, settingsVM: settingsVM)
+            let transcript = try await VoiceTranscriptionCoordinator.transcribe(
+                draft: draft,
+                settingsVM: settingsVM,
+                localModelManager: localModelManager,
+                preferredLocaleIdentifier: Locale.autoupdatingCurrent.identifier,
+                context: .careIntake
+            )
             guard !transcript.isEmpty else {
                 throw LLMError.requestFailed("The voice note could not be turned into text.")
             }

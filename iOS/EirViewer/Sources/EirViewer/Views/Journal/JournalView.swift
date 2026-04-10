@@ -47,133 +47,159 @@ struct JournalView: View {
     @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
     @State private var qrExportURL: URL?
+    @State private var selectedJournalEntryID: String?
     @StateObject private var digitalTracker = DigitalWellbeingTracker()
 
     var body: some View {
-        Group {
-            if mode == .overview {
-                stateOverviewScreen
-            } else if mode == .entries {
+        journalRoot
+    }
+
+    private var journalRoot: some View {
+        activeModeContent
+            .navigationTitle(stateNavigationTitle)
+            .toolbar { journalToolbar }
+            .sheet(isPresented: $showingHealthKitImport) {
+                HealthKitImportView()
+                    .environmentObject(profileStore)
+            }
+            .sheet(isPresented: $showShareSheet) {
+                ActivityView(activityItems: shareItems)
+            }
+            .navigationDestination(item: $selectedJournalEntryID) { entryID in
+                if let entry = documentVM.document?.entries.first(where: { $0.id == entryID }) {
+                    EntryDetailView(entry: entry)
+                }
+            }
+            .sheet(
+                isPresented: Binding(
+                    get: { qrExportURL != nil },
+                    set: { if !$0 { qrExportURL = nil } }
+                )
+            ) {
+                if let qrExportURL {
+                    FileTransferQRCodeView(fileURL: qrExportURL)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openJournalImport)) { _ in
+                mode = .importData
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToJournalEntry)) { notification in
+                if let entryID = notification.object as? String {
+                    openJournalEntry(entryID)
+                }
+            }
+            .onChange(of: documentVM.selectedEntryID) {
+                openJournalEntry(documentVM.selectedEntryID)
+            }
+            .task(id: profileStore.selectedProfileID) {
+                assessmentStore.load(for: profileStore.selectedProfileID)
+                stateStore.load(for: profileStore.selectedProfileID)
+            }
+            .background(AppColors.background)
+    }
+
+    private var activeModeContent: AnyView {
+        switch mode {
+        case .overview:
+            return AnyView(stateOverviewScreen)
+        case .entries:
+            return AnyView(
                 journalTimeline
                     .searchable(text: $documentVM.searchText, prompt: "Search entries...")
-            } else if mode == .digital {
-                digitalScreen
-            } else if mode == .state {
-                stateScreen
-            } else if mode == .assessments {
-                assessmentsScreen
-            } else {
-                importScreen
-            }
-        }
-        .navigationTitle(stateNavigationTitle)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                journalModeMenu
-            }
-
-            ToolbarItem(placement: .topBarTrailing) {
-                if mode == .entries, selectedProfileFileURL != nil {
-                    Menu {
-                        Button {
-                            shareSelectedProfile()
-                        } label: {
-                            Label("Export File", systemImage: "square.and.arrow.up")
-                        }
-
-                        Button {
-                            showSelectedProfileQRCode()
-                        } label: {
-                            Label("Show QR Code", systemImage: "qrcode")
-                        }
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .foregroundColor(AppColors.primary)
-                    }
-                }
-            }
-
-            ToolbarItem(placement: .topBarTrailing) {
-                if mode == .entries {
-                    Menu {
-                        Menu("Category") {
-                            Button("All Categories") {
-                                documentVM.selectedCategory = nil
-                            }
-                            ForEach(documentVM.categories, id: \.self) { cat in
-                                Button {
-                                    documentVM.selectedCategory = cat
-                                } label: {
-                                    HStack {
-                                        Text(cat)
-                                        if documentVM.selectedCategory == cat {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Menu("Provider") {
-                            Button("All Providers") {
-                                documentVM.selectedProvider = nil
-                            }
-                            ForEach(documentVM.providers, id: \.self) { prov in
-                                Button {
-                                    documentVM.selectedProvider = prov
-                                } label: {
-                                    HStack {
-                                        Text(prov)
-                                        if documentVM.selectedProvider == prov {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if documentVM.selectedCategory != nil || documentVM.selectedProvider != nil {
-                            Divider()
-                            Button("Clear Filters", role: .destructive) {
-                                documentVM.clearFilters()
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                            .foregroundColor(
-                                documentVM.selectedCategory != nil || documentVM.selectedProvider != nil
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary
-                            )
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $showingHealthKitImport) {
-            HealthKitImportView()
-                .environmentObject(profileStore)
-        }
-        .sheet(isPresented: $showShareSheet) {
-            ActivityView(activityItems: shareItems)
-        }
-        .sheet(
-            isPresented: Binding(
-                get: { qrExportURL != nil },
-                set: { if !$0 { qrExportURL = nil } }
             )
-        ) {
-            if let qrExportURL {
-                FileTransferQRCodeView(fileURL: qrExportURL)
+        case .digital:
+            return AnyView(digitalScreen)
+        case .state:
+            return AnyView(stateScreen)
+        case .assessments:
+            return AnyView(assessmentsScreen)
+        case .importData:
+            return AnyView(importScreen)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var journalToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            journalModeMenu
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+            if mode == .entries, selectedProfileFileURL != nil {
+                Menu {
+                    Button {
+                        shareSelectedProfile()
+                    } label: {
+                        Label("Export File", systemImage: "square.and.arrow.up")
+                    }
+
+                    Button {
+                        showSelectedProfileQRCode()
+                    } label: {
+                        Label("Show QR Code", systemImage: "qrcode")
+                    }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundColor(AppColors.primary)
+                }
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .openJournalImport)) { _ in
-            mode = .importData
+
+        ToolbarItem(placement: .topBarTrailing) {
+            if mode == .entries {
+                Menu {
+                    Menu("Category") {
+                        Button("All Categories") {
+                            documentVM.selectedCategory = nil
+                        }
+                        ForEach(documentVM.categories, id: \.self) { cat in
+                            Button {
+                                documentVM.selectedCategory = cat
+                            } label: {
+                                HStack {
+                                    Text(cat)
+                                    if documentVM.selectedCategory == cat {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Menu("Provider") {
+                        Button("All Providers") {
+                            documentVM.selectedProvider = nil
+                        }
+                        ForEach(documentVM.providers, id: \.self) { prov in
+                            Button {
+                                documentVM.selectedProvider = prov
+                            } label: {
+                                HStack {
+                                    Text(prov)
+                                    if documentVM.selectedProvider == prov {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if documentVM.selectedCategory != nil || documentVM.selectedProvider != nil {
+                        Divider()
+                        Button("Clear Filters", role: .destructive) {
+                            documentVM.clearFilters()
+                        }
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .foregroundColor(
+                            documentVM.selectedCategory != nil || documentVM.selectedProvider != nil
+                                ? AppColors.primary
+                                : AppColors.textSecondary
+                        )
+                }
+            }
         }
-        .task(id: profileStore.selectedProfileID) {
-            assessmentStore.load(for: profileStore.selectedProfileID)
-            stateStore.load(for: profileStore.selectedProfileID)
-        }
-        .background(AppColors.background)
     }
 
     private var journalTimeline: some View {
@@ -188,7 +214,9 @@ struct JournalView: View {
                         ForEach(documentVM.groupedEntries, id: \.key) { group in
                             Section {
                                 ForEach(group.entries) { entry in
-                                    NavigationLink(value: entry.id) {
+                                    Button {
+                                        selectedJournalEntryID = entry.id
+                                    } label: {
                                         EntryCardView(
                                             entry: entry,
                                             isSelected: false
@@ -205,11 +233,6 @@ struct JournalView: View {
                         }
                     }
                     .padding()
-                }
-                .navigationDestination(for: String.self) { entryID in
-                    if let entry = documentVM.document?.entries.first(where: { $0.id == entryID }) {
-                        EntryDetailView(entry: entry)
-                    }
                 }
             } else {
                 emptyJournalState
@@ -289,6 +312,19 @@ struct JournalView: View {
             .padding(.vertical, 8)
             .background(AppColors.backgroundMuted)
             .clipShape(Capsule())
+        }
+    }
+
+    private func openJournalEntry(_ entryID: String?) {
+        guard let entryID,
+              documentVM.document?.entries.contains(where: { $0.id == entryID }) == true
+        else { return }
+
+        mode = .entries
+        selectedJournalEntryID = entryID
+
+        if documentVM.selectedEntryID != nil {
+            documentVM.selectedEntryID = nil
         }
     }
 

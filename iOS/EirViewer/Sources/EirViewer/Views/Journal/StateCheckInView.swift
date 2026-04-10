@@ -40,6 +40,7 @@ struct StateCheckInView: View {
     @EnvironmentObject private var profileStore: ProfileStore
     @EnvironmentObject private var settingsVM: SettingsViewModel
     @EnvironmentObject private var stateActionVM: StateActionRecommendationViewModel
+    @EnvironmentObject private var localModelManager: LocalModelManager
 
     @ObservedObject var store: StateCheckInStore
 
@@ -1180,7 +1181,13 @@ struct StateCheckInView: View {
         }
 
         do {
-            let transcript = try await AppleSpeechTranscriptionService.transcribe(url: draft.fileURL)
+            let transcript = try await VoiceTranscriptionCoordinator.transcribe(
+                draft: draft,
+                settingsVM: settingsVM,
+                localModelManager: localModelManager,
+                preferredLocaleIdentifier: Locale.autoupdatingCurrent.identifier,
+                context: .stateNote
+            )
             let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else {
                 throw LLMError.requestFailed("The voice note could not be turned into text.")
@@ -1195,35 +1202,6 @@ struct StateCheckInView: View {
 
             queueNoteInference(for: trimmed, voiceEnergy: energy)
         } catch {
-            if let config = settingsVM.activeProvider, config.type.usesManagedTrialAccess {
-                do {
-                    let transcript = try await VoiceNoteTranscriptionService.transcribe(draft: draft, settingsVM: settingsVM)
-                    let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else {
-                        throw LLMError.requestFailed("The voice note could not be turned into text.")
-                    }
-
-                    await MainActor.run {
-                        let existing = note.trimmingCharacters(in: .whitespacesAndNewlines)
-                        skipNextNoteInference = true
-                        note = existing.isEmpty ? trimmed : "\(existing)\n\(trimmed)"
-                        isTranscribingVoiceNote = false
-                    }
-
-                    queueNoteInference(for: trimmed, voiceEnergy: energy)
-                    return
-                } catch {
-                    let lowered = error.localizedDescription.lowercased()
-                    if lowered.contains("trial") || lowered.contains("quota") || lowered.contains("credit") || lowered.contains("transcription") {
-                        applyVoiceEnergyFallback(
-                            energy,
-                            message: "Voice tone read. Add text too if you want the full meaning captured."
-                        )
-                        return
-                    }
-                }
-            }
-
             let lowered = error.localizedDescription.lowercased()
             if lowered.contains("speech") || lowered.contains("recognition") || lowered.contains("transcription") {
                 applyVoiceEnergyFallback(

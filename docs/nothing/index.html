@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nothing by Eir</title>
+    <meta name="description" content="Doing nothing.">
+    <meta name="theme-color" content="#fafaf9">
+    <meta property="og:title" content="Nothing by Eir">
+    <meta property="og:description" content="Doing nothing.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Nothing by Eir">
+    <meta name="twitter:description" content="Doing nothing.">
+    <link rel="icon" href="./eir-icon.png">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <main class="app-shell">
+        <section class="screen">
+            <div class="brand">
+                <div class="brand__icon">
+                    <img src="./eir-rune-white.png" alt="" aria-hidden="true">
+                </div>
+                <span class="brand__name">Eir Space</span>
+            </div>
+
+            <header class="hero">
+                <div>
+                    <h1>Doing nothing</h1>
+                    <p class="hero__live" id="liveBadge" hidden>Live</p>
+                </div>
+                <div class="points-badge"><span id="pointsValue">0</span> pts</div>
+            </header>
+
+            <section class="summary" aria-label="Summary">
+                <article class="summary__item">
+                    <div class="summary__value" id="summaryPoints">0</div>
+                    <div class="summary__label">Points</div>
+                </article>
+                <div class="summary__divider"></div>
+                <article class="summary__item">
+                    <div class="summary__value" id="summarySessions">0</div>
+                    <div class="summary__label">Sessions</div>
+                </article>
+                <div class="summary__divider"></div>
+                <article class="summary__item">
+                    <div class="summary__value" id="summaryQuiet">0m</div>
+                    <div class="summary__label">Quiet</div>
+                </article>
+            </section>
+
+            <section class="studio">
+                <div class="stage" id="stage" data-state="idle" aria-live="polite">
+                    <div class="stage__glow"></div>
+                    <div class="stage__ring"></div>
+                    <div class="stage__core"></div>
+                    <div class="stage__center">
+                        <div class="stage__time" id="timerValue">00:00</div>
+                        <div class="stage__status" id="timerStatus">Ready.</div>
+                    </div>
+                </div>
+
+                <section class="progress-card" aria-label="Session progress">
+                    <div class="progress-card__row">
+                        <span class="progress-card__label" id="progressLabel">Rate</span>
+                        <span class="progress-card__value" id="progressValue">1 point / 5m</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-bar__fill" id="progressFill"></div>
+                    </div>
+                </section>
+
+                <section class="metrics" aria-label="Session metrics">
+                    <article class="metric">
+                        <div class="metric__value" id="pendingValue">0</div>
+                        <div class="metric__label">Pending</div>
+                    </article>
+                    <article class="metric">
+                        <div class="metric__value">1 / 5m</div>
+                        <div class="metric__label">Rate</div>
+                    </article>
+                </section>
+
+                <button class="session-button" id="sessionButton" type="button">
+                    <span class="session-button__icon" id="sessionButtonIcon">▶</span>
+                    <span id="sessionButtonLabel">Start session</span>
+                </button>
+            </section>
+
+            <footer class="footer">Nothing by Eir Space.</footer>
+        </section>
+    </main>
+
+    <script src="./app.js"></script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 import Speech
 
 @MainActor
@@ -29,6 +30,15 @@ struct AppleSpeechTranscriptionService {
             throw ServiceError.notAuthorized
         }
 
+        if #available(iOS 26.0, *),
+           SpeechTranscriber.isAvailable,
+           let transcript = try await transcribeWithSpeechTranscriber(
+                url: url,
+                preferredLocaleIdentifier: preferredLocaleIdentifier
+           ) {
+            return transcript
+        }
+
         guard let recognizer = preferredRecognizer(for: preferredLocaleIdentifier) else {
             throw ServiceError.recognizerUnavailable
         }
@@ -48,6 +58,38 @@ struct AppleSpeechTranscriptionService {
         throw ServiceError.transcriptionUnavailable
     }
 
+    @available(iOS 26.0, *)
+    private static func transcribeWithSpeechTranscriber(
+        url: URL,
+        preferredLocaleIdentifier: String
+    ) async throws -> String? {
+        let locale = await preferredTranscriberLocale(for: preferredLocaleIdentifier)
+        let transcriber = SpeechTranscriber(locale: locale, preset: .transcription)
+        let audioFile = try AVAudioFile(forReading: url)
+        let analyzer = SpeechAnalyzer(modules: [transcriber])
+
+        try await analyzer.prepareToAnalyze(in: audioFile.processingFormat)
+
+        let collector = Task {
+            var latestTranscript: String?
+            for try await result in transcriber.results {
+                let candidate = String(result.text.characters).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !candidate.isEmpty {
+                    latestTranscript = candidate
+                }
+            }
+            return latestTranscript
+        }
+
+        do {
+            try await analyzer.start(inputAudioFile: audioFile, finishAfterFile: true)
+            return try await collector.value
+        } catch {
+            collector.cancel()
+            throw error
+        }
+    }
+
     private static func makeRequest(for url: URL, requiresOnDeviceRecognition: Bool) -> SFSpeechURLRecognitionRequest {
         let request = SFSpeechURLRecognitionRequest(url: url)
         request.shouldReportPartialResults = false
@@ -57,6 +99,35 @@ struct AppleSpeechTranscriptionService {
             request.addsPunctuation = true
         }
         return request
+    }
+
+    @available(iOS 26.0, *)
+    private static func preferredTranscriberLocale(for localeIdentifier: String) async -> Locale {
+        let requested = Locale(identifier: localeIdentifier)
+        let current = Locale.autoupdatingCurrent
+        let supported = await SpeechTranscriber.supportedLocales
+
+        if let exact = supported.first(where: { normalizedIdentifier($0.identifier) == normalizedIdentifier(requested.identifier) }) {
+            return exact
+        }
+
+        if let currentExact = supported.first(where: { normalizedIdentifier($0.identifier) == normalizedIdentifier(current.identifier) }) {
+            return currentExact
+        }
+
+        let requestedLanguage = normalizedLanguageCode(for: requested.identifier)
+        if let requestedLanguage,
+           let languageMatch = supported.first(where: { normalizedLanguageCode(for: $0.identifier) == requestedLanguage }) {
+            return languageMatch
+        }
+
+        let currentLanguage = normalizedLanguageCode(for: current.identifier)
+        if let currentLanguage,
+           let languageMatch = supported.first(where: { normalizedLanguageCode(for: $0.identifier) == currentLanguage }) {
+            return languageMatch
+        }
+
+        return requested
     }
 
     private static func preferredRecognizer(for localeIdentifier: String) -> SFSpeechRecognizer? {
@@ -105,5 +176,13 @@ struct AppleSpeechTranscriptionService {
                 continuation.resume(returning: status)
             }
         }
+    }
+
+    private static func normalizedIdentifier(_ identifier: String) -> String {
+        identifier.replacingOccurrences(of: "_", with: "-").lowercased()
+    }
+
+    private static func normalizedLanguageCode(for identifier: String) -> String? {
+        normalizedIdentifier(identifier).split(separator: "-").first.map(String.init)
     }
 }

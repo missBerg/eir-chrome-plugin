@@ -2,19 +2,25 @@ import SwiftUI
 
 struct ChatBubbleView: View {
     let message: ChatMessage
+    let onFollowUpTap: ((String) -> Void)?
     @EnvironmentObject var chatVM: ChatViewModel
 
     var isUser: Bool { message.role == .user }
     var isEmpty: Bool { message.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(isUser ? "You" : "Eir")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(isUser ? AppColors.textSecondary : AppColors.primaryStrong)
-
-            HStack {
-                if isUser { Spacer(minLength: 28) }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .bottom, spacing: 10) {
+                if !isUser {
+                    Image(systemName: "sparkles")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppColors.primaryStrong)
+                        .frame(width: 28, height: 28)
+                        .background(AppColors.card)
+                        .clipShape(Circle())
+                } else {
+                    Spacer(minLength: 42)
+                }
 
                 VStack(alignment: .leading, spacing: 6) {
                     if !isUser && isEmpty && chatVM.isStreaming {
@@ -40,27 +46,91 @@ struct ChatBubbleView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(isUser ? AppColors.backgroundMuted : AppColors.card)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(bubbleBackground)
                 .foregroundColor(AppColors.text)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(isUser ? AppColors.border : Color.clear, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(bubbleStroke, lineWidth: isUser ? 0 : 1)
                 }
 
-                if !isUser { Spacer(minLength: 28) }
+                if isUser {
+                    Image(systemName: "person.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 28, height: 28)
+                        .background(AppColors.primaryStrong)
+                        .clipShape(Circle())
+                } else {
+                    Spacer(minLength: 42)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
 
-            Text(formattedTime)
-                .font(.caption2)
-                .foregroundColor(AppColors.textSecondary)
+            if !isUser,
+               let followUps = message.followUpQuestions,
+               !followUps.isEmpty {
+                HStack(alignment: .top, spacing: 10) {
+                    Color.clear
+                        .frame(width: 28, height: 1)
+
+                    FollowUpQuestionChips(
+                        questions: followUps,
+                        onTap: { question in
+                            onFollowUpTap?(question)
+                        }
+                    )
+
+                    Spacer(minLength: 42)
+                }
+            }
         }
     }
 
-    private var formattedTime: String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: message.timestamp)
+    private var bubbleBackground: Color {
+        isUser ? AppColors.primaryStrong.opacity(0.14) : AppColors.card
+    }
+
+    private var bubbleStroke: Color {
+        isUser ? .clear : AppColors.border.opacity(0.35)
+    }
+}
+
+private struct FollowUpQuestionChips: View {
+    let questions: [String]
+    let onTap: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Try asking")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(AppColors.textSecondary)
+
+            VStack(spacing: 10) {
+                ForEach(questions, id: \.self) { question in
+                    Button {
+                        onTap(question)
+                    } label: {
+                        HStack {
+                            Text(question)
+                                .font(.subheadline)
+                                .foregroundColor(AppColors.text)
+                                .multilineTextAlignment(.leading)
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(AppColors.card)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
     }
 }
 

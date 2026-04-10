@@ -55,6 +55,7 @@
 		7A59F88B2E5C9A76C5C11264 /* SelfReferralClinicMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A06AED6D22705FE8E8B891 /* SelfReferralClinicMatcher.swift */; };
 		7D4EA8DB5B988BF2795556B8 /* EntryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ACFF29B2C5132B668726FEC /* EntryCardView.swift */; };
 		7E039A51B266CD38D090D288 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = F5EEA1ADC15ECA536512B4B7 /* MLXLMCommon */; };
+		7E53316301704163DB0E6782 /* VoiceTranscriptionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6490E8AFF5A86033ABE9B3 /* VoiceTranscriptionCoordinator.swift */; };
 		817748AA612340524A3117FE /* FindCareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF55DA44EE3743AC4DB87DED /* FindCareView.swift */; };
 		82119577800F83BC85E9457E /* NextBestHealthActionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76D14D4702966D448A8CA8BE /* NextBestHealthActionViewModel.swift */; };
 		85B604502C498F68DA68BAD7 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A7171AB56F25BA404CA5AB /* ChatMessage.swift */; };
@@ -178,6 +179,7 @@
 		B998537AC99341CF1C2D0D19 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
 		BB360D1D5BBF139F5A3AA997 /* LocalLLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMService.swift; sourceTree = "<group>"; };
 		BEDD79CD3F1023AEE60EFD1C /* ChatThreadStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatThreadStore.swift; sourceTree = "<group>"; };
+		BF6490E8AFF5A86033ABE9B3 /* VoiceTranscriptionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTranscriptionCoordinator.swift; sourceTree = "<group>"; };
 		C19D96044A03BA979D89DCD8 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
 		C2420C4DEBEEE4DA345D5DBC /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
 		C4E40A4EAAF54FB04C1B750D /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
@@ -306,6 +308,7 @@
 				2E9B4EE3B86605F32741172D /* VoiceNotePlayer.swift */,
 				289D41DC298A152E56FD349A /* VoiceNoteRecorder.swift */,
 				EE50C9BE181F2E693BE17FF0 /* VoiceNoteTranscriptionService.swift */,
+				BF6490E8AFF5A86033ABE9B3 /* VoiceTranscriptionCoordinator.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -684,6 +687,7 @@
 				11E91E4BE1C61D9D5807B161 /* VoiceNotePlayer.swift in Sources */,
 				741F09AF3A22F20C773C903E /* VoiceNoteRecorder.swift in Sources */,
 				75259EE3D558E83F7D83C6DC /* VoiceNoteTranscriptionService.swift in Sources */,
+				7E53316301704163DB0E6782 /* VoiceTranscriptionCoordinator.swift in Sources */,
 				626524B46041F197D22A4FC4 /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -733,7 +737,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.eir.viewer;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
@@ -894,7 +898,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.eir.viewer;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;

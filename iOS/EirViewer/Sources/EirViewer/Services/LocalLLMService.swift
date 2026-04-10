@@ -67,30 +67,32 @@ actor LocalLLMService {
             throw LLMError.noProvider
         }
 
-        var accumulated = ""
-        var insideThink = false
-        for try await chunk in session.streamResponse(to: userMessage) {
-            // Filter out any <think>...</think> content that slips through
-            var text = chunk
-            if text.contains("<think>") {
-                insideThink = true
-                text = text.components(separatedBy: "<think>").first ?? ""
-            }
-            if insideThink {
-                if text.contains("</think>") {
-                    insideThink = false
-                    text = text.components(separatedBy: "</think>").last ?? ""
-                } else if accumulated.isEmpty || insideThink {
-                    continue
-                }
-            }
-            if !text.isEmpty {
-                accumulated += text
-                onToken(text)
-            }
+        return try await collectResponse(from: session, to: userMessage, onToken: onToken)
+    }
+
+    /// Run a one-off prompt against the currently loaded model without mutating the shared chat session.
+    func completeDetachedResponse(
+        userMessage: String,
+        systemPrompt: String
+    ) async throws -> String {
+        guard let container = modelContainer else {
+            throw LLMError.noProvider
         }
 
-        return accumulated
+        let detachedSession = ChatSession(
+            container,
+            instructions: systemPrompt,
+            generateParameters: GenerateParameters(
+                maxTokens: 512,
+                temperature: 0.2,
+                topP: 0.9
+            ),
+            additionalContext: [
+                "enable_thinking": false
+            ]
+        )
+
+        return try await collectResponse(from: detachedSession, to: userMessage) { _ in }
     }
 
     /// Reset the chat session (e.g. when starting a new conversation)
@@ -105,6 +107,38 @@ actor LocalLLMService {
         currentModelId = nil
         currentConversationId = nil
         Memory.clearCache()
+    }
+
+    private func collectResponse(
+        from session: ChatSession,
+        to userMessage: String,
+        onToken: @Sendable @escaping (String) -> Void
+    ) async throws -> String {
+        var accumulated = ""
+        var insideThink = false
+
+        for try await chunk in session.streamResponse(to: userMessage) {
+            // Filter out any <think>...</think> content that slips through.
+            var text = chunk
+            if text.contains("<think>") {
+                insideThink = true
+                text = text.components(separatedBy: "<think>").first ?? ""
+            }
+            if insideThink {
+                if text.contains("</think>") {
+                    insideThink = false
+                    text = text.components(separatedBy: "</think>").last ?? ""
+                } else {
+                    continue
+                }
+            }
+            if !text.isEmpty {
+                accumulated += text
+                onToken(text)
+            }
+        }
+
+        return accumulated
     }
 }
 

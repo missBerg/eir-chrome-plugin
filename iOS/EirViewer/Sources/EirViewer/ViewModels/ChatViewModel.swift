@@ -186,6 +186,10 @@ class ChatViewModel: ObservableObject {
                         }
                     }
 
+                    Self.finalizeAssistantMessage(
+                        at: assistantIndex,
+                        in: chatThreadStore
+                    )
                     chatThreadStore.persistMessages()
 
                     // Generate title using local model
@@ -277,6 +281,10 @@ class ChatViewModel: ObservableObject {
         switch result {
         case .text:
             // Final text response — done
+            Self.finalizeAssistantMessage(
+                at: assistantIndex,
+                in: chatThreadStore
+            )
             return
 
         case .toolCalls(let calls):
@@ -339,17 +347,6 @@ class ChatViewModel: ObservableObject {
             return
         }
 
-        guard config.type.usesManagedTrialAccess else {
-            errorMessage = "Voice transcription currently uses Eir Speech in Free Trial for Eir."
-            return
-        }
-
-        if !Self.hasCloudConsent(for: config.type) {
-            pendingVoiceNoteArgs = (draft, document, settingsVM, chatThreadStore, profileID, agentMemoryStore, localModelManager)
-            pendingCloudConsent = config.type
-            return
-        }
-
         if chatThreadStore.selectedThreadID == nil {
             chatThreadStore.createThread(profileID: profileID)
         }
@@ -368,7 +365,13 @@ class ChatViewModel: ObservableObject {
         chatThreadStore.addMessage(message)
 
         do {
-            let transcript = try await VoiceNoteTranscriptionService.transcribe(draft: draft, settingsVM: settingsVM)
+            let transcript = try await VoiceTranscriptionCoordinator.transcribe(
+                draft: draft,
+                settingsVM: settingsVM,
+                localModelManager: localModelManager,
+                preferredLocaleIdentifier: Locale.autoupdatingCurrent.identifier,
+                context: .chat
+            )
             guard !transcript.isEmpty else {
                 throw LLMError.requestFailed("The voice note could not be turned into text.")
             }
@@ -450,6 +453,139 @@ class ChatViewModel: ObservableObject {
         let words = userMsg.split(separator: " ").prefix(6).joined(separator: " ")
         let title = words.isEmpty ? "New Chat" : words
         chatThreadStore.updateThreadTitle(threadID, title: title)
+    }
+
+    private static func finalizeAssistantMessage(
+        at index: Int,
+        in chatThreadStore: ChatThreadStore
+    ) {
+        guard chatThreadStore.messages.indices.contains(index) else { return }
+        var message = chatThreadStore.messages[index]
+        guard message.role == .assistant else { return }
+
+        let parsed = parseFollowUpQuestions(from: message.content)
+        message.content = parsed.cleanedContent
+        message.followUpQuestions = parsed.questions.isEmpty ? nil : parsed.questions
+        chatThreadStore.messages[index] = message
+    }
+
+    private static func parseFollowUpQuestions(from raw: String) -> (cleanedContent: String, questions: [String]) {
+        let pattern = #"<FOLLOW_UP_QUESTIONS>([\s\S]*?)</FOLLOW_UP_QUESTIONS>"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return (raw.trimmingCharacters(in: .whitespacesAndNewlines), [])
+        }
+
+        let nsRange = NSRange(raw.startIndex..<raw.endIndex, in: raw)
+        guard let match = regex.firstMatch(in: raw, options: [], range: nsRange),
+              let blockRange = Range(match.range(at: 0), in: raw),
+              let innerRange = Range(match.range(at: 1), in: raw) else {
+            return (raw.trimmingCharacters(in: .whitespacesAndNewlines), [])
+        }
+
+        let block = String(raw[innerRange])
+        var questions: [String] = []
+
+        if let questionRegex = try? NSRegularExpression(
+            pattern: #"<QUESTION>([\s\S]*?)</QUESTION>"#,
+            options: [.caseInsensitive]
+        ) {
+            let blockRange = NSRange(block.startIndex..<block.endIndex, in: block)
+            let matches = questionRegex.matches(in: block, options: [], range: blockRange)
+            questions = matches.compactMap { match in
+                guard let range = Range(match.range(at: 1), in: block) else { return nil }
+                return normalizedFollowUpQuestion(String(block[range]))
+            }
+        }
+
+        if questions.isEmpty {
+            questions = block
+                .split(whereSeparator: \.isNewline)
+                .compactMap { line in
+                    let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let stripped = trimmed.replacingOccurrences(
+                        of: #"^[-•\d\.\)\s]+"#,
+                        with: "",
+                        options: .regularExpression
+                    )
+                    return normalizedFollowUpQuestion(stripped)
+                }
+        }
+
+        var cleaned = raw
+        cleaned.removeSubrange(blockRange)
+        cleaned = cleaned.replacingOccurrences(of: "\n\n\n", with: "\n\n")
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return (cleaned, Array(questions.prefix(3)))
+    }
+
+    private static func normalizedFollowUpQuestion(_ raw: String) -> String? {
+        var trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        trimmed = trimmed.replacingOccurrences(of: #"^["'“”]+"#, with: "", options: .regularExpression)
+        trimmed = trimmed.replacingOccurrences(of: #"["'“”]+$"#, with: "", options: .regularExpression)
+
+        let lower = trimmed.lowercased()
+        if lower.hasPrefix("would you like me to ") {
+            let rest = String(trimmed.dropFirst("Would you like me to ".count))
+            trimmed = "Can you \(lowercaseFirst(rest))"
+        } else if lower.hasPrefix("do you want me to ") {
+            let rest = String(trimmed.dropFirst("Do you want me to ".count))
+            trimmed = "Can you \(lowercaseFirst(rest))"
+        } else if lower.hasPrefix("would it help if i ") {
+            let rest = String(trimmed.dropFirst("Would it help if I ".count))
+            trimmed = "Can you \(lowercaseFirst(rest))"
+        } else if lower.hasPrefix("should i ") {
+            let rest = String(trimmed.dropFirst("Should I ".count))
+            trimmed = "Can you \(lowercaseFirst(rest))"
+        } else if lower.hasPrefix("are you interested in ") {
+            let rest = String(trimmed.dropFirst("Are you interested in ".count))
+            trimmed = "Can you focus on \(lowercaseFirst(rest))"
+        }
+
+        trimmed = trimmed.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.hasSuffix("?") {
+            trimmed += "?"
+        }
+        guard !isWeakFollowUpQuestion(trimmed) else { return nil }
+        guard trimmed.count <= 140 else { return nil }
+        return trimmed
+    }
+
+    private static func isWeakFollowUpQuestion(_ value: String) -> Bool {
+        let normalized = value
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let exactMatches: Set<String> = [
+            "can you tell me more?",
+            "what would you like to ask next?",
+            "what else would you like to know?",
+            "would you like more detail?",
+            "do you want more detail?",
+            "can you say more?",
+            "what next?"
+        ]
+
+        if exactMatches.contains(normalized) {
+            return true
+        }
+
+        let weakPrefixes = [
+            "would you like",
+            "do you want",
+            "are you interested in",
+            "can you tell me more about that",
+            "what else would you like",
+            "should we go deeper into"
+        ]
+
+        return weakPrefixes.contains { normalized.hasPrefix($0) }
+    }
+
+    private static func lowercaseFirst(_ value: String) -> String {
+        guard let first = value.first else { return value }
+        return first.lowercased() + value.dropFirst()
     }
 
     // MARK: - Explain Entry
