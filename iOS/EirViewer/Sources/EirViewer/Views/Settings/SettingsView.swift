@@ -53,8 +53,20 @@ struct SettingsView: View {
                         showHealthKitImport = true
                     } label: {
                         Label("Import from Apple Health", systemImage: "heart.fill")
-                            .foregroundColor(AppColors.pink)
+                    .foregroundColor(AppColors.pink)
                     }
+                }
+            }
+
+            if let profileID = profileStore.selectedProfileID {
+                Section("Chat") {
+                    Toggle(
+                        "Show AI follow-up suggestions",
+                        isOn: Binding(
+                            get: { profileStore.showChatFollowUpSuggestions(for: profileID) },
+                            set: { profileStore.setShowChatFollowUpSuggestions($0, for: profileID) }
+                        )
+                    )
                 }
             }
 
@@ -765,11 +777,32 @@ private struct PromptStyleSection: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
     @State private var showCreatePrompt = false
     @State private var editingPrompt: PromptVersion?
+    @State private var templatingPrompt: PromptVersion?
     @State private var isExpanded = false
 
     var body: some View {
         Section {
             DisclosureGroup(isExpanded: $isExpanded) {
+                if let active = settingsVM.activePromptVersion {
+                    Button {
+                        if active.isBuiltIn {
+                            templatingPrompt = active
+                        } else {
+                            editingPrompt = active
+                        }
+                    } label: {
+                        Label(
+                            active.isBuiltIn ? "Customize Current Style..." : "Edit Current Style...",
+                            systemImage: active.isBuiltIn ? "slider.horizontal.3" : "pencil"
+                        )
+                    }
+                    .foregroundColor(AppColors.primary)
+
+                    Text("Short, direct prompts work best for on-device models.")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
                 ForEach(settingsVM.allPromptVersions) { version in
                     Button {
                         settingsVM.activePromptVersionId = version.id
@@ -802,7 +835,14 @@ private struct PromptStyleSection: View {
                         }
                     }
                     .swipeActions(edge: .trailing) {
-                        if !version.isBuiltIn {
+                        if version.isBuiltIn {
+                            Button {
+                                templatingPrompt = version
+                            } label: {
+                                Label("Customize", systemImage: "doc.on.doc")
+                            }
+                            .tint(AppColors.primary)
+                        } else {
                             Button(role: .destructive) {
                                 settingsVM.deleteCustomPrompt(version.id)
                             } label: {
@@ -843,6 +883,9 @@ private struct PromptStyleSection: View {
         .sheet(item: $editingPrompt) { prompt in
             PromptEditorSheet(settingsVM: settingsVM, editing: prompt)
         }
+        .sheet(item: $templatingPrompt) { prompt in
+            PromptEditorSheet(settingsVM: settingsVM, template: prompt)
+        }
     }
 }
 
@@ -857,21 +900,29 @@ private struct PromptEditorSheet: View {
     @State private var systemPrompt: String
 
     private let editingId: String?
+    private let isTemplate: Bool
 
-    init(settingsVM: SettingsViewModel, editing: PromptVersion? = nil) {
+    init(settingsVM: SettingsViewModel, editing: PromptVersion? = nil, template: PromptVersion? = nil) {
         self.settingsVM = settingsVM
         self.editingId = editing?.id
-        _name = State(initialValue: editing?.name ?? "")
-        _description = State(initialValue: editing?.description ?? "")
-        _systemPrompt = State(initialValue: editing?.systemPrompt ?? """
-        You are Eir, a helpful health companion. Respond in the same language the user writes in. Records may be in Swedish — translate them when useful. Be concise.
+        self.isTemplate = template != nil && editing == nil
+        _name = State(initialValue: editing?.name ?? template.map { "\($0.name) Copy" } ?? "")
+        _description = State(initialValue: editing?.description ?? template?.description ?? "")
+        _systemPrompt = State(initialValue: editing?.systemPrompt ?? template?.systemPrompt ?? """
+        You are Eir, a practical health guide.
+        Goal: help the user understand their health and records in plain language.
+        Reply in the user's language.
 
         Rules:
-        1. Use only the records for record-specific facts.
-        2. If the answer is not in the records, say so clearly.
-        3. You may still give general health guidance when the user asks broader questions.
-        4. Never invent medications, dosages, diagnoses, or results.
-        5. Never provide definitive diagnoses.
+        - Use the records only for record-specific facts.
+        - If the records do not answer the question, say that clearly.
+        - General health guidance is allowed, but label it as general guidance.
+        - Explain medical terms simply.
+        - Start with the answer.
+        - Cite specific entries with <JOURNAL_ENTRY id="ENTRY_ID"/>.
+        - Never invent medications, results, diagnoses, or dosages.
+        - Never give a definitive diagnosis.
+        - Only suggest follow-up questions when there is a clearly useful next question.
         """)
     }
 
@@ -898,12 +949,12 @@ private struct PromptEditorSheet: View {
                 }
 
                 Section {
-                    Text("The prompt tells the AI how to respond. Patient records and user context are appended automatically.")
+                    Text("Keep it short and direct for on-device models. Patient records and user context are appended automatically.")
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
                 }
             }
-            .navigationTitle(editingId != nil ? "Edit Prompt" : "New Prompt Style")
+            .navigationTitle(editingId != nil ? "Edit Prompt" : (isTemplate ? "Customize Prompt" : "New Prompt Style"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

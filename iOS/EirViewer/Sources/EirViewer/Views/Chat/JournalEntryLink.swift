@@ -8,7 +8,7 @@ enum ChatContentPart {
 }
 
 func parseJournalEntryTags(_ text: String) -> [ChatContentPart] {
-    let pattern = #"`?(?:<|&lt;)JOURNAL_ENTRY\s+id=(?:"([^"]+)"|'([^']+)')\s*/?(?:>|&gt;)`?"#
+    let pattern = #"`?(?:<|&lt;)JOURNAL_ENTRY\s+id=(?:"([^"]+)"|'([^']+)')\s*/?(?:>|&gt;)`?|(?<![A-Za-z0-9_])(entry_\d{3,})(?![A-Za-z0-9_])"#
     guard let regex = try? NSRegularExpression(pattern: pattern) else {
         return [.text(text)]
     }
@@ -21,9 +21,14 @@ func parseJournalEntryTags(_ text: String) -> [ChatContentPart] {
         guard let match = match,
               let fullRange = Range(match.range, in: text) else { return }
 
-        let captureRange = match.range(at: 1).location != NSNotFound
-            ? match.range(at: 1)
-            : match.range(at: 2)
+        let captureRange: NSRange
+        if match.range(at: 1).location != NSNotFound {
+            captureRange = match.range(at: 1)
+        } else if match.range(at: 2).location != NSNotFound {
+            captureRange = match.range(at: 2)
+        } else {
+            captureRange = match.range(at: 3)
+        }
 
         guard let idRange = Range(captureRange, in: text) else { return }
 

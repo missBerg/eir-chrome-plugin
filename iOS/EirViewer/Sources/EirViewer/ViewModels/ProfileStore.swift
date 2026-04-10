@@ -13,14 +13,26 @@ class ProfileStore: ObservableObject {
 
     private let profilesKey = "eir_person_profiles"
     private let selectedIDKey = "eir_selected_profile_id"
+    private let bundledSampleFileName = "sample-data.yaml"
 
     init() {
         migrateIfNeeded()
+        refreshBundledSampleProfileIfNeeded()
         loadFromStore()
     }
 
     var selectedProfile: PersonProfile? {
         profiles.first(where: { $0.id == selectedProfileID })
+    }
+
+    func showChatFollowUpSuggestions(for profileID: UUID) -> Bool {
+        profiles.first { $0.id == profileID }?.showChatFollowUpSuggestions ?? false
+    }
+
+    func setShowChatFollowUpSuggestions(_ enabled: Bool, for profileID: UUID) {
+        guard let index = profiles.firstIndex(where: { $0.id == profileID }) else { return }
+        profiles[index].showChatFollowUpSuggestions = enabled
+        saveToStore()
     }
 
     @discardableResult
@@ -189,6 +201,21 @@ class ProfileStore: ObservableObject {
         if let idString = EncryptedStore.load(String.self, forKey: selectedIDKey) {
             selectedProfileID = UUID(uuidString: idString)
         }
+
+        if let sampleIndex = profiles.firstIndex(where: { $0.fileName == bundledSampleFileName }),
+           let sampleDocument = try? EirParser.parse(url: profiles[sampleIndex].fileURL) {
+            let profile = profiles[sampleIndex]
+            profiles[sampleIndex] = PersonProfile(
+                id: profile.id,
+                displayName: profile.displayName,
+                fileName: profile.fileName,
+                patientName: sampleDocument.metadata.patient?.name ?? profile.patientName,
+                personalNumber: sampleDocument.metadata.patient?.personalNumber ?? profile.personalNumber,
+                birthDate: sampleDocument.metadata.patient?.birthDate ?? profile.birthDate,
+                totalEntries: sampleDocument.entries.count,
+                addedAt: profile.addedAt
+            )
+        }
     }
 
     /// Migrate from plain UserDefaults to encrypted storage (one-time).
@@ -202,6 +229,27 @@ class ProfileStore: ObservableObject {
         if let idString = UserDefaults.standard.string(forKey: selectedIDKey) {
             EncryptedStore.save(idString, forKey: selectedIDKey)
             UserDefaults.standard.removeObject(forKey: selectedIDKey)
+        }
+    }
+
+    private func refreshBundledSampleProfileIfNeeded() {
+        guard let bundledURL = Bundle.main.url(forResource: "sample-data", withExtension: "yaml") else {
+            return
+        }
+
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let destURL = docs.appendingPathComponent(bundledSampleFileName)
+
+        guard FileManager.default.fileExists(atPath: destURL.path) else {
+            return
+        }
+
+        do {
+            try? FileManager.default.removeItem(at: destURL)
+            try FileManager.default.copyItem(at: bundledURL, to: destURL)
+            EncryptedStore.protectFile(at: destURL)
+        } catch {
+            // Sample data is non-critical. Keep the older file if refresh fails.
         }
     }
 }

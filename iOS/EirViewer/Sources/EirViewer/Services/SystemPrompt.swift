@@ -6,7 +6,8 @@ enum SystemPrompt {
     static func build(
         memory: AgentMemory,
         document: EirDocument?,
-        includeToolInstructions: Bool = true
+        includeToolInstructions: Bool = true,
+        allowFollowUpQuestions: Bool = false
     ) -> String {
         var sections: [String] = []
 
@@ -43,29 +44,46 @@ enum SystemPrompt {
         }
 
         // 7. Response Guidelines
-        sections.append("""
+        var responseGuidelines = """
         # Response Guidelines
 
         - Respond in the same language the user writes in (Swedish or English)
         - Use `<JOURNAL_ENTRY id="ENTRY_ID"/>` to cite specific entries — these become clickable links
+        - Never cite entries using only bare IDs like `entry_002`; always wrap the exact ID in the JOURNAL_ENTRY tag
         - Be concise by default; expand when asked for details
+        - Start every response with the answer, not a preamble
         - For broad summary questions like "What stands out?", "Summarize my recent records", or "What has been happening lately?", answer directly with your best synthesis from the available records
-        - For those broad record questions, lead with 2 to 5 concrete observations before asking any narrowing or follow-up question
+        - For those broad record questions, prioritize 2 to 5 concrete observations and concise implications
+        - Do not begin with caveats such as "I can..." "I need..." or "please provide more context..."
         - Do not ask the user to clarify or narrow first unless there is truly not enough context to answer at all
         - Flag findings that may need professional attention
         - Never provide definitive diagnoses — explain, analyze, and recommend follow-up
         - If unsure, say so rather than guessing about medical matters
-        - Only add follow-up questions when there is a genuinely useful, natural next question for the user
-        - If there is no clear next question, omit the entire follow-up block
-        - When helpful, end with up to 3 short next questions the user could ask you inside:
-          <FOLLOW_UP_QUESTIONS>
-          <QUESTION>...</QUESTION>
-          </FOLLOW_UP_QUESTIONS>
-        - Write those questions from the user's point of view, like "What should I watch for next?" or "What questions should I ask care?"
-        - Do not write them from your own point of view, such as "Would you like me to..." or "Are you interested in..."
-        - Do not generate vague filler questions like "Can you tell me more?" or "What would you like to ask next?"
-        - Put follow-up questions at the very end, and do not mention the tags in normal prose
-        """)
+        """
+
+        if allowFollowUpQuestions {
+            responseGuidelines += """
+            - Only add follow-up questions when there is a genuinely useful, natural next question for the user
+            - If there is no clear next question, omit the entire follow-up block
+            - When helpful, end with up to 3 short next questions the user could ask you inside:
+              <FOLLOW_UP_QUESTIONS>
+              <QUESTION>...</QUESTION>
+              </FOLLOW_UP_QUESTIONS>
+            - Write those questions from the user's point of view, like "What should I watch for next?" or "What questions should I ask care?"
+            - Do not write them from your own point of view, such as "Would you like me to..." or "Are you interested in..."
+            - Do not generate vague filler questions like "Can you tell me more?" or "What would you like to ask next?"
+            - Put follow-up questions at the very end, and do not mention the tags in normal prose
+            """
+        } else {
+            responseGuidelines += """
+            - Do not add follow-up questions.
+            - Never emit `<FOLLOW_UP_QUESTIONS>` tags or question blocks.
+            - Do not end the reply with questions for the user.
+            - Do not add a "next questions", "questions you could ask", or similar section in prose.
+            - Do not ask what the user wants to explore next.
+            """
+        }
+        sections.append(responseGuidelines)
 
         return sections.joined(separator: "\n\n---\n\n")
     }
@@ -78,90 +96,99 @@ enum SystemPrompt {
             memory: AgentDefaults.defaultMemory,
             agents: AgentDefaults.defaultAgents
         )
-        return build(memory: defaultMemory, document: document, includeToolInstructions: false)
+        return build(memory: defaultMemory, document: document, includeToolInstructions: false, allowFollowUpQuestions: false)
     }
 
     /// Compact system prompt for on-device models — much shorter to reduce prefill time
     static func buildLocal(
         document: EirDocument?,
         userName: String? = nil,
-        promptVersion: PromptVersion? = nil
+        promptVersion: PromptVersion? = nil,
+        allowFollowUpQuestions: Bool = false
     ) -> String {
         var prompt: String
         if let version = promptVersion {
             prompt = version.systemPrompt
         } else {
             prompt = """
-            You are Eir, a calm and helpful health companion. Respond in the same language the user writes in. Records may be in Swedish — translate when useful.
-
-            You can help in two modes:
-            1. Record-grounded mode: when the user asks about their records, labs, medications, visits, or dates, use only the provided records.
-            2. General health mode: when the user asks broader health questions, reflection questions, behavior change questions, or "what should I do now?" questions, you may give general supportive health guidance without pretending it came from the records.
-
-            Core rules:
-            - Be warm, clear, and practical.
-            - Be concise by default.
-            - Never claim the records say something unless it is explicitly written there.
-            - If record-specific information is missing, say that clearly.
-            - For broad summary questions like "What stands out in my recent records?" or "What has been happening lately?", answer directly with the most important patterns you can see from the available records.
-            - For those broad record questions, lead with concrete observations first instead of asking the user to narrow the request.
-            - Whenever you reference a specific journal note or record entry, include `<JOURNAL_ENTRY id="ENTRY_ID"/>` right next to that reference.
-            - Never invent medications, dosages, diagnoses, or test results.
-            - Never provide definitive diagnoses.
-            - For urgent or concerning symptoms, recommend appropriate professional care.
-            - When giving general guidance, label it as general guidance rather than record-based fact.
+            You are Eir, a practical health guide.
+            Goal: help the user understand their health and records in plain language.
+            Reply in the user's language.
             """
         }
 
         if let name = userName, !name.isEmpty {
-            prompt += "\n\nThe user is \(name). All records below belong to this person."
+            prompt += "\n\n<user>\nName: \(name)\n</user>"
         }
 
         if let doc = document {
-            prompt += "\n\n# Patient Records\n"
+            prompt += "\n\n<records>"
             if let patient = doc.metadata.patient {
-                prompt += "Patient: \(patient.name ?? "Unknown")"
-                if let dob = patient.birthDate { prompt += ", born \(dob)" }
-                prompt += "\n"
+                prompt += "\nPatient: \(patient.name ?? "Unknown")"
+                if let dob = patient.birthDate { prompt += " | born \(dob)" }
             }
             if let info = doc.metadata.exportInfo, let total = info.totalEntries {
-                prompt += "Total entries: \(total)\n"
+                prompt += "\nTotal entries: \(total)"
             }
-            let recent = doc.entries.prefix(15)
+            let recent = doc.entries.prefix(12)
             if !recent.isEmpty {
-                prompt += "\nRecent entries:\n"
+                prompt += "\nRecent entries:"
                 for entry in recent {
-                    prompt += "- \(entry.date ?? "?") [\(entry.category ?? "?")] "
-                    if let summary = entry.content?.summary { prompt += summary }
-                    prompt += " (ID: \(entry.id))\n"
+                    var line = "\n- ID: \(entry.id) | \(entry.date ?? "?") | \(entry.category ?? "?")"
+                    if let type = entry.type, !type.isEmpty {
+                        line += " | \(type)"
+                    }
+                    if let summary = entry.content?.summary, !summary.isEmpty {
+                        line += " | \(summary)"
+                    }
+                    prompt += line
                 }
-                if doc.entries.count > 15 {
-                    prompt += "(\(doc.entries.count - 15) more entries available)\n"
+                if doc.entries.count > 12 {
+                    prompt += "\n(\(doc.entries.count - 12) more entries available)"
                 }
             }
+            prompt += "\n</records>"
         }
 
         prompt += """
 
-        
-        RESPONSE STYLE:
-        - If the question is about the user's records, ground the answer in the records and say what is or is not there.
-        - If the question is a broader health question, answer helpfully and practically, while staying medically cautious.
-        - If both apply, separate record facts from general guidance.
-        - For broad record-summary questions, start with the answer itself, not a request for clarification.
-        - When summarizing records, prefer a short "what stands out" synthesis with the most important recent changes, visits, patterns, or unresolved items.
-        - When you mention a specific note, visit, result, or record item from the records above, cite it with `<JOURNAL_ENTRY id="ENTRY_ID"/>`.
-        - Only add follow-up questions when there is a genuinely useful, natural next question for the user.
-        - If there is no clear next question, omit the entire follow-up block.
-        - When helpful, end with up to 3 short next questions the user could ask you inside:
-          <FOLLOW_UP_QUESTIONS>
-          <QUESTION>...</QUESTION>
-          </FOLLOW_UP_QUESTIONS>
-        - Write those questions from the user's point of view, not your own.
-        - Avoid lines like "Would you like me to..." or "Are you interested in..."
-        - Do not generate vague filler questions like "Can you tell me more?" or "What would you like to ask next?"
-        - Put follow-up questions at the very end, and do not mention the tags in normal prose.
+        <response_rules>
+        - Start with the answer.
+        - Be concise by default.
+        - Start directly with the insight, not meta statements.
+        - Use the records only for record-specific facts.
+        - If the records do not answer the question, say so clearly.
+        - If context is insufficient, state that directly and avoid any extra caveat language.
+        - Label broader advice as general guidance.
+        - Explain medical terms simply.
+        - Cite specific records with <JOURNAL_ENTRY id="ENTRY_ID"/>.
+        - Never write only bare entry IDs such as `entry_002`; always use the JOURNAL_ENTRY tag.
+        - Never invent medications, dosages, diagnoses, or test results.
+        - Never give a definitive diagnosis.
+        - If symptoms sound urgent, tell the user to seek professional care.
+        - If there is a question that improves health literacy, answer directly and clearly.
+        - Include practical, actionable next steps where appropriate.
+        </response_rules>
         """
+
+        if allowFollowUpQuestions {
+            prompt += """
+            Add follow-up questions only when they are clearly useful.
+            If useful, put them at the end inside:
+            <FOLLOW_UP_QUESTIONS>
+            <QUESTION>...</QUESTION>
+            </FOLLOW_UP_QUESTIONS>
+            Write follow-up questions from the user's point of view.
+            """
+        } else {
+            prompt += """
+            Do not add follow-up questions.
+            Never emit `<FOLLOW_UP_QUESTIONS>` tags.
+            Do not end the reply with questions for the user.
+            Do not add a "next questions" or "questions you could ask" section.
+            Do not ask what the user wants to explore next.
+            """
+        }
 
         return prompt
     }

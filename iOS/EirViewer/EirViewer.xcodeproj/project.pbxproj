@@ -26,6 +26,8 @@
 		3E2D05F86A0E4E06282AFD27 /* SystemPromptEvalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B5224AC43701680F835B69 /* SystemPromptEvalTests.swift */; };
 		3FF23216CD5FDD5C7639C22E /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2420C4DEBEEE4DA345D5DBC /* ChatViewModel.swift */; };
 		3FF47E8B50B02EE8841909DF /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8150635BB2A535271C6E9DF6 /* HealthKitService.swift */; };
+		40558F0FC939786CE74CAE4C /* ClinicalNoteImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E796F28ECD9E094B95A4535 /* ClinicalNoteImportTests.swift */; };
+		437A3C1C72D24A8EA933B0D1 /* JournalEntryLinkParsingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F29BA2EA1F0F482C91741A76 /* JournalEntryLinkParsingTests.swift */; };
 		442F40C9C5ABFE2D7FBE514A /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = ADA19A73E5F4591556183B40 /* HuggingFace */; };
 		468C6D68209A69E16056FC91 /* ToolRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7533EFA7AB708D1A74C75160 /* ToolRegistry.swift */; };
 		47D5D30C92775FECA4ED1E25 /* HealthAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = B53967D56CF2AFBD216E1586 /* HealthAction.swift */; };
@@ -41,7 +43,6 @@
 		643F5195244E6ED2119F2079 /* EirDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8434B44AEFD4017D0F72594F /* EirDocument.swift */; };
 		694DDE62F042C5C273B391D6 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19D96044A03BA979D89DCD8 /* LLMProvider.swift */; };
 		69B1E8CECA7ABE10058AEF5C /* self-referral-clinics-sweden.json in Resources */ = {isa = PBXBuildFile; fileRef = 859B60323E11A5E910BF961A /* self-referral-clinics-sweden.json */; };
-		6A68ECEDDDD1BF98820A64B1 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = E01FA90F6D6615BAA47E2B61 /* MLXHuggingFace */; };
 		6CA3F6F906A6F95E7A3C2FD2 /* LocalLLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB360D1D5BBF139F5A3AA997 /* LocalLLMService.swift */; };
 		6DEA0CFA214C00DD21CE0047 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 9392CA25F8B28A447679F331 /* Yams */; };
 		6F2963E5566D72046E6C9E8C /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50DB1027E7C1FA9DD4B4165A /* HealthKit.framework */; };
@@ -75,6 +76,7 @@
 		B9AF4343469CC22C7DDD233A /* ChatThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5CCD5E136F8474222C4DC6 /* ChatThread.swift */; };
 		BFDDBE2A9C9EBDCA99D4FE42 /* PersonRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119A697A765510A595D89472 /* PersonRow.swift */; };
 		C0E4A3FFCEB5DE03B98BAA34 /* HealthDataBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE0A79A4CA679B89535E7FB /* HealthDataBrowserView.swift */; };
+		C2ED3900D2B6C9E3238E39DE /* ClinicalNoteFHIRExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F85A62C020F22694CB65B75 /* ClinicalNoteFHIRExtractor.swift */; };
 		C4C9B9DE4F960FB63B8940A8 /* RecoveryActionOutcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBAA95C2440DA6A917C26CB5 /* RecoveryActionOutcome.swift */; };
 		CA1DD31769DC693D62E28C34 /* SelfReferralClinicStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD13C19109D4F1D1F11EC1C /* SelfReferralClinicStore.swift */; };
 		CC1B91744F3AD79993D57044 /* CategoryBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB40951059FDE72D983CFB3 /* CategoryBadge.swift */; };
@@ -135,6 +137,7 @@
 		30F85BD291BABC62454B4DBB /* AgentDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentDefaults.swift; sourceTree = "<group>"; };
 		340E673CE7624A453E343715 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3CC134672B103B1CAD5367E6 /* EirViewerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EirViewerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3F85A62C020F22694CB65B75 /* ClinicalNoteFHIRExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClinicalNoteFHIRExtractor.swift; sourceTree = "<group>"; };
 		3FB3F018C828B97817906708 /* JournalEntryLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalEntryLink.swift; sourceTree = "<group>"; };
 		4A2B5A2EB7786BFABF5D0B05 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		50DB1027E7C1FA9DD4B4165A /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
@@ -146,6 +149,7 @@
 		61A06AED6D22705FE8E8B891 /* SelfReferralClinicMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfReferralClinicMatcher.swift; sourceTree = "<group>"; };
 		66EE9E2EC4164E702159408C /* ChatBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatBubbleView.swift; sourceTree = "<group>"; };
 		68173D5B1D09C80059F229F7 /* HealthKitImportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitImportViewModel.swift; sourceTree = "<group>"; };
+		6E796F28ECD9E094B95A4535 /* ClinicalNoteImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClinicalNoteImportTests.swift; sourceTree = "<group>"; };
 		6FBB538AFDEEB8FD799CEF6A /* QRTransferFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRTransferFlowTests.swift; sourceTree = "<group>"; };
 		6FE6812C85D970222820AD6E /* VoiceNoteComposerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteComposerSheet.swift; sourceTree = "<group>"; };
 		717B9133FB8214A39A67219B /* StateCheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateCheckInView.swift; sourceTree = "<group>"; };
@@ -200,6 +204,7 @@
 		EB1B2FB926C253E2C0C6EEC1 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		EE3BFCA4C74FC9139915A4ED /* VoiceNoteAttachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteAttachment.swift; sourceTree = "<group>"; };
 		EE50C9BE181F2E693BE17FF0 /* VoiceNoteTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteTranscriptionService.swift; sourceTree = "<group>"; };
+		F29BA2EA1F0F482C91741A76 /* JournalEntryLinkParsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalEntryLinkParsingTests.swift; sourceTree = "<group>"; };
 		F69371C2EFD97FBA6D9E4176 /* SelfReferralClinicSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfReferralClinicSheet.swift; sourceTree = "<group>"; };
 		F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViewModel.swift; sourceTree = "<group>"; };
 		F6AA80107E445F21C5E14336 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
@@ -222,7 +227,6 @@
 				6DEA0CFA214C00DD21CE0047 /* Yams in Frameworks */,
 				7E039A51B266CD38D090D288 /* MLXLMCommon in Frameworks */,
 				D50F1EAFB087BAD39799BB27 /* MLXLLM in Frameworks */,
-				6A68ECEDDDD1BF98820A64B1 /* MLXHuggingFace in Frameworks */,
 				B1BF7912C6D4709B03E6D203 /* MLX in Frameworks */,
 				442F40C9C5ABFE2D7FBE514A /* HuggingFace in Frameworks */,
 				8E48EB72F2725CB769F4B39F /* Tokenizers in Frameworks */,
@@ -288,6 +292,7 @@
 				DA43867A7EA5302BF2DFD82E /* ActionVoiceTrainingService.swift */,
 				30F85BD291BABC62454B4DBB /* AgentDefaults.swift */,
 				19396AF3111F422DB55B2DB8 /* AppleSpeechTranscriptionService.swift */,
+				3F85A62C020F22694CB65B75 /* ClinicalNoteFHIRExtractor.swift */,
 				DDDD9A98A16DE81625130468 /* EirParser.swift */,
 				0642B699BCEB214F64366D9D /* EncryptedStore.swift */,
 				1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */,
@@ -341,6 +346,8 @@
 		5E3C01FA3A9265D031441CA2 /* EirViewerTests */ = {
 			isa = PBXGroup;
 			children = (
+				6E796F28ECD9E094B95A4535 /* ClinicalNoteImportTests.swift */,
+				F29BA2EA1F0F482C91741A76 /* JournalEntryLinkParsingTests.swift */,
 				6FBB538AFDEEB8FD799CEF6A /* QRTransferFlowTests.swift */,
 				53B5224AC43701680F835B69 /* SystemPromptEvalTests.swift */,
 			);
@@ -511,7 +518,6 @@
 				9392CA25F8B28A447679F331 /* Yams */,
 				F5EEA1ADC15ECA536512B4B7 /* MLXLMCommon */,
 				C87CDCC4773E86F931FCFE2A /* MLXLLM */,
-				E01FA90F6D6615BAA47E2B61 /* MLXHuggingFace */,
 				034BC3C922F5543C5E63B4C6 /* MLX */,
 				ADA19A73E5F4591556183B40 /* HuggingFace */,
 				7022EFB9AAF98BDEEDBBF706 /* Tokenizers */,
@@ -601,6 +607,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				40558F0FC939786CE74CAE4C /* ClinicalNoteImportTests.swift in Sources */,
+				437A3C1C72D24A8EA933B0D1 /* JournalEntryLinkParsingTests.swift in Sources */,
 				913B76B784FD4CB55B6385C4 /* QRTransferFlowTests.swift in Sources */,
 				3E2D05F86A0E4E06282AFD27 /* SystemPromptEvalTests.swift in Sources */,
 			);
@@ -630,6 +638,7 @@
 				14615AA1C2F9F832CF337DD8 /* ChatThreadStore.swift in Sources */,
 				B647EFAE5C04335E4FA218B3 /* ChatView.swift in Sources */,
 				3FF23216CD5FDD5C7639C22E /* ChatViewModel.swift in Sources */,
+				C2ED3900D2B6C9E3238E39DE /* ClinicalNoteFHIRExtractor.swift in Sources */,
 				1A4FD6BA76079E193919115E /* ColorExtension.swift in Sources */,
 				1FD98DC080579097543C0268 /* ContentView.swift in Sources */,
 				2393589910298083AE0E1802 /* ConversationListSheet.swift in Sources */,
@@ -728,7 +737,7 @@
 				CODE_SIGN_ENTITLEMENTS = EirViewer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = YJ9A3JT299;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Eir uses the microphone so you can dictate questions and notes for AI assistance.";
@@ -889,7 +898,7 @@
 				CODE_SIGN_ENTITLEMENTS = EirViewer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = YJ9A3JT299;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Eir uses the microphone so you can dictate questions and notes for AI assistance.";
@@ -1011,11 +1020,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F026A5B780777D9C4858F479 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
 			productName = MLXLLM;
-		};
-		E01FA90F6D6615BAA47E2B61 /* MLXHuggingFace */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = F026A5B780777D9C4858F479 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
-			productName = MLXHuggingFace;
 		};
 		F5EEA1ADC15ECA536512B4B7 /* MLXLMCommon */ = {
 			isa = XCSwiftPackageProductDependency;

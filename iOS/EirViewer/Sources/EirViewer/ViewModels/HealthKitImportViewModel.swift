@@ -16,7 +16,7 @@ class HealthKitImportViewModel: ObservableObject {
 
     @Published var phase: ImportPhase = .selectingTypes
     @Published var selectedDateRange: DateRangeOption = .sixMonths
-    @Published var selectedCategories: Set<HealthDataCategory> = Set(HealthDataCategory.allCases)
+    @Published var selectedCategories: Set<HealthDataCategory> = Set(HealthDataCategory.supportedCases)
     @Published var sampleCounts: [HealthDataCategory: Int] = [:]
     @Published var importProgress: Double = 0
     @Published var importedEntryCount: Int = 0
@@ -34,7 +34,10 @@ class HealthKitImportViewModel: ObservableObject {
 
     func loadSampleCounts() async {
         let startDate = selectedDateRange.startDate
-        for category in HealthDataCategory.allCases {
+        let supportedCategories = HealthDataCategory.supportedCases
+        selectedCategories = selectedCategories.intersection(Set(supportedCategories))
+
+        for category in supportedCategories {
             do {
                 let count = try await service.sampleCount(for: category, from: startDate)
                 sampleCounts[category] = count
@@ -47,7 +50,7 @@ class HealthKitImportViewModel: ObservableObject {
     // MARK: - Import Flow
 
     func startImport(patientName: String?) async {
-        let categories = Array(selectedCategories)
+        let categories = Array(selectedCategories).filter(\.isSupportedOnCurrentDevice)
         guard !categories.isEmpty else {
             phase = .error("Välj minst en datatyp att importera.")
             return

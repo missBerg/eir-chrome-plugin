@@ -43,6 +43,10 @@ class SettingsViewModel: ObservableObject {
         self.customPrompts = Self.loadCustomPrompts()
         self.managedAccessSnapshots = Self.loadManagedAccessSnapshots()
 
+        if !(PromptLibrary.versions + customPrompts).contains(where: { $0.id == activePromptVersionId }) {
+            self.activePromptVersionId = PromptLibrary.defaultVersionId
+        }
+
         if Self.shouldForceLocalDefault(current: activeProviderType) {
             self.activeProviderType = .local
             UserDefaults.standard.set(LLMProviderType.local.rawValue, forKey: "eir_active_provider")

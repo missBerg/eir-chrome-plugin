@@ -95,7 +95,7 @@ struct EntryDetailView: View {
 
                 // Details
                 if let details = entry.content?.details, !details.isEmpty {
-                    GroupBox("Detaljer") {
+                    GroupBox(entry.detailSectionTitle) {
                         Text(details)
                             .font(.body)
                             .foregroundColor(AppColors.text)
@@ -106,18 +106,27 @@ struct EntryDetailView: View {
 
                 // Notes
                 if let notes = entry.content?.notes, !notes.isEmpty {
-                    GroupBox("Anteckningar") {
+                    GroupBox(entry.notesSectionTitle) {
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(notes, id: \.self) { note in
-                                HStack(alignment: .top, spacing: 8) {
-                                    Circle()
-                                        .fill(AppColors.primary)
-                                        .frame(width: 6, height: 6)
-                                        .padding(.top, 6)
+                                if entry.isClinicalNote {
                                     Text(note)
                                         .font(.body)
                                         .foregroundColor(AppColors.text)
                                         .textSelection(.enabled)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.vertical, 2)
+                                } else {
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Circle()
+                                            .fill(AppColors.primary)
+                                            .frame(width: 6, height: 6)
+                                            .padding(.top, 6)
+                                        Text(note)
+                                            .font(.body)
+                                            .foregroundColor(AppColors.text)
+                                            .textSelection(.enabled)
+                                    }
                                 }
                             }
                         }
@@ -147,6 +156,7 @@ struct EntryDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     guard let profileID = profileStore.selectedProfileID else { return }
+                    let includeFollowUpQuestions = profileStore.showChatFollowUpSuggestions(for: profileID)
                     chatVM.explainEntry(
                         entry,
                         document: documentVM.document,
@@ -154,7 +164,8 @@ struct EntryDetailView: View {
                         chatThreadStore: chatThreadStore,
                         profileID: profileID,
                         agentMemoryStore: agentMemoryStore,
-                        localModelManager: localModelManager
+                        localModelManager: localModelManager,
+                        includeFollowUpQuestions: includeFollowUpQuestions
                     )
                 } label: {
                     Label("Explain with AI", systemImage: "sparkles")

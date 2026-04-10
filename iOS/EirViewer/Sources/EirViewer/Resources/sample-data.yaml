@@ -8,7 +8,7 @@ metadata:
     birth_date: "1990-05-15"
     personal_number: "19900515-1234"
   export_info:
-    total_entries: 25
+    total_entries: 27
     date_range:
       start: "2001-02-26"
       end: "2025-03-17"
@@ -16,6 +16,7 @@ metadata:
       - "Östervåla vårdcentral"
       - "Folktandvården Östervåla"
       - "SLSO- Närakut Danderyd"
+      - "Apple Health"
 
 entries:
   - id: "entry_001"
@@ -129,3 +130,77 @@ entries:
         - "Bedömning: DIP-led subluxation lateralt. Drar den rakt och därefter är tån rak. Inga hematom eller svullnader. Således luxation, ingen misstanke om fraktur."
     attachments: []
     tags: ["akut", "ortopedi", "tåskada", "luxation", "osignerad"]
+
+  - id: "entry_006"
+    date: "2025-03-12"
+    time: "08:14"
+    category: "Anteckningar"
+    type: "Klinisk anteckning"
+    provider:
+      name: "Apple Health"
+      region: null
+      location: null
+    status: "Importerad"
+    responsible_person:
+      name: "Apple Health"
+      role: "Clinical Note Record"
+    content:
+      summary: "Utskrivningsanteckning efter närakutbesök"
+      details: |-
+        Importerad från Apple Health
+        FHIR-resurs: DocumentReference
+        FHIR-ID: note-acute-20250312
+        Status: current
+        Dokumentdatum: 2025-03-12T08:14:00+01:00
+      notes:
+        - |-
+          Sammanfattning
+
+          Patienten sökte för tilltagande halsont och feber sedan tre dagar.
+        - |-
+          Bedömning
+
+          Status förenligt med övre luftvägsinfektion, ingen andningspåverkan eller alarmsymtom.
+        - |-
+          Plan
+
+          Råd om vätska, vila, egenvård och återkontakt vid försämring eller kvarstående hög feber.
+    attachments: []
+    tags: ["apple-health", "clinical-note", "documentreference", "anteckning", "luftvägsinfektion"]
+
+  - id: "entry_007"
+    date: "2025-03-05"
+    time: "19:42"
+    category: "Anteckningar"
+    type: "Klinisk anteckning"
+    provider:
+      name: "Apple Health"
+      region: null
+      location: null
+    status: "Importerad"
+    responsible_person:
+      name: "Apple Health"
+      role: "Clinical Note Record"
+    content:
+      summary: "Mottagningsanteckning om stress, sömn och återhämtning"
+      details: |-
+        Importerad från Apple Health
+        FHIR-resurs: Composition
+        FHIR-ID: note-recovery-20250305
+        Status: final
+        Dokumentdatum: 2025-03-05T19:42:00+01:00
+      notes:
+        - |-
+          Aktuellt
+
+          Patienten beskriver ökad stressbelastning senaste månaden med ytligare sömn och svårare nedvarvning kvällstid.
+        - |-
+          Bedömning
+
+          Ingen akut somatisk fara framkommer, men tydligt behov av återhämtning och bättre struktur för sömnrutiner.
+        - |-
+          Plan
+
+          Prioritera kvällsrutin, minska skärmtid sent och följa upp energinivå och sömn nästa vecka.
+    attachments: []
+    tags: ["apple-health", "clinical-note", "composition", "stress", "sömn", "återhämtning"]

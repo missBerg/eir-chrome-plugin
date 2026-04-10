@@ -8,6 +8,7 @@ struct PersonProfile: Codable, Identifiable {
     let personalNumber: String?
     let birthDate: String?
     let totalEntries: Int?
+    var showChatFollowUpSuggestions: Bool
     let addedAt: Date
 
     /// Resolves the full file URL from the current Documents directory.
@@ -29,10 +30,20 @@ struct PersonProfile: Codable, Identifiable {
     // MARK: - Migration from old format
 
     enum CodingKeys: String, CodingKey {
-        case id, displayName, fileName, fileURL, patientName, personalNumber, birthDate, totalEntries, addedAt
+        case id, displayName, fileName, fileURL, patientName, personalNumber, birthDate, totalEntries, showChatFollowUpSuggestions, addedAt
     }
 
-    init(id: UUID, displayName: String, fileName: String, patientName: String?, personalNumber: String?, birthDate: String?, totalEntries: Int?, addedAt: Date) {
+    init(
+        id: UUID,
+        displayName: String,
+        fileName: String,
+        patientName: String?,
+        personalNumber: String?,
+        birthDate: String?,
+        totalEntries: Int?,
+        showChatFollowUpSuggestions: Bool = false,
+        addedAt: Date
+    ) {
         self.id = id
         self.displayName = displayName
         self.fileName = fileName
@@ -40,6 +51,7 @@ struct PersonProfile: Codable, Identifiable {
         self.personalNumber = personalNumber
         self.birthDate = birthDate
         self.totalEntries = totalEntries
+        self.showChatFollowUpSuggestions = showChatFollowUpSuggestions
         self.addedAt = addedAt
     }
 
@@ -51,6 +63,10 @@ struct PersonProfile: Codable, Identifiable {
         personalNumber = try container.decodeIfPresent(String.self, forKey: .personalNumber)
         birthDate = try container.decodeIfPresent(String.self, forKey: .birthDate)
         totalEntries = try container.decodeIfPresent(Int.self, forKey: .totalEntries)
+        showChatFollowUpSuggestions = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .showChatFollowUpSuggestions
+        ) ?? false
         addedAt = try container.decode(Date.self, forKey: .addedAt)
 
         // Try new fileName key first, then migrate from old fileURL key
@@ -71,6 +87,7 @@ struct PersonProfile: Codable, Identifiable {
         try container.encode(personalNumber, forKey: .personalNumber)
         try container.encode(birthDate, forKey: .birthDate)
         try container.encode(totalEntries, forKey: .totalEntries)
+        try container.encode(showChatFollowUpSuggestions, forKey: .showChatFollowUpSuggestions)
         try container.encode(addedAt, forKey: .addedAt)
     }
 }

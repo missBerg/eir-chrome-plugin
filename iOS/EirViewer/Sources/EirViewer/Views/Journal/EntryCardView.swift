@@ -36,6 +36,13 @@ struct EntryCardView: View {
                     .lineLimit(2)
             }
 
+            if let preview = entry.notePreviewText, !preview.isEmpty {
+                Text(preview)
+                    .font(.callout)
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(3)
+            }
+
             if let type = entry.type, !type.isEmpty {
                 Text(type)
                     .font(.callout)

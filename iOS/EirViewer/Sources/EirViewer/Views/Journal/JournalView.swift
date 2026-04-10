@@ -897,6 +897,44 @@ struct JournalView: View {
                     }
                 }
             }
+
+            if !summary.recentClinicalNotes.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Recent clinical notes")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppColors.text)
+
+                    VStack(spacing: 10) {
+                        ForEach(summary.recentClinicalNotes) { note in
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text(note.title)
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundColor(AppColors.text)
+                                        .lineLimit(2)
+                                    Spacer()
+                                    if let date = note.date {
+                                        Text(date)
+                                            .font(.caption)
+                                            .foregroundColor(AppColors.textSecondary)
+                                    }
+                                }
+
+                                if let preview = note.preview, !preview.isEmpty {
+                                    Text(preview)
+                                        .font(.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .lineLimit(3)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                            .background(AppColors.backgroundMuted)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        }
+                    }
+                }
+            }
         }
         .padding(18)
         .background(AppColors.card)
@@ -1352,6 +1390,13 @@ private struct AppleHealthSummary {
         let count: Int
     }
 
+    struct ClinicalNoteItem: Identifiable {
+        let id: String
+        let title: String
+        let preview: String?
+        let date: String?
+    }
+
     struct TrendPoint: Identifiable {
         let id = UUID()
         let date: Date
@@ -1362,6 +1407,7 @@ private struct AppleHealthSummary {
     let daysTracked: Int
     let metricCount: Int
     let metricBreakdown: [BreakdownItem]
+    let recentClinicalNotes: [ClinicalNoteItem]
     let stepTrend: [TrendPoint]
 
     init?(document: EirDocument) {
@@ -1383,6 +1429,24 @@ private struct AppleHealthSummary {
                 lhs.count == rhs.count ? lhs.metric < rhs.metric : lhs.count > rhs.count
             }
         metricCount = groupedMetrics.count
+
+        recentClinicalNotes = entries
+            .filter(\.isClinicalNote)
+            .sorted {
+                if $0.date == $1.date {
+                    return ($0.time ?? "") > ($1.time ?? "")
+                }
+                return ($0.date ?? "") > ($1.date ?? "")
+            }
+            .prefix(3)
+            .map { entry in
+                ClinicalNoteItem(
+                    id: entry.id,
+                    title: entry.content?.summary ?? entry.type ?? "Klinisk anteckning",
+                    preview: entry.notePreviewText,
+                    date: entry.date
+                )
+            }
 
         let stepEntries = entries
             .filter {

@@ -136,6 +136,8 @@ struct HealthKitToEirConverter {
 
         let summary: String
         let details: String
+        var notes: [String]? = nil
+        var tags = ["apple-health", category.rawValue.lowercased()]
 
         switch category {
         case .bloodPressure:
@@ -161,6 +163,40 @@ struct HealthKitToEirConverter {
             summary = "\(typeStr): \(durationMin) min\(calStr)"
             details = "Typ: \(typeStr)\nTid: \(durationMin) minuter\(calories.map { "\nKalorier: \(formatValue($0, decimals: 0)) kcal" } ?? "")"
 
+        case .clinicalNotes:
+            guard let record = sample as? HKClinicalRecord else { return nil }
+            let extracted: ClinicalNoteFHIRExtraction
+            if let data = record.fhirResource?.data {
+                extracted = ClinicalNoteFHIRExtractor.extract(
+                    from: data,
+                    fallbackTitle: record.displayName,
+                    fallbackResourceType: record.fhirResource?.resourceType.rawValue,
+                    fallbackIdentifier: record.fhirResource?.identifier
+                )
+            } else {
+                var fallbackMetadataLines = ["Importerad från Apple Health"]
+                if let resourceType = record.fhirResource?.resourceType.rawValue, !resourceType.isEmpty {
+                    fallbackMetadataLines.append("FHIR-resurs: \(resourceType)")
+                }
+                if let identifier = record.fhirResource?.identifier, !identifier.isEmpty {
+                    fallbackMetadataLines.append("FHIR-ID: \(identifier)")
+                }
+                extracted = ClinicalNoteFHIRExtraction(
+                    summary: record.displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? "Klinisk anteckning"
+                        : record.displayName.trimmingCharacters(in: .whitespacesAndNewlines),
+                    noteBlocks: [],
+                    metadataLines: fallbackMetadataLines,
+                    tags: ["clinical-note"]
+                )
+            }
+            summary = extracted.summary
+            details = extracted.metadataLines.isEmpty
+                ? "Klinisk anteckning från Apple Health."
+                : extracted.metadataLines.joined(separator: "\n")
+            notes = extracted.noteBlocks.isEmpty ? nil : extracted.noteBlocks
+            tags += extracted.tags
+
         default:
             guard let quantitySample = sample as? HKQuantitySample,
                   let unit = category.hkUnit else { return nil }
@@ -179,9 +215,9 @@ struct HealthKitToEirConverter {
             provider: EirProvider(name: "Apple Health", region: nil, location: nil),
             status: nil,
             responsiblePerson: nil,
-            content: EirContent(summary: summary, details: details, notes: nil),
+            content: EirContent(summary: summary, details: details, notes: notes),
             attachments: nil,
-            tags: ["apple-health", category.rawValue.lowercased()]
+            tags: Array(Set(tags)).sorted()
         )
     }
 

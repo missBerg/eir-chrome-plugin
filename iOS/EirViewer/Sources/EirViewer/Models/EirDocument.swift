@@ -164,6 +164,31 @@ struct EirEntry: Codable, Identifiable {
         formatter.locale = Locale(identifier: "sv_SE")
         return formatter.string(from: parsed)
     }
+
+    var isClinicalNote: Bool {
+        if type == "Klinisk anteckning" {
+            return true
+        }
+        if tags?.contains(where: { $0.localizedCaseInsensitiveContains("clinical-note") }) == true {
+            return true
+        }
+        return false
+    }
+
+    var detailSectionTitle: String {
+        isClinicalNote ? "Metadata" : "Detaljer"
+    }
+
+    var notesSectionTitle: String {
+        isClinicalNote ? "Journaltext" : "Anteckningar"
+    }
+
+    var notePreviewText: String? {
+        guard isClinicalNote else { return nil }
+        return content?.notes?
+            .first?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
 
 struct EirProvider: Codable {

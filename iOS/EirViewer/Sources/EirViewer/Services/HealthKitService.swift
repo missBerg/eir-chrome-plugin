@@ -15,8 +15,17 @@ enum HealthDataCategory: String, CaseIterable, Identifiable {
     case steps = "Steg"
     case activeEnergy = "Aktiv energi"
     case workouts = "Träningspass"
+    case clinicalNotes = "Kliniska anteckningar"
 
     var id: String { rawValue }
+
+    static var supportedCases: [HealthDataCategory] {
+        allCases.filter(\.isSupportedOnCurrentDevice)
+    }
+
+    var isSupportedOnCurrentDevice: Bool {
+        hkSampleType != nil
+    }
 
     var icon: String {
         switch self {
@@ -31,6 +40,7 @@ enum HealthDataCategory: String, CaseIterable, Identifiable {
         case .steps: return "figure.walk"
         case .activeEnergy: return "flame.fill"
         case .workouts: return "figure.run"
+        case .clinicalNotes: return "doc.text.fill"
         }
     }
 
@@ -41,6 +51,8 @@ enum HealthDataCategory: String, CaseIterable, Identifiable {
             return "Lab"
         case .steps, .activeEnergy, .workouts:
             return "Hälsodata"
+        case .clinicalNotes:
+            return "Anteckningar"
         }
     }
 
@@ -57,6 +69,7 @@ enum HealthDataCategory: String, CaseIterable, Identifiable {
         case .steps: return "steg"
         case .activeEnergy: return "kcal"
         case .workouts: return ""
+        case .clinicalNotes: return ""
         }
     }
 
@@ -94,6 +107,11 @@ enum HealthDataCategory: String, CaseIterable, Identifiable {
             return HKQuantityType(.activeEnergyBurned)
         case .workouts:
             return HKWorkoutType.workoutType()
+        case .clinicalNotes:
+            if #available(iOS 16.4, *) {
+                return HKObjectType.clinicalType(forIdentifier: .clinicalNoteRecord)
+            }
+            return nil
         }
     }
 
@@ -127,6 +145,7 @@ enum HealthDataCategory: String, CaseIterable, Identifiable {
         case .steps: return .count()
         case .activeEnergy: return .kilocalorie()
         case .workouts: return nil
+        case .clinicalNotes: return nil
         }
     }
 }

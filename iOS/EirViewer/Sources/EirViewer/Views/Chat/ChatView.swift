@@ -296,13 +296,15 @@ struct ChatView: View {
     private func sendMessage() {
         guard let profileID = profileStore.selectedProfileID else { return }
         isComposerFocused = false
+        let includeFollowUpQuestions = profileStore.showChatFollowUpSuggestions(for: profileID)
         chatVM.sendMessage(
             document: documentVM.document,
             settingsVM: settingsVM,
             chatThreadStore: chatThreadStore,
             profileID: profileID,
             agentMemoryStore: agentMemoryStore,
-            localModelManager: localModelManager
+            localModelManager: localModelManager,
+            includeFollowUpQuestions: includeFollowUpQuestions
         )
     }
 
@@ -313,6 +315,7 @@ struct ChatView: View {
 
     private func sendVoiceNote(_ draft: RecordedVoiceNoteDraft) async {
         guard let profileID = profileStore.selectedProfileID else { return }
+        let includeFollowUpQuestions = profileStore.showChatFollowUpSuggestions(for: profileID)
         await chatVM.sendVoiceNote(
             draft,
             document: documentVM.document,
@@ -320,7 +323,8 @@ struct ChatView: View {
             chatThreadStore: chatThreadStore,
             profileID: profileID,
             agentMemoryStore: agentMemoryStore,
-            localModelManager: localModelManager
+            localModelManager: localModelManager,
+            includeFollowUpQuestions: includeFollowUpQuestions
         )
     }
 }

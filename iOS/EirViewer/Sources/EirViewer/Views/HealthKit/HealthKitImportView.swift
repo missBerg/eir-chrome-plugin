@@ -66,7 +66,7 @@ struct HealthKitImportView: View {
             }
 
             Section {
-                ForEach(HealthDataCategory.allCases) { category in
+                ForEach(HealthDataCategory.supportedCases) { category in
                     CategoryToggleRow(
                         category: category,
                         isSelected: viewModel.selectedCategories.contains(category),
@@ -310,6 +310,7 @@ private struct CategoryToggleRow: View {
         case .steps: return AppColors.green
         case .activeEnergy: return AppColors.orange
         case .workouts: return AppColors.primary
+        case .clinicalNotes: return AppColors.teal
         }
     }
 }

@@ -12,8 +12,8 @@ class ChatViewModel: ObservableObject {
     private let maxToolIterations = 5
 
     // Pending message state for consent flow
-    private var pendingSendArgs: (EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?)?
-    private var pendingVoiceNoteArgs: (RecordedVoiceNoteDraft, EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?)?
+    private var pendingSendArgs: (EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?, Bool)?
+    private var pendingVoiceNoteArgs: (RecordedVoiceNoteDraft, EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?, Bool)?
 
     static func hasCloudConsent(for provider: LLMProviderType) -> Bool {
         UserDefaults.standard.bool(forKey: "cloudConsent_\(provider.rawValue)")
@@ -42,7 +42,8 @@ class ChatViewModel: ObservableObject {
                         chatThreadStore: args.2,
                         profileID: args.3,
                         agentMemoryStore: args.4,
-                        localModelManager: args.5
+                        localModelManager: args.5,
+                        includeFollowUpQuestions: args.6
                     )
                 } catch {
                     errorMessage = error.localizedDescription
@@ -64,7 +65,8 @@ class ChatViewModel: ObservableObject {
                         chatThreadStore: args.3,
                         profileID: args.4,
                         agentMemoryStore: args.5,
-                        localModelManager: args.6
+                        localModelManager: args.6,
+                        includeFollowUpQuestions: args.7
                     )
                 } catch {
                     errorMessage = error.localizedDescription
@@ -85,7 +87,8 @@ class ChatViewModel: ObservableObject {
         chatThreadStore: ChatThreadStore,
         profileID: UUID,
         agentMemoryStore: AgentMemoryStore,
-        localModelManager: LocalModelManager? = nil
+        localModelManager: LocalModelManager? = nil,
+        includeFollowUpQuestions: Bool = false
     ) {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isStreaming else { return }
@@ -97,7 +100,7 @@ class ChatViewModel: ObservableObject {
 
         // Check cloud consent before sending data to third-party providers
         if !config.type.isLocal && !Self.hasCloudConsent(for: config.type) {
-            pendingSendArgs = (document, settingsVM, chatThreadStore, profileID, agentMemoryStore, localModelManager)
+            pendingSendArgs = (document, settingsVM, chatThreadStore, profileID, agentMemoryStore, localModelManager, includeFollowUpQuestions)
             pendingCloudConsent = config.type
             return
         }
@@ -135,7 +138,8 @@ class ChatViewModel: ObservableObject {
         let systemPrompt = SystemPrompt.build(
             memory: agentMemoryStore.memory,
             document: document,
-            includeToolInstructions: !config.type.isLocal
+            includeToolInstructions: !config.type.isLocal,
+            allowFollowUpQuestions: includeFollowUpQuestions
         )
 
         // Build LLM messages from conversation history
@@ -167,7 +171,12 @@ class ChatViewModel: ObservableObject {
             let manager = localModelManager!
             let userName = document?.metadata.patient?.name
             let activeVersion = settingsVM.activePromptVersion
-            let localPrompt = SystemPrompt.buildLocal(document: document, userName: userName, promptVersion: activeVersion)
+            let localPrompt = SystemPrompt.buildLocal(
+                document: document,
+                userName: userName,
+                promptVersion: activeVersion,
+                allowFollowUpQuestions: includeFollowUpQuestions
+            )
             let conversationId = chatThreadStore.selectedThreadID ?? UUID()
 
             streamingTask = Task {
@@ -188,7 +197,8 @@ class ChatViewModel: ObservableObject {
 
                     Self.finalizeAssistantMessage(
                         at: assistantIndex,
-                        in: chatThreadStore
+                        in: chatThreadStore,
+                        allowFollowUpQuestions: includeFollowUpQuestions
                     )
                     chatThreadStore.persistMessages()
 
@@ -228,6 +238,7 @@ class ChatViewModel: ObservableObject {
                         toolContext: toolContext,
                         chatThreadStore: chatThreadStore,
                         assistantIndex: assistantIndex,
+                        includeFollowUpQuestions: includeFollowUpQuestions,
                         iteration: 0
                     )
 
@@ -263,6 +274,7 @@ class ChatViewModel: ObservableObject {
         toolContext: ToolContext,
         chatThreadStore: ChatThreadStore,
         assistantIndex: Int,
+        includeFollowUpQuestions: Bool,
         iteration: Int
     ) async throws {
         guard iteration < maxToolIterations else { return }
@@ -283,7 +295,8 @@ class ChatViewModel: ObservableObject {
             // Final text response — done
             Self.finalizeAssistantMessage(
                 at: assistantIndex,
-                in: chatThreadStore
+                in: chatThreadStore,
+                allowFollowUpQuestions: includeFollowUpQuestions
             )
             return
 
@@ -322,6 +335,7 @@ class ChatViewModel: ObservableObject {
                 toolContext: toolContext,
                 chatThreadStore: chatThreadStore,
                 assistantIndex: newIndex,
+                includeFollowUpQuestions: includeFollowUpQuestions,
                 iteration: iteration + 1
             )
         }
@@ -339,11 +353,19 @@ class ChatViewModel: ObservableObject {
         chatThreadStore: ChatThreadStore,
         profileID: UUID,
         agentMemoryStore: AgentMemoryStore,
-        localModelManager: LocalModelManager? = nil
+        localModelManager: LocalModelManager? = nil,
+        includeFollowUpQuestions: Bool = false
     ) async {
         guard !isStreaming else { return }
         guard let config = settingsVM.activeProvider else {
             errorMessage = "No LLM provider selected. Configure one in Settings."
+            return
+        }
+
+        // Check cloud consent before sending transcript text to third-party providers
+        if !config.type.isLocal && !Self.hasCloudConsent(for: config.type) {
+            pendingVoiceNoteArgs = (draft, document, settingsVM, chatThreadStore, profileID, agentMemoryStore, localModelManager, includeFollowUpQuestions)
+            pendingCloudConsent = config.type
             return
         }
 
@@ -390,7 +412,8 @@ class ChatViewModel: ObservableObject {
                 chatThreadStore: chatThreadStore,
                 profileID: profileID,
                 agentMemoryStore: agentMemoryStore,
-                localModelManager: localModelManager
+                localModelManager: localModelManager,
+                includeFollowUpQuestions: includeFollowUpQuestions
             )
         } catch {
             errorMessage = error.localizedDescription
@@ -457,7 +480,8 @@ class ChatViewModel: ObservableObject {
 
     private static func finalizeAssistantMessage(
         at index: Int,
-        in chatThreadStore: ChatThreadStore
+        in chatThreadStore: ChatThreadStore,
+        allowFollowUpQuestions: Bool
     ) {
         guard chatThreadStore.messages.indices.contains(index) else { return }
         var message = chatThreadStore.messages[index]
@@ -465,7 +489,7 @@ class ChatViewModel: ObservableObject {
 
         let parsed = parseFollowUpQuestions(from: message.content)
         message.content = parsed.cleanedContent
-        message.followUpQuestions = parsed.questions.isEmpty ? nil : parsed.questions
+        message.followUpQuestions = allowFollowUpQuestions ? (parsed.questions.isEmpty ? nil : parsed.questions) : nil
         chatThreadStore.messages[index] = message
     }
 
@@ -597,7 +621,8 @@ class ChatViewModel: ObservableObject {
         chatThreadStore: ChatThreadStore,
         profileID: UUID,
         agentMemoryStore: AgentMemoryStore,
-        localModelManager: LocalModelManager? = nil
+        localModelManager: LocalModelManager? = nil,
+        includeFollowUpQuestions: Bool = false
     ) {
         // Build a prompt from the entry content
         var prompt = "Explain this medical record:\n\n"
@@ -624,7 +649,8 @@ class ChatViewModel: ObservableObject {
             chatThreadStore: chatThreadStore,
             profileID: profileID,
             agentMemoryStore: agentMemoryStore,
-            localModelManager: localModelManager
+            localModelManager: localModelManager,
+            includeFollowUpQuestions: includeFollowUpQuestions
         )
     }
 }
