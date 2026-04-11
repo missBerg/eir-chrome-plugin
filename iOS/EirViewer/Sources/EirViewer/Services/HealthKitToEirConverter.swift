@@ -138,6 +138,8 @@ struct HealthKitToEirConverter {
         let details: String
         var notes: [String]? = nil
         var tags = ["apple-health", category.rawValue.lowercased()]
+        var provider = EirProvider(name: "Apple Health", region: nil, location: nil)
+        var responsiblePerson: EirResponsiblePerson? = nil
 
         switch category {
         case .bloodPressure:
@@ -197,6 +199,26 @@ struct HealthKitToEirConverter {
             notes = extracted.noteBlocks.isEmpty ? nil : extracted.noteBlocks
             tags += extracted.tags
 
+            // Extract provider and author from FHIR JSON
+            if let data = record.fhirResource?.data,
+               let fhirObj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                if let authors = fhirObj["author"] as? [[String: Any]],
+                   let authorName = authors.first.flatMap({ $0["display"] as? String }) {
+                    // Extract role from context extension
+                    let role = (fhirObj["context"] as? [String: Any])
+                        .flatMap { $0["extension"] as? [[String: Any]] }?
+                        .compactMap { ($0["valueCodeableConcept"] as? [String: Any])?["text"] as? String }
+                        .first
+                    responsiblePerson = EirResponsiblePerson(name: authorName, role: role)
+                }
+                // Use encounter display as provider name if available
+                if let context = fhirObj["context"] as? [String: Any],
+                   let encounters = context["encounter"] as? [[String: Any]],
+                   let encounterDisplay = encounters.first?["display"] as? String {
+                    provider = EirProvider(name: encounterDisplay, region: nil, location: nil)
+                }
+            }
+
         default:
             guard let quantitySample = sample as? HKQuantitySample,
                   let unit = category.hkUnit else { return nil }
@@ -212,9 +234,9 @@ struct HealthKitToEirConverter {
             time: timeStr,
             category: category.eirCategory,
             type: category.rawValue,
-            provider: EirProvider(name: "Apple Health", region: nil, location: nil),
+            provider: provider,
             status: nil,
-            responsiblePerson: nil,
+            responsiblePerson: responsiblePerson,
             content: EirContent(summary: summary, details: details, notes: notes),
             attachments: nil,
             tags: Array(Set(tags)).sorted()

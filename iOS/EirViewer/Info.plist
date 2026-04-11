@@ -93,6 +93,8 @@
 	</array>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Eir imports your health data (vitals, activity, lab values) from Apple Health to display alongside your medical records.</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>Eir imports your clinical notes and health records from Apple Health to display alongside your other medical data.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Eir does not write any data to Apple Health. This permission is required by the HealthKit framework.</string>
 	<key>EIRBillingSubscriptionProductID</key>
