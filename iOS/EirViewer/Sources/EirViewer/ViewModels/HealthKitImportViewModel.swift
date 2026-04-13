@@ -33,11 +33,22 @@ class HealthKitImportViewModel: ObservableObject {
     // MARK: - Load Sample Counts
 
     func loadSampleCounts() async {
+        guard service.isAvailable else {
+            sampleCounts = [:]
+            return
+        }
+
         let startDate = selectedDateRange.startDate
         let supportedCategories = HealthDataCategory.supportedCases
         selectedCategories = selectedCategories.intersection(Set(supportedCategories))
 
         for category in supportedCategories {
+            // Clinical records can behave more strictly across iOS versions.
+            // Avoid eager count queries here and let the actual import flow handle them.
+            if category == .clinicalNotes {
+                sampleCounts[category] = nil
+                continue
+            }
             do {
                 let count = try await service.sampleCount(for: category, from: startDate)
                 sampleCounts[category] = count

@@ -1,6 +1,8 @@
 import StoreKit
 import SwiftUI
 import HealthKit
+import UIKit
+import WebKit
 
 struct SettingsView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
@@ -58,8 +60,22 @@ struct SettingsView: View {
                 }
             }
 
-            if let profileID = profileStore.selectedProfileID {
-                Section("Chat") {
+            Section("Language") {
+                Picker("App language", selection: $settingsVM.interfaceLanguagePreference) {
+                    ForEach(InterfaceLanguagePreference.allCases) { preference in
+                        Text(preference.displayName).tag(preference)
+                    }
+                }
+
+                Picker("Response language", selection: $settingsVM.responseLanguagePreference) {
+                    ForEach(ResponseLanguagePreference.allCases) { preference in
+                        Text(preference.displayName).tag(preference)
+                    }
+                }
+            }
+
+            Section("Chat") {
+                if let profileID = profileStore.selectedProfileID {
                     Toggle(
                         "Show AI follow-up suggestions",
                         isOn: Binding(
@@ -162,6 +178,7 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showHealthKitImport) {
             HealthKitImportView()
+                .environmentObject(profileStore)
         }
         .alert("Rename Person", isPresented: Binding(
             get: { renamingProfileID != nil },
@@ -199,9 +216,11 @@ struct SettingsView: View {
 
 private struct ProviderSection: View {
     let config: LLMProviderConfig
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject var settingsVM: SettingsViewModel
     @EnvironmentObject var purchaseManager: PurchaseManager
     @EnvironmentObject var localModelManager: LocalModelManager
+    @ObservedObject private var codexDiagnostics = CodexNetworkDiagnosticsStore.shared
     @State private var apiKey: String = ""
     @State private var baseURL: String = ""
     @State private var model: String = ""
@@ -210,16 +229,38 @@ private struct ProviderSection: View {
     @State private var managedAccessSnapshot: ManagedCloudAccessSnapshot?
     @State private var managedAccessError: String?
     @State private var isExpanded = false
+    @State private var didCopyOpenAICode = false
+    @State private var lastAutoCopiedCode: String?
+    @State private var inlineSignInURL: URL?
+    @State private var showOpenAIDiagnostics = false
 
     var isActive: Bool { settingsVM.activeProviderType == config.type }
     var hasKey: Bool { !apiKey.isEmpty }
     var usesManagedTrial: Bool { config.type.usesManagedTrialAccess }
+    var hasOpenAIAccount: Bool {
+        config.type == .openai && settingsVM.openAIAccountSession != nil
+    }
+    var latestCodexDiagnostic: CodexNetworkDiagnostic? {
+        codexDiagnostics.entries.first(where: { $0.category == "ChatGPT account" })
+    }
+    var hasOpenAIAvailableModels: Bool {
+        config.type == .openai && !settingsVM.openAIAvailableModels.isEmpty
+    }
     var isConfigured: Bool {
-        usesManagedTrial ? settingsVM.hasManagedAccessToken(for: config.type) : hasKey
+        if usesManagedTrial {
+            return settingsVM.hasManagedAccessToken(for: config.type)
+        }
+        if config.type == .openai {
+            return hasOpenAIAccount || hasKey
+        }
+        return hasKey
     }
     var statusText: String {
         if usesManagedTrial {
             return isConfigured ? "Trial ready" : "Free credits available"
+        }
+        if config.type == .openai && hasOpenAIAccount {
+            return "ChatGPT connected"
         }
         return hasKey ? "Configured" : "No API key"
     }
@@ -232,6 +273,10 @@ private struct ProviderSection: View {
                 } else if usesManagedTrial {
                     managedCloudSection
                 } else {
+                    if config.type == .openai {
+                        openAIAccountSection
+                    }
+
                     HStack {
                         if showKey {
                             TextField("API Key", text: $apiKey)
@@ -254,17 +299,50 @@ private struct ProviderSection: View {
                         settingsVM.setApiKey(newValue, for: config.type)
                     }
 
-                    HStack {
-                        Text("Model")
-                            .foregroundColor(AppColors.textSecondary)
-                        Spacer()
-                        TextField("Model name", text: $model)
-                            .multilineTextAlignment(.trailing)
+                    if config.type == .openai && hasOpenAIAvailableModels {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Available models")
+                                    .foregroundColor(AppColors.textSecondary)
+                                Spacer()
+                                Button {
+                                    Task { await settingsVM.refreshOpenAIAvailableModels(force: true) }
+                                } label: {
+                                    if settingsVM.isRefreshingOpenAIModels {
+                                        ProgressView()
+                                    } else {
+                                        Text("Refresh")
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                                .disabled(settingsVM.isRefreshingOpenAIModels)
+                            }
+
+                            Picker("Model", selection: $model) {
+                                ForEach(settingsVM.openAIAvailableModels, id: \.self) { availableModel in
+                                    Text(availableModel).tag(availableModel)
+                                }
+                            }
+                            .pickerStyle(.menu)
                             .onChange(of: model) { _, newValue in
                                 var updated = config
                                 updated.model = newValue
                                 settingsVM.updateProvider(updated)
                             }
+                        }
+                    } else {
+                        HStack {
+                            Text("Model")
+                                .foregroundColor(AppColors.textSecondary)
+                            Spacer()
+                            TextField("Model name", text: $model)
+                                .multilineTextAlignment(.trailing)
+                                .onChange(of: model) { _, newValue in
+                                    var updated = config
+                                    updated.model = newValue
+                                    settingsVM.updateProvider(updated)
+                                }
+                        }
                     }
 
                     if config.type == .custom {
@@ -284,7 +362,7 @@ private struct ProviderSection: View {
                         }
                     }
 
-                    if !isActive && hasKey {
+                    if !isActive && isConfigured {
                         Button("Use \(config.type.displayName)") {
                             settingsVM.setActiveProvider(config.type)
                         }
@@ -351,11 +429,27 @@ private struct ProviderSection: View {
             model = config.model
             managedAccessSnapshot = settingsVM.managedAccessSnapshot(for: config.type)
             isExpanded = isActive || config.type.isLocal
+            if config.type == .openai, settingsVM.openAIAccountSession != nil {
+                Task { await settingsVM.refreshOpenAIAvailableModels() }
+            }
         }
         .onChange(of: settingsVM.activeProviderType) { _, newValue in
             if newValue == config.type {
                 isExpanded = true
             }
+        }
+        .onReceive(settingsVM.$providers) { providers in
+            if let updatedConfig = providers.first(where: { $0.type == config.type }) {
+                baseURL = updatedConfig.baseURL
+                model = updatedConfig.model
+            }
+        }
+        .onChange(of: scenePhase) { _, newValue in
+            guard config.type == .openai,
+                  newValue == .active,
+                  settingsVM.pendingOpenAIDeviceCode != nil else { return }
+
+            Task { await settingsVM.refreshOpenAIAccountSignInStatus() }
         }
     }
 
@@ -409,6 +503,296 @@ private struct ProviderSection: View {
                     settingsVM.setActiveProvider(config.type)
                 }
                 .foregroundColor(AppColors.primary)
+            }
+        }
+    }
+
+    private var openAIAccountSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Text("ChatGPT account")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppColors.text)
+                    Text("Experimental")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.orange.opacity(0.14))
+                        .clipShape(Capsule())
+                }
+
+                Text("Use the same OpenAI account flow as Codex to try your ChatGPT subscription here.")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppColors.backgroundMuted)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            if let session = settingsVM.openAIAccountSession {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(session.email ?? session.accountID ?? "Connected")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppColors.text)
+
+                    if let planType = session.planType, !planType.isEmpty {
+                        Text(planType.replacingOccurrences(of: "_", with: " ").capitalized)
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    Text("OpenAI account auth will be used before the manual API key.")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppColors.aiSoft)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+
+            if let deviceCode = settingsVM.pendingOpenAIDeviceCode {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Enter this code")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppColors.textSecondary)
+
+                    HStack(spacing: 12) {
+                        Text(deviceCode.userCode)
+                            .font(.system(.title3, design: .rounded, weight: .bold))
+                            .foregroundColor(AppColors.text)
+                            .textSelection(.enabled)
+
+                        Spacer()
+
+                        Button(didCopyOpenAICode ? "Copied" : "Copy") {
+                            UIPasteboard.general.string = deviceCode.userCode
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                didCopyOpenAICode = true
+                            }
+
+                            Task {
+                                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                                await MainActor.run {
+                                    didCopyOpenAICode = false
+                                }
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    Text("Copy the code, open ChatGPT sign-in, paste it there, then come back here. Eir will keep checking, and you can also refresh the status manually.")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    HStack {
+                        Button("Open in Browser") {
+                            if let url = URL(string: deviceCode.verificationURL) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(AppColors.primaryStrong)
+
+                        Button("Check Status") {
+                            Task { await settingsVM.refreshOpenAIAccountSignInStatus() }
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(settingsVM.isOpenAIAccountBusy)
+
+                        Button("Cancel") {
+                            settingsVM.cancelOpenAIAccountSignIn()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    if settingsVM.isOpenAIAccountBusy {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text("Finishing sign-in…")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                    } else {
+                        Text("Waiting for confirmation. Return here after the browser step if you want to check again.")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    if let inlineSignInURL {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("ChatGPT sign-in")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(AppColors.textSecondary)
+                                Spacer()
+                                Button("Hide") {
+                                    self.inlineSignInURL = nil
+                                }
+                                .buttonStyle(.bordered)
+                            }
+
+                            InlineWebView(
+                                url: inlineSignInURL,
+                                prefillCode: deviceCode.userCode
+                            )
+                                .frame(height: 420)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(AppColors.border.opacity(0.8), lineWidth: 1)
+                                )
+                        }
+                    }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppColors.backgroundMuted)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .onAppear {
+                    autoCopyOpenAICodeIfNeeded(deviceCode.userCode)
+                    inlineSignInURL = URL(string: deviceCode.verificationURL)
+                }
+                .onChange(of: deviceCode.userCode) { _, newValue in
+                    autoCopyOpenAICodeIfNeeded(newValue)
+                }
+                .onChange(of: deviceCode.verificationURL) { _, newValue in
+                    inlineSignInURL = URL(string: newValue)
+                }
+            } else {
+                Button {
+                    Task { await settingsVM.startOpenAIAccountSignIn() }
+                } label: {
+                    HStack {
+                        if settingsVM.isOpenAIAccountBusy {
+                            ProgressView()
+                                .tint(.white)
+                        }
+                        Text(hasOpenAIAccount ? "Reconnect ChatGPT Account" : "Sign In with ChatGPT")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppColors.primaryStrong)
+                .disabled(settingsVM.isOpenAIAccountBusy)
+            }
+
+            if let error = settingsVM.openAIAccountError, !error.isEmpty {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(AppColors.danger)
+            }
+
+            openAIDiagnosticsSection
+
+            if hasOpenAIAccount {
+                Button("Disconnect ChatGPT Account", role: .destructive) {
+                    settingsVM.disconnectOpenAIAccount()
+                }
+            }
+
+            Divider()
+        }
+    }
+
+    private func autoCopyOpenAICodeIfNeeded(_ code: String) {
+        guard lastAutoCopiedCode != code else { return }
+        UIPasteboard.general.string = code
+        lastAutoCopiedCode = code
+        didCopyOpenAICode = true
+
+        Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            await MainActor.run {
+                didCopyOpenAICode = false
+            }
+        }
+    }
+
+    private var openAIDiagnosticsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            DisclosureGroup(isExpanded: $showOpenAIDiagnostics) {
+                if let diagnostic = latestCodexDiagnostic {
+                    VStack(alignment: .leading, spacing: 8) {
+                        LabeledContent("Updated", value: diagnostic.updatedAt.formatted(date: .omitted, time: .standard))
+                        LabeledContent("Status", value: diagnostic.statusCode.map(String.init) ?? "No HTTP response")
+                        LabeledContent("Content-Type", value: diagnostic.contentType.isEmpty ? "None" : diagnostic.contentType)
+                        LabeledContent("Bytes", value: "\(diagnostic.bytesRead)")
+                        LabeledContent("Lines", value: "\(diagnostic.lineCount)")
+                        LabeledContent("Outcome", value: diagnostic.outcome)
+
+                        if let error = diagnostic.errorMessage, !error.isEmpty {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundColor(AppColors.danger)
+                        }
+
+                        if !diagnostic.parserEvents.isEmpty {
+                            Text("Parser events: \(diagnostic.parserEvents.joined(separator: ", "))")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+
+                        if !diagnostic.responseHeaders.isEmpty {
+                            let headersText = diagnostic.responseHeaders
+                                .sorted { $0.key.localizedCaseInsensitiveCompare($1.key) == .orderedAscending }
+                                .map { "\($0.key): \($0.value)" }
+                                .joined(separator: "\n")
+                            Text(headersText)
+                                .font(.caption2.monospaced())
+                                .foregroundColor(AppColors.textSecondary)
+                                .textSelection(.enabled)
+                        }
+
+                        if !diagnostic.rawPreview.isEmpty {
+                            ScrollView {
+                                Text(diagnostic.rawPreview)
+                                    .font(.caption2.monospaced())
+                                    .foregroundColor(AppColors.text)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .textSelection(.enabled)
+                            }
+                            .frame(minHeight: 90, maxHeight: 180)
+                            .padding(10)
+                            .background(AppColors.background)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+
+                        HStack {
+                            Button("Copy Diagnostics") {
+                                UIPasteboard.general.string = diagnostic.shareText
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("Clear") {
+                                codexDiagnostics.clear()
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(.top, 8)
+                } else {
+                    Text("No recent ChatGPT account request has been logged yet.")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                        .padding(.top, 8)
+                }
+            } label: {
+                HStack {
+                    Text("Connection diagnostics")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                    if let diagnostic = latestCodexDiagnostic {
+                        Text(diagnostic.outcome)
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
             }
         }
     }
@@ -582,6 +966,135 @@ private struct ProviderSection: View {
     }
 }
 
+private struct InlineWebView: UIViewRepresentable {
+    let url: URL
+    let prefillCode: String?
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(prefillCode: prefillCode)
+    }
+
+    func makeUIView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        configuration.websiteDataStore = .default()
+
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.allowsBackForwardNavigationGestures = true
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
+        webView.load(URLRequest(url: url))
+        return webView
+    }
+
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        context.coordinator.prefillCode = prefillCode
+        if webView.url != url {
+            webView.load(URLRequest(url: url))
+        }
+    }
+
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+        var prefillCode: String?
+
+        init(prefillCode: String?) {
+            self.prefillCode = prefillCode
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            scheduleAutofill(in: webView)
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            createWebViewWith configuration: WKWebViewConfiguration,
+            for navigationAction: WKNavigationAction,
+            windowFeatures: WKWindowFeatures
+        ) -> WKWebView? {
+            if let targetURL = navigationAction.request.url {
+                webView.load(URLRequest(url: targetURL))
+            }
+            return nil
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            decidePolicyFor navigationAction: WKNavigationAction,
+            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+        ) {
+            if navigationAction.targetFrame == nil, let targetURL = navigationAction.request.url {
+                webView.load(URLRequest(url: targetURL))
+                decisionHandler(.cancel)
+                return
+            }
+            decisionHandler(.allow)
+        }
+
+        private func scheduleAutofill(in webView: WKWebView) {
+            attemptAutofill(in: webView)
+            let delays: [TimeInterval] = [0.35, 0.9, 1.8, 3.0]
+            for delay in delays {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self, weak webView] in
+                    guard let self, let webView else { return }
+                    self.attemptAutofill(in: webView)
+                }
+            }
+        }
+
+        private func attemptAutofill(in webView: WKWebView) {
+            guard let code = prefillCode?.replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+                  !code.isEmpty else {
+                return
+            }
+
+            let script = """
+            (function() {
+              const code = '\(code)';
+              const candidates = Array.from(document.querySelectorAll('input, textarea, [contenteditable="true"]')).filter((element) => {
+                if (element.disabled || element.readOnly) return false;
+                const style = window.getComputedStyle(element);
+                return style.display !== 'none' && style.visibility !== 'hidden';
+              });
+              const target = candidates.find((element) => {
+                const description = [
+                  element.name || '',
+                  element.id || '',
+                  element.placeholder || '',
+                  element.getAttribute('aria-label') || '',
+                  element.getAttribute('autocomplete') || ''
+                ].join(' ').toLowerCase();
+                return /code|otp|verification|device|user/.test(description);
+              }) || candidates[0];
+
+              if (!target) return 'no-input';
+
+              target.focus();
+              if (target.isContentEditable) {
+                target.textContent = code;
+              } else {
+                target.value = code;
+              }
+              target.dispatchEvent(new InputEvent('input', { bubbles: true, data: code, inputType: 'insertText' }));
+              target.dispatchEvent(new Event('change', { bubbles: true }));
+              const submitButton = Array.from(document.querySelectorAll('button, input[type="submit"]')).find((element) => {
+                const label = (element.innerText || element.value || element.getAttribute('aria-label') || '').toLowerCase();
+                return /continue|next|verify|submit/.test(label);
+              });
+              if (submitButton) {
+                submitButton.click();
+              }
+              return 'filled';
+            })();
+            """
+
+            webView.evaluateJavaScript(script)
+        }
+    }
+}
+
 // MARK: - Local Model Section
 
 private struct LocalModelSection: View {
@@ -642,8 +1155,7 @@ private struct LocalModelSection: View {
             Button("Add") {
                 let id = newModelId.trimmingCharacters(in: .whitespaces)
                 guard !id.isEmpty else { return }
-                // Use last path component as display name
-                let name = id.components(separatedBy: "/").last ?? id
+                let name = LocalModel.defaultDisplayName(for: id)
                 localModelManager.addModel(id: id, displayName: name)
             }
         } message: {
@@ -696,6 +1208,15 @@ private struct LocalModelRow: View {
                             Text(model.displayName)
                                 .font(.subheadline)
                                 .foregroundColor(AppColors.text)
+                            if model.isExperimental {
+                                Text("Experimental")
+                                    .font(.caption2)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(AppColors.orange.opacity(0.14))
+                                    .foregroundColor(AppColors.orange)
+                                    .clipShape(Capsule())
+                            }
                             if isPreferred {
                                 Text("Preferred")
                                     .font(.caption2)

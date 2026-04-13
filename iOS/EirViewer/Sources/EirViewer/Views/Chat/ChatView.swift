@@ -13,6 +13,8 @@ struct ChatView: View {
     @State private var showOnboarding = false
     @State private var showConversations = false
     @State private var showDictation = false
+    @State private var showDataSources = false
+    @State private var showRecordSelection = false
     @FocusState private var isComposerFocused: Bool
 
     var body: some View {
@@ -21,6 +23,8 @@ struct ChatView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
+                dataSourceBanner
+
                 if chatThreadStore.messages.isEmpty {
                     emptyState
                 } else {
@@ -77,6 +81,14 @@ struct ChatView: View {
         .navigationTitle("Eir")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showDataSources = true
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                }
+                .accessibilityLabel("Choose Chat Data Sources")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 HStack(spacing: 12) {
                     Button {
@@ -100,6 +112,27 @@ struct ChatView: View {
         }
         .sheet(isPresented: $showConversations) {
             ConversationListSheet()
+        }
+        .sheet(isPresented: $showDataSources) {
+            ChatDataSourcesSheet(
+                selectedProfile: profileStore.selectedProfile,
+                document: documentVM.document,
+                recordsEnabled: recordsEnabled,
+                selectedRecordCount: selectedRecordCount,
+                onToggleRecords: { enabled in
+                    guard let profileID = profileStore.selectedProfileID else { return }
+                    profileStore.setUseRecordsInChat(enabled, for: profileID)
+                },
+                onManageRecords: {
+                    showDataSources = false
+                    showRecordSelection = true
+                }
+            )
+        }
+        .sheet(isPresented: $showRecordSelection) {
+            ChatRecordSelectionSheet()
+                .environmentObject(documentVM)
+                .environmentObject(profileStore)
         }
         .sheet(isPresented: $showDictation) {
             VoiceNoteComposerSheet(title: "Voice Note") { draft in
@@ -271,26 +304,174 @@ struct ChatView: View {
         !chatVM.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private var recordsEnabled: Bool {
+        guard let profileID = profileStore.selectedProfileID else { return false }
+        return profileStore.useRecordsInChat(for: profileID)
+    }
+
+    private var chatDocument: EirDocument? {
+        guard recordsEnabled, let profileID = profileStore.selectedProfileID else { return nil }
+        return profileStore.selectedRecordsDocument(for: profileID, document: documentVM.document)
+    }
+
+    private var dataSourceSubtitle: String {
+        if recordsEnabled {
+            let name = displayProfileName
+            if let totalEntries = profileStore.selectedProfile?.totalEntries {
+                return "\(name) • \(selectedRecordCount) of \(totalEntries) selected"
+            }
+            return "\(name) • available in State"
+        }
+        return "Only your messages and conversation context"
+    }
+
+    private var selectedRecordCount: Int {
+        guard let profileID = profileStore.selectedProfileID else { return 0 }
+        return profileStore.selectedRecordCount(for: profileID, document: documentVM.document)
+    }
+
+    private var displayProfileName: String {
+        guard let name = profileStore.selectedProfile?.displayName, !name.isEmpty else {
+            return "Selected profile"
+        }
+        return name.localizedCaseInsensitiveContains("sample") ? "Sample Data" : name
+    }
+
+    private var dataSourceBanner: some View {
+        Button {
+            showDataSources = true
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: recordsEnabled ? "doc.text" : "text.bubble")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(recordsEnabled ? AppColors.primaryStrong : AppColors.textSecondary)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(recordsEnabled ? "Using selected records" : "Using chat only")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppColors.text)
+                    Text(dataSourceSubtitle)
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(AppColors.card)
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AppColors.border.opacity(0.45), lineWidth: 1)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
+        }
+        .buttonStyle(.plain)
+    }
+
     private var emptyStateSubtitle: String {
-        if documentVM.document != nil {
+        if chatDocument != nil {
             return "Talk through symptoms, records, next steps, or questions to bring to care."
         }
         return "You can use Eir for reflection, health questions, next actions, and care preparation."
     }
 
     private var suggestedPrompts: [String] {
-        if documentVM.document != nil {
+        switch interfaceLanguage {
+        case .swedish:
+            if chatDocument != nil {
+                return [
+                    "Vad är viktigaste händelserna i mina journaler?",
+                    "Vad bör jag vara uppmärksam på just nu?",
+                    "Hjälp mig förbereda frågor till vården"
+                ]
+            }
             return [
-                "What stands out in my recent records?",
-                "What should I pay attention to right now?",
-                "Help me prepare questions for care"
+                "Hur kommer jag igång med Eir?",
+                "Hjälp mig beskriva hur jag mår idag",
+                "Vad är en bra sak jag kan göra just nu?"
+            ]
+        case .arabic:
+            if chatDocument != nil {
+                return [
+                    "ما أهم الأحداث في سجلاتي الطبية؟",
+                    "ما الذي ينبغي أن أنتبه له الآن؟",
+                    "ساعدني في تحضير أسئلة للرعاية"
+                ]
+            }
+            return [
+                "كيف أبدأ باستخدام إير؟",
+                "ساعدني في وصف كيف أشعر اليوم",
+                "ما إجراء جيد يمكنني القيام به الآن؟"
+            ]
+        case .finnish:
+            if chatDocument != nil {
+                return [
+                    "Mitkä ovat tärkeimmät tapahtumat potilastiedoissani?",
+                    "Mihin minun pitäisi kiinnittää huomiota juuri nyt?",
+                    "Auta minua valmistautumaan hoitoa koskeviin kysymyksiin"
+                ]
+            }
+            return [
+                "Miten pääsen alkuun Eirin kanssa?",
+                "Auta minua kuvaamaan, miltä minusta tuntuu tänään",
+                "Mikä olisi yksi hyvä teko juuri nyt?"
+            ]
+        case .polish:
+            if chatDocument != nil {
+                return [
+                    "Jakie są najważniejsze wydarzenia w mojej dokumentacji medycznej?",
+                    "Na co powinienem teraz zwrócić uwagę?",
+                    "Pomóż mi przygotować pytania do opieki zdrowotnej"
+                ]
+            }
+            return [
+                "Jak zacząć korzystać z Eir?",
+                "Pomóż mi opisać, jak się dziś czuję",
+                "Jaki jeden dobry krok mogę zrobić teraz?"
+            ]
+        case .somali:
+            if chatDocument != nil {
+                return [
+                    "Maxay yihiin dhacdooyinka ugu muhiimsan ee ku jira diiwaannadayda caafimaad?",
+                    "Maxaan hadda fiiro gaar ah u yeeshaa?",
+                    "Iga caawi inaan diyaariyo su'aalaha aan daryeelka u qaadanayo"
+                ]
+            }
+            return [
+                "Sideen ugu bilaabaa Eir?",
+                "Iga caawi inaan sharaxo sida aan maanta dareemayo",
+                "Maxay tahay hal tallaabo oo fiican oo aan hadda qaadi karo?"
+            ]
+        case .english:
+            if chatDocument != nil {
+                return [
+                    "What stands out in my recent records?",
+                    "What should I pay attention to right now?",
+                    "Help me prepare questions for care"
+                ]
+            }
+            return [
+                "How should I get started with Eir?",
+                "Help me describe how I feel today",
+                "What is one good action I can take right now?"
             ]
         }
-        return [
-            "How should I get started with Eir?",
-            "Help me describe how I feel today",
-            "What is one good action I can take right now?"
-        ]
+    }
+
+    private var interfaceLanguage: SupportedChatLanguage {
+        if let explicit = settingsVM.responseLanguagePreference.explicitLanguage {
+            return explicit
+        }
+        return settingsVM.resolvedInterfaceLanguage
     }
 
     private func sendMessage() {
@@ -298,7 +479,7 @@ struct ChatView: View {
         isComposerFocused = false
         let includeFollowUpQuestions = profileStore.showChatFollowUpSuggestions(for: profileID)
         chatVM.sendMessage(
-            document: documentVM.document,
+            document: chatDocument,
             settingsVM: settingsVM,
             chatThreadStore: chatThreadStore,
             profileID: profileID,
@@ -318,7 +499,7 @@ struct ChatView: View {
         let includeFollowUpQuestions = profileStore.showChatFollowUpSuggestions(for: profileID)
         await chatVM.sendVoiceNote(
             draft,
-            document: documentVM.document,
+            document: chatDocument,
             settingsVM: settingsVM,
             chatThreadStore: chatThreadStore,
             profileID: profileID,
@@ -326,5 +507,186 @@ struct ChatView: View {
             localModelManager: localModelManager,
             includeFollowUpQuestions: includeFollowUpQuestions
         )
+    }
+}
+
+private struct ChatDataSourcesSheet: View {
+    let selectedProfile: PersonProfile?
+    let document: EirDocument?
+    let recordsEnabled: Bool
+    let selectedRecordCount: Int
+    let onToggleRecords: (Bool) -> Void
+    let onManageRecords: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Used In Chat") {
+                    LabeledContent("Conversation") {
+                        Text("Always")
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    Toggle("Selected profile records", isOn: Binding(
+                        get: { recordsEnabled },
+                        set: onToggleRecords
+                    ))
+
+                    if recordsEnabled, let totalEntries = document?.entries.count {
+                        LabeledContent("Selected entries") {
+                            Text("\(selectedRecordCount) of \(totalEntries)")
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+
+                        Button("Choose records") {
+                            onManageRecords()
+                        }
+                    }
+                }
+
+                Section("Current Source") {
+                    if let selectedProfile {
+                        LabeledContent("Profile") {
+                            Text(displayName(for: selectedProfile))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        if let totalEntries = selectedProfile.totalEntries {
+                            LabeledContent("Entries") {
+                                Text("\(totalEntries)")
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+                        LabeledContent("File") {
+                            Text(selectedProfile.fileName)
+                                .foregroundColor(AppColors.textSecondary)
+                                .lineLimit(1)
+                        }
+
+                        Button("Open State Data") {
+                            NotificationCenter.default.post(name: .navigateToState, object: nil)
+                            dismiss()
+                        }
+                    } else {
+                        Text("No profile is selected.")
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+
+                Section {
+                    Text(recordsEnabled
+                         ? "Chat can use the selected profile records together with your messages."
+                         : "Chat will answer from your messages and general guidance only.")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+            .navigationTitle("Chat Data")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func displayName(for profile: PersonProfile) -> String {
+        profile.displayName.localizedCaseInsensitiveContains("sample") ? "Sample Data" : profile.displayName
+    }
+}
+
+private struct ChatRecordSelectionSheet: View {
+    @EnvironmentObject private var documentVM: DocumentViewModel
+    @EnvironmentObject private var profileStore: ProfileStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let profileID = profileStore.selectedProfileID,
+                   let document = documentVM.document {
+                    List {
+                        Section {
+                            LabeledContent("Selected") {
+                                Text("\(selectedCount(for: profileID, document: document)) of \(filteredEntries(in: document).count)")
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+
+                            HStack {
+                                Button("Select All") {
+                                    profileStore.selectAllRecordsForChat(for: profileID)
+                                }
+
+                                Spacer()
+
+                                Button("Deselect All") {
+                                    profileStore.deselectAllRecordsForChat(for: profileID, document: document)
+                                }
+                                .foregroundStyle(AppColors.red)
+                            }
+                            .font(.subheadline.weight(.semibold))
+                        }
+
+                        Section("Records") {
+                            ForEach(filteredEntries(in: document)) { entry in
+                                Toggle(isOn: Binding(
+                                    get: { profileStore.isRecordIncludedInChat(entry.id, for: profileID) },
+                                    set: { included in
+                                        profileStore.setRecordIncludedInChat(included, entryID: entry.id, for: profileID)
+                                    }
+                                )) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(entry.content?.summary ?? entry.type ?? entry.id)
+                                            .foregroundColor(AppColors.text)
+                                        Text(entry.displayDate)
+                                            .font(.caption)
+                                            .foregroundColor(AppColors.textSecondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .searchable(text: $searchText, prompt: "Search records...")
+                } else {
+                    ContentUnavailableView(
+                        "No records available",
+                        systemImage: "doc.text.magnifyingglass",
+                        description: Text("Select a profile with records to choose which entries chat can use.")
+                    )
+                }
+            }
+            .navigationTitle("Choose Records")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func selectedCount(for profileID: UUID, document: EirDocument) -> Int {
+        filteredEntries(in: document).filter { profileStore.isRecordIncludedInChat($0.id, for: profileID) }.count
+    }
+
+    private func filteredEntries(in document: EirDocument) -> [EirEntry] {
+        let entries = document.entries
+        guard !searchText.isEmpty else { return entries }
+        return entries.filter { entry in
+            entry.content?.summary?.localizedCaseInsensitiveContains(searchText) == true ||
+            entry.content?.details?.localizedCaseInsensitiveContains(searchText) == true ||
+            entry.content?.notes?.contains(where: { $0.localizedCaseInsensitiveContains(searchText) }) == true ||
+            entry.category?.localizedCaseInsensitiveContains(searchText) == true ||
+            entry.provider?.name?.localizedCaseInsensitiveContains(searchText) == true ||
+            entry.type?.localizedCaseInsensitiveContains(searchText) == true ||
+            entry.id.localizedCaseInsensitiveContains(searchText)
+        }
     }
 }

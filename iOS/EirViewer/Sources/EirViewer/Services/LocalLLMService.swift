@@ -18,18 +18,19 @@ actor LocalLLMService {
         Memory.cacheLimit = 512 * 1024 * 1024
 
         let modelConfig = ModelConfiguration(id: id)
-        let container = try await LLMModelFactory.shared.loadContainer(
-            from: HuggingFaceHubDownloader(),
+        let container = try await loadModelContainer(
+            from: HuggingFaceDownloaderBridge(),
             using: TransformersTokenizerLoader(),
-            configuration: modelConfig
-        ) { progress in
-            Task { @MainActor in
-                NotificationCenter.default.post(
-                    name: .localModelDownloadProgress,
-                    object: progress.fractionCompleted
-                )
+            configuration: modelConfig,
+            progressHandler: { progress in
+                Task { @MainActor in
+                    NotificationCenter.default.post(
+                        name: .localModelDownloadProgress,
+                        object: progress.fractionCompleted
+                    )
+                }
             }
-        }
+        )
 
         modelContainer = container
         currentModelId = id
@@ -149,7 +150,24 @@ extension Notification.Name {
     static let localModelDownloadProgress = Notification.Name("localModelDownloadProgress")
 }
 
-private struct HuggingFaceHubDownloader: MLXLMCommon.Downloader {
+private enum HuggingFaceDownloaderBridgeError: LocalizedError {
+    case invalidRepositoryID(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidRepositoryID(let id):
+            return "Invalid Hugging Face repository ID: \(id)"
+        }
+    }
+}
+
+private struct HuggingFaceDownloaderBridge: Downloader {
+    private let upstream: HubClient
+
+    init(upstream: HubClient = .default) {
+        self.upstream = upstream
+    }
+
     func download(
         id: String,
         revision: String?,
@@ -157,11 +175,11 @@ private struct HuggingFaceHubDownloader: MLXLMCommon.Downloader {
         useLatest: Bool,
         progressHandler: @Sendable @escaping (Progress) -> Void
     ) async throws -> URL {
-        guard let repoID = HuggingFace.Repo.ID(rawValue: id) else {
-            throw MLXLMHuggingFaceError.invalidRepositoryID(id)
+        guard let repoID = Repo.ID(rawValue: id) else {
+            throw HuggingFaceDownloaderBridgeError.invalidRepositoryID(id)
         }
 
-        return try await HubClient().downloadSnapshot(
+        return try await upstream.downloadSnapshot(
             of: repoID,
             revision: revision ?? "main",
             matching: patterns,
@@ -172,17 +190,17 @@ private struct HuggingFaceHubDownloader: MLXLMCommon.Downloader {
     }
 }
 
-private struct TransformersTokenizerLoader: MLXLMCommon.TokenizerLoader {
+private struct TransformersTokenizerLoader: TokenizerLoader {
     func load(from directory: URL) async throws -> any MLXLMCommon.Tokenizer {
-        let upstream = try await AutoTokenizer.from(modelFolder: directory)
-        return TokenizerBridge(upstream)
+        let tokenizer = try await AutoTokenizer.from(modelFolder: directory)
+        return TransformersTokenizerBridge(upstream: tokenizer)
     }
 }
 
-private struct TokenizerBridge: MLXLMCommon.Tokenizer {
+private struct TransformersTokenizerBridge: MLXLMCommon.Tokenizer {
     private let upstream: any Tokenizers.Tokenizer
 
-    init(_ upstream: any Tokenizers.Tokenizer) {
+    init(upstream: any Tokenizers.Tokenizer) {
         self.upstream = upstream
     }
 
@@ -219,17 +237,6 @@ private struct TokenizerBridge: MLXLMCommon.Tokenizer {
             )
         } catch Tokenizers.TokenizerError.missingChatTemplate {
             throw MLXLMCommon.TokenizerError.missingChatTemplate
-        }
-    }
-}
-
-private enum MLXLMHuggingFaceError: LocalizedError {
-    case invalidRepositoryID(String)
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidRepositoryID(let id):
-            return "Invalid Hugging Face repository ID: '\(id)'. Expected format 'namespace/name'."
         }
     }
 }

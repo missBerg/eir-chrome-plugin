@@ -9,6 +9,8 @@ struct EntryDetailView: View {
     @EnvironmentObject var chatThreadStore: ChatThreadStore
     @EnvironmentObject var agentMemoryStore: AgentMemoryStore
     @EnvironmentObject var localModelManager: LocalModelManager
+    @EnvironmentObject var translationStore: JournalTranslationStore
+    @State private var requestedTranslationLanguage: SupportedChatLanguage?
 
     var body: some View {
         ScrollView {
@@ -40,7 +42,7 @@ struct EntryDetailView: View {
                 }
 
                 // Summary
-                if let summary = entry.content?.summary {
+                if let summary = translationStore.summary(for: entry) {
                     Text(summary)
                         .font(.title2)
                         .fontWeight(.bold)
@@ -52,6 +54,10 @@ struct EntryDetailView: View {
                     Text(type)
                         .font(.title3)
                         .foregroundColor(AppColors.textSecondary)
+                }
+
+                if !translationStore.availableLanguages(for: entry).isEmpty {
+                    translationLanguageChips
                 }
 
                 Divider()
@@ -94,7 +100,7 @@ struct EntryDetailView: View {
                 }
 
                 // Details
-                if let details = entry.content?.details, !details.isEmpty {
+                if let details = translationStore.details(for: entry), !details.isEmpty {
                     GroupBox(entry.detailSectionTitle) {
                         Text(details)
                             .font(.body)
@@ -105,7 +111,7 @@ struct EntryDetailView: View {
                 }
 
                 // Notes
-                if let notes = entry.content?.notes, !notes.isEmpty {
+                if let notes = translationStore.notes(for: entry), !notes.isEmpty {
                     GroupBox(entry.notesSectionTitle) {
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(notes, id: \.self) { note in
@@ -154,6 +160,32 @@ struct EntryDetailView: View {
         .background(AppColors.background)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    ForEach(translationTargets, id: \.self) { language in
+                        Button(language.displayName) {
+                            requestedTranslationLanguage = language
+                            Task {
+                                await translationStore.translateEntry(
+                                    entry,
+                                    to: language,
+                                    settingsVM: settingsVM,
+                                    localModelManager: localModelManager
+                                )
+                            }
+                        }
+                    }
+
+                    if translationStore.selectedLanguage != nil {
+                        Divider()
+                        Button("Show Original") {
+                            translationStore.setSelectedLanguage(nil)
+                        }
+                    }
+                } label: {
+                    Label("Translate", systemImage: "globe")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     guard let profileID = profileStore.selectedProfileID else { return }
                     let includeFollowUpQuestions = profileStore.showChatFollowUpSuggestions(for: profileID)
@@ -172,5 +204,95 @@ struct EntryDetailView: View {
                 }
             }
         }
+        .overlay(alignment: .bottom) {
+            if translationStore.isTranslating, requestedTranslationLanguage != nil {
+                VStack(spacing: 6) {
+                    ProgressView(value: translationStore.progress) {
+                        Text("Translating note...")
+                    }
+                    if translationStore.totalEntries > 0 {
+                        Text("\(translationStore.currentEntryIndex) of \(translationStore.totalEntries)")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .padding(.bottom, 20)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if let profileID = profileStore.selectedProfileID {
+                recordSelectionBar(profileID: profileID)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                    .background(AppColors.background.opacity(0.96))
+            }
+        }
+    }
+
+    private var translationTargets: [SupportedChatLanguage] {
+        SupportedChatLanguage.swedenPriorityLanguages
+    }
+
+    private var translationLanguageChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                translationChip(title: "Original", isSelected: translationStore.selectedLanguage == nil) {
+                    translationStore.setSelectedLanguage(nil)
+                }
+
+                ForEach(translationStore.availableLanguages(for: entry), id: \.self) { language in
+                    translationChip(title: language.displayName, isSelected: translationStore.selectedLanguage == language) {
+                        translationStore.setSelectedLanguage(language)
+                    }
+                }
+            }
+        }
+    }
+
+    private func translationChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(isSelected ? .white : AppColors.text)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(isSelected ? AppColors.primary : AppColors.backgroundMuted)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func recordSelectionBar(profileID: UUID) -> some View {
+        let included = profileStore.isRecordIncludedInChat(entry.id, for: profileID)
+
+        Button {
+            profileStore.setRecordIncludedInChat(!included, entryID: entry.id, for: profileID)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: included ? "checkmark.circle.fill" : "minus.circle")
+                    .foregroundStyle(included ? AppColors.primary : AppColors.orange)
+                Text(included ? "Used in Chat" : "Excluded from Chat")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppColors.text)
+                Spacer()
+                Text(included ? "Tap to remove" : "Tap to include")
+                    .font(.caption)
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(AppColors.card)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AppColors.border.opacity(0.5), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }

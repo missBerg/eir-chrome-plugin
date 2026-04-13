@@ -7,6 +7,191 @@ import DeviceCheck
 
 private let managedCloudKeyVersion = "v2"
 
+enum ResponseLanguagePreference: String, CaseIterable, Identifiable, Codable {
+    case automatic
+    case english
+    case swedish
+    case arabic
+    case finnish
+    case polish
+    case somali
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .automatic:
+            return "Automatic"
+        case .english:
+            return "English"
+        case .swedish:
+            return "Swedish"
+        case .arabic:
+            return "Arabic"
+        case .finnish:
+            return "Finnish"
+        case .polish:
+            return "Polish"
+        case .somali:
+            return "Somali"
+        }
+    }
+
+    var explicitLanguage: SupportedChatLanguage? {
+        switch self {
+        case .automatic:
+            return nil
+        case .english:
+            return .english
+        case .swedish:
+            return .swedish
+        case .arabic:
+            return .arabic
+        case .finnish:
+            return .finnish
+        case .polish:
+            return .polish
+        case .somali:
+            return .somali
+        }
+    }
+}
+
+enum SupportedChatLanguage: String, CaseIterable, Identifiable, Codable {
+    case english = "en"
+    case swedish = "sv"
+    case arabic = "ar"
+    case finnish = "fi"
+    case polish = "pl"
+    case somali = "so"
+
+    var id: String { rawValue }
+
+    static let swedenPriorityLanguages: [SupportedChatLanguage] = [
+        .swedish,
+        .english,
+        .arabic,
+        .finnish,
+        .polish,
+        .somali,
+    ]
+
+    var displayName: String {
+        switch self {
+        case .english:
+            return "English"
+        case .swedish:
+            return "Swedish"
+        case .arabic:
+            return "Arabic"
+        case .finnish:
+            return "Finnish"
+        case .polish:
+            return "Polish"
+        case .somali:
+            return "Somali"
+        }
+    }
+
+    var promptName: String {
+        switch self {
+        case .english:
+            return "English"
+        case .swedish:
+            return "Swedish"
+        case .arabic:
+            return "Arabic"
+        case .finnish:
+            return "Finnish"
+        case .polish:
+            return "Polish"
+        case .somali:
+            return "Somali"
+        }
+    }
+
+    var localeIdentifier: String {
+        switch self {
+        case .english:
+            return "en-US"
+        case .swedish:
+            return "sv-SE"
+        case .arabic:
+            return "ar"
+        case .finnish:
+            return "fi-FI"
+        case .polish:
+            return "pl-PL"
+        case .somali:
+            return "so-SO"
+        }
+    }
+
+    var usesRightToLeftLayout: Bool {
+        self == .arabic
+    }
+
+    static func from(localeIdentifier: String) -> SupportedChatLanguage {
+        let normalized = localeIdentifier.lowercased()
+        if normalized.hasPrefix("sv") { return .swedish }
+        if normalized.hasPrefix("ar") { return .arabic }
+        if normalized.hasPrefix("fi") { return .finnish }
+        if normalized.hasPrefix("pl") { return .polish }
+        if normalized.hasPrefix("so") { return .somali }
+        return .english
+    }
+}
+
+enum InterfaceLanguagePreference: String, CaseIterable, Identifiable, Codable {
+    case system
+    case english
+    case swedish
+    case arabic
+    case finnish
+    case polish
+    case somali
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .system:
+            return "System"
+        case .english:
+            return "English"
+        case .swedish:
+            return "Svenska"
+        case .arabic:
+            return "العربية"
+        case .finnish:
+            return "Suomi"
+        case .polish:
+            return "Polski"
+        case .somali:
+            return "Soomaali"
+        }
+    }
+
+    var explicitLanguage: SupportedChatLanguage? {
+        switch self {
+        case .system:
+            return nil
+        case .english:
+            return .english
+        case .swedish:
+            return .swedish
+        case .arabic:
+            return .arabic
+        case .finnish:
+            return .finnish
+        case .polish:
+            return .polish
+        case .somali:
+            return .somali
+        }
+    }
+}
+
 @MainActor
 class SettingsViewModel: ObservableObject {
     static let eirTrialRequestsPerToken = 100
@@ -15,6 +200,10 @@ class SettingsViewModel: ObservableObject {
     private static let localDefaultMigrationKey = "eir_default_provider_local_migration_v1"
     private static let providerSelectionKey = "eir_has_explicitly_selected_provider_v1"
     private static let voiceTranscriptPolishKey = "eir_voice_transcript_polish_enabled_v1"
+    private static let responseLanguageKey = "eir_response_language_preference_v1"
+    private static let interfaceLanguageKey = "eir_interface_language_preference_v1"
+    private static let openAIAccountSessionKey = "eir_openai_account_session_v1"
+    private static let openAIAvailableModelsKey = "eir_openai_available_models_v1"
 
     @Published var providers: [LLMProviderConfig]
     @Published var activeProviderType: LLMProviderType
@@ -28,10 +217,29 @@ class SettingsViewModel: ObservableObject {
             UserDefaults.standard.set(voiceTranscriptPolishEnabled, forKey: Self.voiceTranscriptPolishKey)
         }
     }
+    @Published var responseLanguagePreference: ResponseLanguagePreference {
+        didSet {
+            UserDefaults.standard.set(responseLanguagePreference.rawValue, forKey: Self.responseLanguageKey)
+        }
+    }
+    @Published var interfaceLanguagePreference: InterfaceLanguagePreference {
+        didSet {
+            UserDefaults.standard.set(interfaceLanguagePreference.rawValue, forKey: Self.interfaceLanguageKey)
+        }
+    }
     @Published var customPrompts: [PromptVersion] {
         didSet { saveCustomPrompts() }
     }
     @Published private(set) var managedAccessSnapshots: [LLMProviderType: ManagedCloudAccessSnapshot]
+    @Published private(set) var openAIAccountSession: OpenAIAccountSession?
+    @Published private(set) var pendingOpenAIDeviceCode: OpenAIDeviceCode?
+    @Published private(set) var isOpenAIAccountBusy = false
+    @Published private(set) var openAIAvailableModels: [String]
+    @Published private(set) var isRefreshingOpenAIModels = false
+    @Published var openAIAccountError: String?
+
+    private let openAIAccountAuthService = OpenAIAccountAuthService()
+    private var openAIAccountPollingTask: Task<Void, Never>?
 
     init() {
         let saved = Self.loadProviders()
@@ -40,8 +248,12 @@ class SettingsViewModel: ObservableObject {
         self.activePromptVersionId = UserDefaults.standard.string(forKey: "eir_active_prompt_version")
             ?? PromptLibrary.defaultVersionId
         self.voiceTranscriptPolishEnabled = UserDefaults.standard.object(forKey: Self.voiceTranscriptPolishKey) as? Bool ?? true
+        self.responseLanguagePreference = Self.loadResponseLanguagePreference()
+        self.interfaceLanguagePreference = Self.loadInterfaceLanguagePreference()
         self.customPrompts = Self.loadCustomPrompts()
         self.managedAccessSnapshots = Self.loadManagedAccessSnapshots()
+        self.openAIAccountSession = Self.loadOpenAIAccountSession()
+        self.openAIAvailableModels = Self.loadOpenAIAvailableModels()
 
         if !(PromptLibrary.versions + customPrompts).contains(where: { $0.id == activePromptVersionId }) {
             self.activePromptVersionId = PromptLibrary.defaultVersionId
@@ -52,6 +264,10 @@ class SettingsViewModel: ObservableObject {
             UserDefaults.standard.set(LLMProviderType.local.rawValue, forKey: "eir_active_provider")
             UserDefaults.standard.set(true, forKey: Self.localDefaultMigrationKey)
         }
+    }
+
+    deinit {
+        openAIAccountPollingTask?.cancel()
     }
 
     var activeProvider: LLMProviderConfig? {
@@ -111,8 +327,50 @@ class SettingsViewModel: ObservableObject {
         return []
     }
 
+    private static func loadResponseLanguagePreference() -> ResponseLanguagePreference {
+        guard let raw = UserDefaults.standard.string(forKey: Self.responseLanguageKey),
+              let preference = ResponseLanguagePreference(rawValue: raw) else {
+            return .automatic
+        }
+        return preference
+    }
+
+    private static func loadInterfaceLanguagePreference() -> InterfaceLanguagePreference {
+        guard let raw = UserDefaults.standard.string(forKey: Self.interfaceLanguageKey),
+              let preference = InterfaceLanguagePreference(rawValue: raw) else {
+            return .system
+        }
+        return preference
+    }
+
+    var resolvedInterfaceLanguage: SupportedChatLanguage {
+        if let explicit = interfaceLanguagePreference.explicitLanguage {
+            return explicit
+        }
+        let preferredLanguage = Locale.preferredLanguages.first ?? Locale.autoupdatingCurrent.identifier
+        return SupportedChatLanguage.from(localeIdentifier: preferredLanguage)
+    }
+
+    var interfaceLocale: Locale {
+        Locale(identifier: resolvedInterfaceLanguage.localeIdentifier)
+    }
+
+    var interfaceLayoutDirection: LayoutDirection {
+        resolvedInterfaceLanguage.usesRightToLeftLayout ? .rightToLeft : .leftToRight
+    }
+
     func apiKey(for type: LLMProviderType) -> String {
         KeychainService.get(key: "eir_api_key_\(type.rawValue)") ?? ""
+    }
+
+    func hasStoredCredential(for type: LLMProviderType) -> Bool {
+        if type == .openai {
+            return openAIAccountSession != nil || !apiKey(for: type).isEmpty
+        }
+        if type.usesManagedTrialAccess {
+            return hasManagedAccessToken(for: type)
+        }
+        return !apiKey(for: type).isEmpty
     }
 
     func setApiKey(_ key: String, for type: LLMProviderType) {
@@ -147,11 +405,117 @@ class SettingsViewModel: ObservableObject {
             return token
         }
 
+        if config.type == .openai, let session = openAIAccountSession {
+            do {
+                let refreshed = try await openAIAccountAuthService.usableSession(from: session)
+                if refreshed != session {
+                    storeOpenAIAccountSession(refreshed)
+                }
+                return refreshed.accessToken
+            } catch {
+                let fallbackKey = apiKey(for: config.type)
+                if !fallbackKey.isEmpty {
+                    return fallbackKey
+                }
+                throw error
+            }
+        }
+
         let key = apiKey(for: config.type)
         guard !key.isEmpty else {
             throw LLMError.noAPIKey
         }
         return key
+    }
+
+    func startOpenAIAccountSignIn() async {
+        openAIAccountPollingTask?.cancel()
+        openAIAccountError = nil
+        isOpenAIAccountBusy = true
+
+        do {
+            let deviceCode = try await openAIAccountAuthService.requestDeviceCode()
+            pendingOpenAIDeviceCode = deviceCode
+            isOpenAIAccountBusy = false
+
+            openAIAccountPollingTask = Task { [weak self] in
+                guard let self else { return }
+                await self.finishOpenAIAccountSignIn(with: deviceCode)
+            }
+        } catch {
+            pendingOpenAIDeviceCode = nil
+            isOpenAIAccountBusy = false
+            openAIAccountError = error.localizedDescription
+        }
+    }
+
+    func cancelOpenAIAccountSignIn() {
+        openAIAccountPollingTask?.cancel()
+        openAIAccountPollingTask = nil
+        pendingOpenAIDeviceCode = nil
+        isOpenAIAccountBusy = false
+    }
+
+    func refreshOpenAIAccountSignInStatus() async {
+        guard let deviceCode = pendingOpenAIDeviceCode else { return }
+        guard !isOpenAIAccountBusy else { return }
+        openAIAccountPollingTask?.cancel()
+        isOpenAIAccountBusy = true
+
+        openAIAccountPollingTask = Task { [weak self] in
+            guard let self else { return }
+            await self.finishOpenAIAccountSignIn(with: deviceCode)
+        }
+    }
+
+    func disconnectOpenAIAccount() {
+        cancelOpenAIAccountSignIn()
+        openAIAccountError = nil
+        clearOpenAIAccountSession()
+        setOpenAIAvailableModels([])
+    }
+
+    func refreshOpenAIAvailableModels(force: Bool = false) async {
+        guard let session = openAIAccountSession else { return }
+        if isRefreshingOpenAIModels { return }
+        if !force && !openAIAvailableModels.isEmpty { return }
+
+        isRefreshingOpenAIModels = true
+        defer { isRefreshingOpenAIModels = false }
+
+        do {
+            let usable = try await openAIAccountAuthService.usableSession(from: session)
+            if usable != session {
+                storeOpenAIAccountSession(usable)
+            }
+
+            let models = try await openAIAccountAuthService.fetchAvailableModels(accessToken: usable.accessToken)
+            setOpenAIAvailableModels(models)
+            applyBestAvailableOpenAIModelIfNeeded(from: models)
+        } catch {
+            if force {
+                openAIAccountError = error.localizedDescription
+            }
+        }
+    }
+
+    private func finishOpenAIAccountSignIn(with deviceCode: OpenAIDeviceCode) async {
+        do {
+            let session = try await openAIAccountAuthService.completeDeviceCodeLogin(deviceCode: deviceCode)
+            guard !Task.isCancelled else { return }
+            storeOpenAIAccountSession(session)
+            applyOpenAICodexDefaultsIfNeeded()
+            await refreshOpenAIAvailableModels(force: true)
+            pendingOpenAIDeviceCode = nil
+            isOpenAIAccountBusy = false
+            openAIAccountError = nil
+        } catch is CancellationError {
+            isOpenAIAccountBusy = false
+        } catch {
+            pendingOpenAIDeviceCode = nil
+            isOpenAIAccountBusy = false
+            openAIAccountError = error.localizedDescription
+        }
     }
 
     @discardableResult
@@ -314,6 +678,93 @@ class SettingsViewModel: ObservableObject {
         return .local
     }
 
+    private static func loadOpenAIAccountSession() -> OpenAIAccountSession? {
+        guard let raw = KeychainService.get(key: Self.openAIAccountSessionKey),
+              let data = raw.data(using: .utf8) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(OpenAIAccountSession.self, from: data)
+    }
+
+    private static func loadOpenAIAvailableModels() -> [String] {
+        guard let data = UserDefaults.standard.data(forKey: Self.openAIAvailableModelsKey),
+              let models = try? JSONDecoder().decode([String].self, from: data) else {
+            return []
+        }
+        return models
+    }
+
+    private func storeOpenAIAccountSession(_ session: OpenAIAccountSession) {
+        guard let data = try? JSONEncoder().encode(session),
+              let raw = String(data: data, encoding: .utf8) else {
+            return
+        }
+        KeychainService.set(key: Self.openAIAccountSessionKey, value: raw)
+        openAIAccountSession = session
+        objectWillChange.send()
+    }
+
+    private func clearOpenAIAccountSession() {
+        KeychainService.delete(key: Self.openAIAccountSessionKey)
+        openAIAccountSession = nil
+        objectWillChange.send()
+    }
+
+    private func setOpenAIAvailableModels(_ models: [String]) {
+        openAIAvailableModels = models
+        if let data = try? JSONEncoder().encode(models) {
+            UserDefaults.standard.set(data, forKey: Self.openAIAvailableModelsKey)
+        }
+    }
+
+    private func applyOpenAICodexDefaultsIfNeeded() {
+        guard let index = providers.firstIndex(where: { $0.type == .openai }) else { return }
+        var config = providers[index]
+        var changed = false
+
+        if config.model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || config.model == "gpt-4.1" {
+            config.model = "gpt-5.4"
+            changed = true
+        }
+
+        if changed {
+            providers[index] = config
+            saveProviders()
+        }
+    }
+
+    private func applyBestAvailableOpenAIModelIfNeeded(from models: [String]) {
+        guard let index = providers.firstIndex(where: { $0.type == .openai }) else { return }
+        guard let preferred = preferredOpenAIModel(from: models) else { return }
+
+        let current = providers[index].model.trimmingCharacters(in: .whitespacesAndNewlines)
+        let shouldReplace = current.isEmpty
+            || current == LLMProviderType.openai.defaultModel
+            || current == "gpt-5.4"
+            || !models.contains(current)
+
+        guard shouldReplace else { return }
+        var config = providers[index]
+        config.model = preferred
+        providers[index] = config
+        saveProviders()
+    }
+
+    private func preferredOpenAIModel(from models: [String]) -> String? {
+        let priority = [
+            "gpt-5.4",
+            "gpt-5.2",
+            "gpt-5.1",
+            "gpt-5",
+            "gpt-4.1",
+            "gpt-4o",
+        ]
+        for candidate in priority where models.contains(candidate) {
+            return candidate
+        }
+        return models.first
+    }
+
     private static func shouldForceLocalDefault(current: LLMProviderType) -> Bool {
         if UserDefaults.standard.bool(forKey: Self.providerSelectionKey) {
             return false
@@ -424,6 +875,8 @@ final class PurchaseManager: ObservableObject {
     private var updatesTask: Task<Void, Never>?
 
     init() {
+        guard !AppRuntimeContext.isRunningTests else { return }
+
         updatesTask = Task {
             await observeTransactionUpdates()
         }

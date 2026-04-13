@@ -16,6 +16,10 @@ private enum JournalMode: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    var localizedTitle: LocalizedStringKey {
+        LocalizedStringKey(rawValue)
+    }
+
     var symbolName: String {
         switch self {
         case .overview:
@@ -39,11 +43,13 @@ struct JournalView: View {
     @EnvironmentObject var profileStore: ProfileStore
     @EnvironmentObject var settingsVM: SettingsViewModel
     @EnvironmentObject var localModelManager: LocalModelManager
+    @EnvironmentObject var translationStore: JournalTranslationStore
 
     @State private var mode: JournalMode = .overview
     @StateObject private var assessmentStore = AssessmentHistoryStore()
     @StateObject private var stateStore = StateCheckInStore()
     @State private var showingHealthKitImport = false
+    @State private var showingTranslationSheet = false
     @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
     @State private var qrExportURL: URL?
@@ -94,6 +100,14 @@ struct JournalView: View {
             .task(id: profileStore.selectedProfileID) {
                 assessmentStore.load(for: profileStore.selectedProfileID)
                 stateStore.load(for: profileStore.selectedProfileID)
+                translationStore.load(for: profileStore.selectedProfileID)
+            }
+            .safeAreaInset(edge: .top) {
+                if translationStore.isTranslating {
+                    translationProgressBanner
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                }
             }
             .background(AppColors.background)
     }
@@ -140,6 +154,17 @@ struct JournalView: View {
                     }
                 } label: {
                     Image(systemName: "square.and.arrow.up")
+                        .foregroundColor(AppColors.primary)
+                }
+            }
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+            if mode == .entries, hasEntries {
+                Button {
+                    showingTranslationSheet = true
+                } label: {
+                    Image(systemName: "globe")
                         .foregroundColor(AppColors.primary)
                 }
             }
@@ -207,6 +232,10 @@ struct JournalView: View {
             if hasEntries {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 16) {
+                        if !translationStore.availableLanguages(for: documentVM.filteredEntries).isEmpty {
+                            translationDisplayControls
+                        }
+
                         if let summary = appleHealthSummary {
                             appleHealthOverview(summary)
                         }
@@ -234,10 +263,45 @@ struct JournalView: View {
                     }
                     .padding()
                 }
+                .sheet(isPresented: $showingTranslationSheet) {
+                    HistoryTranslationSheet(entries: documentVM.filteredEntries)
+                        .environmentObject(settingsVM)
+                        .environmentObject(localModelManager)
+                        .environmentObject(translationStore)
+                }
             } else {
                 emptyJournalState
             }
         }
+    }
+
+    private var translationDisplayControls: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                translationDisplayChip(title: "Original", isSelected: translationStore.selectedLanguage == nil) {
+                    translationStore.setSelectedLanguage(nil)
+                }
+
+                ForEach(translationStore.availableLanguages(for: documentVM.filteredEntries), id: \.self) { language in
+                    translationDisplayChip(title: language.displayName, isSelected: translationStore.selectedLanguage == language) {
+                        translationStore.setSelectedLanguage(language)
+                    }
+                }
+            }
+        }
+    }
+
+    private func translationDisplayChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(isSelected ? .white : AppColors.text)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(isSelected ? AppColors.primary : AppColors.backgroundMuted)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     private var stateOverviewScreen: some View {
@@ -255,6 +319,50 @@ struct JournalView: View {
             }
             .padding()
         }
+    }
+
+    private var translationProgressBanner: some View {
+        Button {
+            showingTranslationSheet = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "globe")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppColors.primary)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Translating history")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppColors.text)
+
+                    if translationStore.totalEntries > 0 {
+                        Text("\(translationStore.currentEntryIndex) of \(translationStore.totalEntries)")
+                            .font(.caption)
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+                }
+
+                Spacer()
+
+                ProgressView(value: translationStore.progress)
+                    .tint(AppColors.primary)
+                    .frame(width: 72)
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(AppColors.card)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AppColors.border, lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
+        }
+        .buttonStyle(.plain)
     }
 
     private var importScreen: some View {
@@ -295,14 +403,14 @@ struct JournalView: View {
                 Button {
                     mode = item
                 } label: {
-                    Label(item.rawValue, systemImage: item.symbolName)
+                    Label(item.localizedTitle, systemImage: item.symbolName)
                 }
             }
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: mode.symbolName)
                     .font(.caption.weight(.bold))
-                Text(mode.rawValue)
+                Text(mode.localizedTitle)
                     .font(.caption.weight(.semibold))
                 Image(systemName: "chevron.down")
                     .font(.caption2.weight(.bold))

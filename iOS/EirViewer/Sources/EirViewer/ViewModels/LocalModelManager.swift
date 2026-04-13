@@ -3,6 +3,10 @@ import SwiftUI
 struct LocalModel: Identifiable, Codable, Equatable {
     var id: String          // HuggingFace model ID
     var displayName: String // Short name shown in UI
+
+    var isExperimental: Bool {
+        id == "birgermoell/gemma-2-2b-it-4bit-eir-swedish"
+    }
 }
 
 @MainActor
@@ -35,6 +39,7 @@ class LocalModelManager: ObservableObject {
     static let presets: [LocalModel] = [
         LocalModel(id: "mlx-community/gemma-4-e2b-it-4bit", displayName: "Gemma 4 E2B"),
         LocalModel(id: "mlx-community/gemma-4-e4b-it-4bit", displayName: "Gemma 4 E4B"),
+        LocalModel(id: "birgermoell/gemma-2-2b-it-4bit-eir-swedish", displayName: "Gemma 2 2B Eir Swedish"),
         LocalModel(id: "mlx-community/Qwen3.5-0.8B-4bit", displayName: "Qwen 3.5 0.8B (Fast)"),
         LocalModel(id: "mlx-community/Qwen3.5-2B-4bit", displayName: "Qwen 3.5 2B (Balanced)"),
         LocalModel(id: "mlx-community/Qwen3.5-4B-4bit", displayName: "Qwen 3.5 4B (Quality)"),
@@ -189,15 +194,18 @@ class LocalModelManager: ObservableObject {
             return
         }
 
-        if downloadingModelId == targetId {
+        while downloadingModelId == targetId {
             switch status {
-            case .downloading:
-                throw LLMError.requestFailed("The on-device model is still downloading.")
-            case .loading:
-                throw LLMError.requestFailed("The on-device model is still loading.")
+            case .downloading, .loading:
+                try await Task.sleep(nanoseconds: 300_000_000)
+                if activeModelId == targetId && status == .ready {
+                    return
+                }
+                continue
             default:
                 break
             }
+            break
         }
 
         await loadModel(targetId)
@@ -225,6 +233,27 @@ class LocalModelManager: ObservableObject {
     private func saveModels() {
         if let data = try? JSONEncoder().encode(models) {
             UserDefaults.standard.set(data, forKey: Self.modelsKey)
+        }
+    }
+}
+
+extension LocalModel {
+    static func defaultDisplayName(for id: String) -> String {
+        switch id {
+        case "mlx-community/gemma-4-e2b-it-4bit":
+            return "Gemma 4 E2B"
+        case "mlx-community/gemma-4-e4b-it-4bit":
+            return "Gemma 4 E4B"
+        case "birgermoell/gemma-2-2b-it-4bit-eir-swedish":
+            return "Gemma 2 2B Eir Swedish"
+        case "mlx-community/Qwen3.5-0.8B-4bit":
+            return "Qwen 3.5 0.8B (Fast)"
+        case "mlx-community/Qwen3.5-2B-4bit":
+            return "Qwen 3.5 2B (Balanced)"
+        case "mlx-community/Qwen3.5-4B-4bit":
+            return "Qwen 3.5 4B (Quality)"
+        default:
+            return id.components(separatedBy: "/").last ?? id
         }
     }
 }

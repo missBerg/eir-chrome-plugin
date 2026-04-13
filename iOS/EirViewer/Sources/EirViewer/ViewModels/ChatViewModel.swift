@@ -1,4 +1,5 @@
 import SwiftUI
+import NaturalLanguage
 
 @MainActor
 class ChatViewModel: ObservableObject {
@@ -12,7 +13,7 @@ class ChatViewModel: ObservableObject {
     private let maxToolIterations = 5
 
     // Pending message state for consent flow
-    private var pendingSendArgs: (EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?, Bool)?
+    private var pendingSendArgs: (EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?, Bool, SupportedChatLanguage?)?
     private var pendingVoiceNoteArgs: (RecordedVoiceNoteDraft, EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?, Bool)?
 
     static func hasCloudConsent(for provider: LLMProviderType) -> Bool {
@@ -43,7 +44,8 @@ class ChatViewModel: ObservableObject {
                         profileID: args.3,
                         agentMemoryStore: args.4,
                         localModelManager: args.5,
-                        includeFollowUpQuestions: args.6
+                        includeFollowUpQuestions: args.6,
+                        sourceLanguageHint: args.7
                     )
                 } catch {
                     errorMessage = error.localizedDescription
@@ -88,7 +90,8 @@ class ChatViewModel: ObservableObject {
         profileID: UUID,
         agentMemoryStore: AgentMemoryStore,
         localModelManager: LocalModelManager? = nil,
-        includeFollowUpQuestions: Bool = false
+        includeFollowUpQuestions: Bool = false,
+        sourceLanguageHint: SupportedChatLanguage? = nil
     ) {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isStreaming else { return }
@@ -100,7 +103,16 @@ class ChatViewModel: ObservableObject {
 
         // Check cloud consent before sending data to third-party providers
         if !config.type.isLocal && !Self.hasCloudConsent(for: config.type) {
-            pendingSendArgs = (document, settingsVM, chatThreadStore, profileID, agentMemoryStore, localModelManager, includeFollowUpQuestions)
+            pendingSendArgs = (
+                document,
+                settingsVM,
+                chatThreadStore,
+                profileID,
+                agentMemoryStore,
+                localModelManager,
+                includeFollowUpQuestions,
+                sourceLanguageHint
+            )
             pendingCloudConsent = config.type
             return
         }
@@ -121,9 +133,10 @@ class ChatViewModel: ObservableObject {
                 return
             }
         } else if config.type.requiresUserAPIKey {
-            let credential = settingsVM.apiKey(for: config.type)
-            guard !credential.isEmpty else {
-                errorMessage = "No API key set for \(config.type.rawValue). Add one in Settings."
+            guard settingsVM.hasStoredCredential(for: config.type) else {
+                errorMessage = config.type == .openai
+                    ? "No OpenAI account or API key is configured. Add one in Settings."
+                    : "No API key set for \(config.type.rawValue). Add one in Settings."
                 return
             }
         }
@@ -134,12 +147,19 @@ class ChatViewModel: ObservableObject {
         let assistantMessage = ChatMessage(role: .assistant, content: "")
         chatThreadStore.addMessage(assistantMessage)
         let assistantIndex = chatThreadStore.messages.count - 1
+        let resolvedSourceLanguage = Self.resolvedResponseLanguage(
+            preference: settingsVM.responseLanguagePreference,
+            userMessage: text,
+            sourceLanguageHint: sourceLanguageHint
+        )
 
         let systemPrompt = SystemPrompt.build(
             memory: agentMemoryStore.memory,
             document: document,
             includeToolInstructions: !config.type.isLocal,
-            allowFollowUpQuestions: includeFollowUpQuestions
+            allowFollowUpQuestions: includeFollowUpQuestions,
+            responseLanguagePreference: settingsVM.responseLanguagePreference,
+            sourceLanguage: resolvedSourceLanguage
         )
 
         // Build LLM messages from conversation history
@@ -175,7 +195,9 @@ class ChatViewModel: ObservableObject {
                 document: document,
                 userName: userName,
                 promptVersion: activeVersion,
-                allowFollowUpQuestions: includeFollowUpQuestions
+                allowFollowUpQuestions: includeFollowUpQuestions,
+                responseLanguagePreference: settingsVM.responseLanguagePreference,
+                sourceLanguage: resolvedSourceLanguage
             )
             let conversationId = chatThreadStore.selectedThreadID ?? UUID()
 
@@ -650,8 +672,108 @@ class ChatViewModel: ObservableObject {
             profileID: profileID,
             agentMemoryStore: agentMemoryStore,
             localModelManager: localModelManager,
-            includeFollowUpQuestions: includeFollowUpQuestions
+            includeFollowUpQuestions: includeFollowUpQuestions,
+            sourceLanguageHint: Self.detectLanguage(for: entry)
         )
+    }
+
+    private static func resolvedResponseLanguage(
+        preference: ResponseLanguagePreference,
+        userMessage: String,
+        sourceLanguageHint: SupportedChatLanguage?
+    ) -> SupportedChatLanguage? {
+        if let explicit = preference.explicitLanguage {
+            return explicit
+        }
+
+        if let sourceLanguageHint {
+            return sourceLanguageHint
+        }
+
+        return detectLanguage(in: userMessage)
+    }
+
+    private static func detectLanguage(for entry: EirEntry) -> SupportedChatLanguage? {
+        let components: [String] = [
+            entry.category,
+            entry.type,
+            entry.content?.summary,
+            entry.content?.details,
+            entry.content?.notes?.joined(separator: " "),
+            entry.provider?.name
+        ]
+        .compactMap { $0 }
+
+        return detectLanguage(in: components.joined(separator: "\n"))
+    }
+
+    private static func detectLanguage(in text: String) -> SupportedChatLanguage? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(trimmed)
+
+        if let dominantLanguage = recognizer.dominantLanguage {
+            switch dominantLanguage.rawValue {
+            case NLLanguage.swedish.rawValue:
+                return .swedish
+            case NLLanguage.english.rawValue:
+                return .english
+            case NLLanguage.arabic.rawValue:
+                return .arabic
+            case NLLanguage.finnish.rawValue:
+                return .finnish
+            case NLLanguage.polish.rawValue:
+                return .polish
+            case "so":
+                return .somali
+            default:
+                break
+            }
+        }
+
+        let lower = trimmed.lowercased()
+        let swedishSignals = [" och ", " att ", " det ", " som ", " är ", " för ", " vård", " besök", " anteckning", " journal"]
+        let englishSignals = [" the ", " and ", " with ", " visit ", " note ", " record ", " what ", " your ", " health "]
+        let arabicSignals = [" ال", " من ", " في ", " على ", " سجل", " صحة", " زيارة"]
+        let finnishSignals = [" ja ", " että ", " on ", " tämä ", " hoito", " käynti", " terveys"]
+        let polishSignals = [" i ", " oraz ", " jest ", " zdrow", " wizyta", " opieka", " notatka"]
+        let somaliSignals = [" iyo ", " ayaa ", " caafima", " booqasho", " daryeel", " qoraal"]
+        let swedishScore = swedishSignals.reduce(0) { partial, token in
+            partial + lower.components(separatedBy: token).count - 1
+        }
+        let englishScore = englishSignals.reduce(0) { partial, token in
+            partial + lower.components(separatedBy: token).count - 1
+        }
+        let arabicScore = arabicSignals.reduce(0) { partial, token in
+            partial + lower.components(separatedBy: token).count - 1
+        }
+        let finnishScore = finnishSignals.reduce(0) { partial, token in
+            partial + lower.components(separatedBy: token).count - 1
+        }
+        let polishScore = polishSignals.reduce(0) { partial, token in
+            partial + lower.components(separatedBy: token).count - 1
+        }
+        let somaliScore = somaliSignals.reduce(0) { partial, token in
+            partial + lower.components(separatedBy: token).count - 1
+        }
+
+        let ranked: [(SupportedChatLanguage, Int)] = [
+            (.swedish, swedishScore),
+            (.english, englishScore),
+            (.arabic, arabicScore),
+            (.finnish, finnishScore),
+            (.polish, polishScore),
+            (.somali, somaliScore)
+        ]
+        .sorted { lhs, rhs in lhs.1 > rhs.1 }
+
+        if let best = ranked.first, best.1 > 0 {
+            return best.0
+        }
+
+        return nil
     }
 }
 

@@ -219,7 +219,7 @@ private struct MarkdownText: View {
     let source: String
 
     init(_ source: String) {
-        self.source = source
+        self.source = source.normalizedChatMarkdownSource()
     }
 
     var body: some View {
@@ -228,6 +228,42 @@ private struct MarkdownText: View {
         } else {
             Text(source)
         }
+    }
+}
+
+private extension String {
+    func normalizedChatMarkdownSource() -> String {
+        var text = self
+
+        let regexReplacements: [(String, String)] = [
+            (#"\\text\s*\{([^{}]*)\}"#, "$1"),
+            (#"\\mathrm\s*\{([^{}]*)\}"#, "$1"),
+            (#"\\operatorname\s*\{([^{}]*)\}"#, "$1"),
+            (#"\\\("#, ""),
+            (#"\\\)"#, ""),
+            (#"\\\["#, ""),
+            (#"\\\]"#, ""),
+            (#"\\,"#, " "),
+            (#"\\%"#, "%"),
+            (#"\$([^$]+)\$"#, "$1")
+        ]
+
+        for (pattern, replacement) in regexReplacements {
+            text = text.replacingOccurrences(
+                of: pattern,
+                with: replacement,
+                options: .regularExpression
+            )
+        }
+
+        text = text.replacingOccurrences(of: "$", with: "")
+        text = text.replacingOccurrences(
+            of: #"[ \t]{2,}"#,
+            with: " ",
+            options: .regularExpression
+        )
+
+        return text
     }
 }
 

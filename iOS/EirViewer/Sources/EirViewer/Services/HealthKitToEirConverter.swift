@@ -22,6 +22,8 @@ struct HealthKitToEirConverter {
         return f
     }()
 
+    private static let identifierSanitizer = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+
     // MARK: - Convert to EirDocument
 
     static func convert(
@@ -109,7 +111,7 @@ struct HealthKitToEirConverter {
         }
 
         return EirEntry(
-            id: "hk-\(index)",
+            id: stableAggregatedEntryID(category: category, date: dateStr),
             date: dateStr,
             time: nil,
             category: category.eirCategory,
@@ -138,6 +140,7 @@ struct HealthKitToEirConverter {
         let details: String
         var notes: [String]? = nil
         var tags = ["apple-health", category.rawValue.lowercased()]
+        let entryID: String
 
         switch category {
         case .bloodPressure:
@@ -153,6 +156,7 @@ struct HealthKitToEirConverter {
             let diaStr = diastolic.map { formatValue($0, decimals: 0) } ?? "-"
             summary = "Blodtryck: \(sysStr)/\(diaStr) mmHg"
             details = "Systoliskt: \(sysStr) mmHg\nDiastoliskt: \(diaStr) mmHg"
+            entryID = stableSampleEntryID(sample.uuid.uuidString)
 
         case .workouts:
             guard let workout = sample as? HKWorkout else { return nil }
@@ -162,10 +166,12 @@ struct HealthKitToEirConverter {
             let calStr = calories.map { ", \(formatValue($0, decimals: 0)) kcal" } ?? ""
             summary = "\(typeStr): \(durationMin) min\(calStr)"
             details = "Typ: \(typeStr)\nTid: \(durationMin) minuter\(calories.map { "\nKalorier: \(formatValue($0, decimals: 0)) kcal" } ?? "")"
+            entryID = stableSampleEntryID(sample.uuid.uuidString)
 
         case .clinicalNotes:
             guard let record = sample as? HKClinicalRecord else { return nil }
             let extracted: ClinicalNoteFHIRExtraction
+            let clinicalIdentifier: String
             if let data = record.fhirResource?.data {
                 extracted = ClinicalNoteFHIRExtractor.extract(
                     from: data,
@@ -173,6 +179,7 @@ struct HealthKitToEirConverter {
                     fallbackResourceType: record.fhirResource?.resourceType.rawValue,
                     fallbackIdentifier: record.fhirResource?.identifier
                 )
+                clinicalIdentifier = record.fhirResource?.identifier ?? sample.uuid.uuidString
             } else {
                 var fallbackMetadataLines = ["Importerad från Apple Health"]
                 if let resourceType = record.fhirResource?.resourceType.rawValue, !resourceType.isEmpty {
@@ -189,6 +196,7 @@ struct HealthKitToEirConverter {
                     metadataLines: fallbackMetadataLines,
                     tags: ["clinical-note"]
                 )
+                clinicalIdentifier = record.fhirResource?.identifier ?? sample.uuid.uuidString
             }
             summary = extracted.summary
             details = extracted.metadataLines.isEmpty
@@ -196,6 +204,7 @@ struct HealthKitToEirConverter {
                 : extracted.metadataLines.joined(separator: "\n")
             notes = extracted.noteBlocks.isEmpty ? nil : extracted.noteBlocks
             tags += extracted.tags
+            entryID = stableSampleEntryID(clinicalIdentifier)
 
         default:
             guard let quantitySample = sample as? HKQuantitySample,
@@ -204,10 +213,11 @@ struct HealthKitToEirConverter {
             let formatted = formatValue(value)
             summary = "\(category.rawValue): \(formatted) \(category.unit)"
             details = "Värde: \(formatted) \(category.unit)"
+            entryID = stableSampleEntryID(sample.uuid.uuidString)
         }
 
         return EirEntry(
-            id: "hk-\(index)",
+            id: entryID,
             date: dateStr,
             time: timeStr,
             category: category.eirCategory,
@@ -278,5 +288,27 @@ struct HealthKitToEirConverter {
         case .downhillSkiing: return "Utförsåkning"
         default: return "Träning"
         }
+    }
+
+    private static func stableAggregatedEntryID(category: HealthDataCategory, date: String) -> String {
+        let normalizedCategory = sanitizeIdentifier(category.rawValue.lowercased())
+        return "hk-daily-\(normalizedCategory)-\(date)"
+    }
+
+    private static func stableSampleEntryID(_ rawIdentifier: String) -> String {
+        "hk-\(sanitizeIdentifier(rawIdentifier.lowercased()))"
+    }
+
+    private static func sanitizeIdentifier(_ raw: String) -> String {
+        let unicodeScalars = raw.unicodeScalars.map { scalar -> Character in
+            if identifierSanitizer.contains(scalar) {
+                return Character(scalar)
+            }
+            return "-"
+        }
+        let sanitized = String(unicodeScalars)
+            .replacingOccurrences(of: "-{2,}", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        return sanitized.isEmpty ? UUID().uuidString.lowercased() : sanitized
     }
 }

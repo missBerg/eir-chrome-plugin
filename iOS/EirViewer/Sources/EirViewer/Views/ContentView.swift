@@ -1,21 +1,21 @@
 import SwiftUI
 
 enum NavTab: String, CaseIterable, Identifiable {
-    case forYou = "For You"
+    case chat = "Chat"
     case action = "Action"
     case state = "State"
     case findCare = "Find Care"
-    case chat = "Chat"
+    case forYou = "For You"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .forYou: return "sparkles"
+        case .chat: return "bubble.left.and.bubble.right"
         case .action: return "figure.run.square.stack"
         case .state: return "waveform.path.ecg"
         case .findCare: return "cross.case"
-        case .chat: return "bubble.left.and.bubble.right"
+        case .forYou: return "sparkles"
         }
     }
 }
@@ -29,7 +29,7 @@ struct ContentView: View {
     @EnvironmentObject var agentMemoryStore: AgentMemoryStore
     @EnvironmentObject var healthDataExtractor: HealthDataExtractor
 
-    @State private var selectedTab: NavTab = .forYou
+    @State private var selectedTab: NavTab = .chat
 
     var body: some View {
         if profileStore.profiles.isEmpty {
@@ -37,11 +37,11 @@ struct ContentView: View {
         } else {
             TabView(selection: $selectedTab) {
                 NavigationStack {
-                    ForYouView()
+                    ChatView()
                         .topLevelProfileToolbar()
                 }
-                .tabItem { Label("For You", systemImage: "sparkles") }
-                .tag(NavTab.forYou)
+                .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right") }
+                .tag(NavTab.chat)
 
                 NavigationStack {
                     ActionLibraryView()
@@ -65,11 +65,11 @@ struct ContentView: View {
                 .tag(NavTab.findCare)
 
                 NavigationStack {
-                    ChatView()
+                    ForYouView()
                         .topLevelProfileToolbar()
                 }
-                .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right") }
-                .tag(NavTab.chat)
+                .tabItem { Label("For You", systemImage: "sparkles") }
+                .tag(NavTab.forYou)
             }
             .tint(AppColors.primary)
             .overlay(alignment: .top) {
@@ -124,6 +124,9 @@ struct ContentView: View {
             .onReceive(NotificationCenter.default.publisher(for: .navigateToChat)) { _ in
                 selectedTab = .chat
             }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToState)) { _ in
+                selectedTab = .state
+            }
             .onReceive(NotificationCenter.default.publisher(for: .navigateToAction)) { _ in
                 selectedTab = .action
             }
@@ -139,6 +142,7 @@ struct ContentView: View {
 }
 
 extension Notification.Name {
+    static let navigateToState = Notification.Name("navigateToState")
     static let navigateToAction = Notification.Name("navigateToAction")
 }
 

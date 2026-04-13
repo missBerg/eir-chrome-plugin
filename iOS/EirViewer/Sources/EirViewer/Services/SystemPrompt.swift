@@ -7,9 +7,12 @@ enum SystemPrompt {
         memory: AgentMemory,
         document: EirDocument?,
         includeToolInstructions: Bool = true,
-        allowFollowUpQuestions: Bool = false
+        allowFollowUpQuestions: Bool = false,
+        responseLanguagePreference: ResponseLanguagePreference = .automatic,
+        sourceLanguage: SupportedChatLanguage? = nil
     ) -> String {
         var sections: [String] = []
+        let hasRecords = !(document?.entries.isEmpty ?? true)
 
         // 1. Identity (SOUL.md)
         sections.append(memory.soul)
@@ -24,7 +27,7 @@ enum SystemPrompt {
         sections.append(memory.agents)
 
         // 5. Tool instructions
-        if includeToolInstructions {
+        if includeToolInstructions && hasRecords {
             sections.append("""
             # Tool Usage
 
@@ -36,10 +39,18 @@ enum SystemPrompt {
 
             Always cite specific entries using `<JOURNAL_ENTRY id="ENTRY_ID"/>` format — this renders as a clickable link.
             """)
+        } else if includeToolInstructions {
+            sections.append("""
+            # Tool Usage
+
+            No health record document is attached to this chat right now.
+            Do not search for or cite records unless a document is explicitly attached later in the conversation.
+            Use memory tools only when relevant.
+            """)
         }
 
         // 6. Medical Records Context
-        if let doc = document {
+        if let doc = document, hasRecords {
             sections.append(buildRecordsContext(from: doc))
         }
 
@@ -47,9 +58,7 @@ enum SystemPrompt {
         var responseGuidelines = """
         # Response Guidelines
 
-        - Respond in the same language the user writes in (Swedish or English)
-        - Use `<JOURNAL_ENTRY id="ENTRY_ID"/>` to cite specific entries — these become clickable links
-        - Never cite entries using only bare IDs like `entry_002`; always wrap the exact ID in the JOURNAL_ENTRY tag
+        \(responseLanguageRule(preference: responseLanguagePreference, sourceLanguage: sourceLanguage))
         - Be concise by default; expand when asked for details
         - Start every response with the answer, not a preamble
         - For broad summary questions like "What stands out?", "Summarize my recent records", or "What has been happening lately?", answer directly with your best synthesis from the available records
@@ -60,6 +69,21 @@ enum SystemPrompt {
         - Never provide definitive diagnoses — explain, analyze, and recommend follow-up
         - If unsure, say so rather than guessing about medical matters
         """
+
+        if hasRecords {
+            responseGuidelines += """
+            - Use `<JOURNAL_ENTRY id="ENTRY_ID"/>` to cite specific entries — these become clickable links
+            - Never cite entries using only bare IDs like `entry_002`; always wrap the exact ID in the JOURNAL_ENTRY tag
+            """
+        } else {
+            responseGuidelines += """
+            - No health record document is attached to this chat right now.
+            - Do not claim to see records when none are attached.
+            - Do not emit `<JOURNAL_ENTRY>` tags or fake record placeholders.
+            - Answer general health, state, action, and care questions helpfully from the conversation and general guidance.
+            - Only mention that records are missing when the user explicitly asks for record analysis or record-grounded facts.
+            """
+        }
 
         if allowFollowUpQuestions {
             responseGuidelines += """
@@ -96,7 +120,14 @@ enum SystemPrompt {
             memory: AgentDefaults.defaultMemory,
             agents: AgentDefaults.defaultAgents
         )
-        return build(memory: defaultMemory, document: document, includeToolInstructions: false, allowFollowUpQuestions: false)
+        return build(
+            memory: defaultMemory,
+            document: document,
+            includeToolInstructions: false,
+            allowFollowUpQuestions: false,
+            responseLanguagePreference: .automatic,
+            sourceLanguage: nil
+        )
     }
 
     /// Compact system prompt for on-device models — much shorter to reduce prefill time
@@ -104,16 +135,19 @@ enum SystemPrompt {
         document: EirDocument?,
         userName: String? = nil,
         promptVersion: PromptVersion? = nil,
-        allowFollowUpQuestions: Bool = false
+        allowFollowUpQuestions: Bool = false,
+        responseLanguagePreference: ResponseLanguagePreference = .automatic,
+        sourceLanguage: SupportedChatLanguage? = nil
     ) -> String {
         var prompt: String
+        let hasRecords = !(document?.entries.isEmpty ?? true)
         if let version = promptVersion {
             prompt = version.systemPrompt
         } else {
             prompt = """
             You are Eir, a practical health guide.
             Goal: help the user understand their health and records in plain language.
-            Reply in the user's language.
+            \(responseLanguageSentence(preference: responseLanguagePreference, sourceLanguage: sourceLanguage))
             """
         }
 
@@ -121,7 +155,7 @@ enum SystemPrompt {
             prompt += "\n\n<user>\nName: \(name)\n</user>"
         }
 
-        if let doc = document {
+        if let doc = document, hasRecords {
             prompt += "\n\n<records>"
             if let patient = doc.metadata.patient {
                 prompt += "\nPatient: \(patient.name ?? "Unknown")"
@@ -130,39 +164,42 @@ enum SystemPrompt {
             if let info = doc.metadata.exportInfo, let total = info.totalEntries {
                 prompt += "\nTotal entries: \(total)"
             }
-            let recent = doc.entries.prefix(12)
+            let recent = doc.entries.prefix(8)
             if !recent.isEmpty {
+                prompt += "\nThe records are already included below. Do not ask the user to provide records that are present in this block."
                 prompt += "\nRecent entries:"
                 for entry in recent {
-                    var line = "\n- ID: \(entry.id) | \(entry.date ?? "?") | \(entry.category ?? "?")"
-                    if let type = entry.type, !type.isEmpty {
-                        line += " | \(type)"
-                    }
-                    if let summary = entry.content?.summary, !summary.isEmpty {
-                        line += " | \(summary)"
-                    }
-                    prompt += line
+                    prompt += localRecordContext(for: entry)
                 }
-                if doc.entries.count > 12 {
-                    prompt += "\n(\(doc.entries.count - 12) more entries available)"
+                if doc.entries.count > 8 {
+                    prompt += "\n(\(doc.entries.count - 8) more entries available)"
                 }
             }
             prompt += "\n</records>"
+        } else {
+            prompt += """
+
+            <context>
+            No health record document is attached to this chat right now.
+            The user can still ask general questions about health, state, actions, and care.
+            Do not ask for records unless the user explicitly wants record-based analysis.
+            </context>
+            """
         }
 
         prompt += """
 
         <response_rules>
+        - \(responseLanguageRuleText(preference: responseLanguagePreference, sourceLanguage: sourceLanguage))
         - Start with the answer.
         - Be concise by default.
         - Start directly with the insight, not meta statements.
-        - Use the records only for record-specific facts.
-        - If the records do not answer the question, say so clearly.
+        - \(hasRecords ? "Use the records only for record-specific facts." : "Use the conversation context only; no records are attached.") 
+        - \(hasRecords ? "If records are included in the prompt, use them directly and never ask the user to provide those same records again." : "Do not ask the user to upload or paste records unless they specifically want record-based analysis.")
+        - \(hasRecords ? "If the records do not answer the question, say so clearly." : "If the user asks for record-specific facts, say no records are attached to this chat right now.")
         - If context is insufficient, state that directly and avoid any extra caveat language.
         - Label broader advice as general guidance.
         - Explain medical terms simply.
-        - Cite specific records with <JOURNAL_ENTRY id="ENTRY_ID"/>.
-        - Never write only bare entry IDs such as `entry_002`; always use the JOURNAL_ENTRY tag.
         - Never invent medications, dosages, diagnoses, or test results.
         - Never give a definitive diagnosis.
         - If symptoms sound urgent, tell the user to seek professional care.
@@ -170,6 +207,17 @@ enum SystemPrompt {
         - Include practical, actionable next steps where appropriate.
         </response_rules>
         """
+
+        if hasRecords {
+            prompt += """
+            Cite specific records with <JOURNAL_ENTRY id="ENTRY_ID"/>.
+            Never write only bare entry IDs such as `entry_002`; always use the JOURNAL_ENTRY tag.
+            """
+        } else {
+            prompt += """
+            Never emit `<JOURNAL_ENTRY>` tags or fake record IDs when no records are attached.
+            """
+        }
 
         if allowFollowUpQuestions {
             prompt += """
@@ -191,6 +239,69 @@ enum SystemPrompt {
         }
 
         return prompt
+    }
+
+    private static func responseLanguageRule(
+        preference: ResponseLanguagePreference,
+        sourceLanguage: SupportedChatLanguage?
+    ) -> String {
+        "- \(responseLanguageRuleText(preference: preference, sourceLanguage: sourceLanguage))"
+    }
+
+    private static func responseLanguageRuleText(
+        preference: ResponseLanguagePreference,
+        sourceLanguage: SupportedChatLanguage?
+    ) -> String {
+        if let explicit = preference.explicitLanguage {
+            return "Reply in \(explicit.promptName), even if the records or note are written in another language."
+        }
+
+        if let sourceLanguage {
+            return "Reply in \(sourceLanguage.promptName) to match the language of the note or message being discussed."
+        }
+
+        return "Reply in the same language as the user's message."
+    }
+
+    private static func responseLanguageSentence(
+        preference: ResponseLanguagePreference,
+        sourceLanguage: SupportedChatLanguage?
+    ) -> String {
+        let text = responseLanguageRuleText(preference: preference, sourceLanguage: sourceLanguage)
+        guard let first = text.first else { return text }
+        return first.uppercased() + text.dropFirst()
+    }
+
+    private static func localRecordContext(for entry: EirEntry) -> String {
+        var block = "\n- ID: \(entry.id) | \(entry.date ?? "?") | \(entry.category ?? "?")"
+        if let type = entry.type, !type.isEmpty {
+            block += " | \(type)"
+        }
+        if let summary = entry.content?.summary, !summary.isEmpty {
+            block += "\n  Summary: \(truncated(summary, limit: 220))"
+        }
+        if let details = entry.content?.details, !details.isEmpty {
+            block += "\n  Details: \(truncated(details, limit: 320))"
+        }
+        if let notes = entry.content?.notes, !notes.isEmpty {
+            let joinedNotes = notes
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .joined(separator: "\n")
+            if !joinedNotes.isEmpty {
+                block += "\n  Notes: \(truncated(joinedNotes, limit: 420))"
+            }
+        }
+        return block
+    }
+
+    private static func truncated(_ text: String, limit: Int) -> String {
+        let cleaned = text
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleaned.count > limit else { return cleaned }
+        let endIndex = cleaned.index(cleaned.startIndex, offsetBy: limit)
+        return cleaned[..<endIndex].trimmingCharacters(in: .whitespacesAndNewlines) + "..."
     }
 
     // MARK: - Records Context

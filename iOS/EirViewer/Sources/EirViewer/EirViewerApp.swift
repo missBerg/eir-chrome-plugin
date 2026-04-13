@@ -15,6 +15,7 @@ struct EirViewerApp: App {
     @StateObject private var forYouVM = ForYouViewModel()
     @StateObject private var nextBestActionVM = NextBestHealthActionViewModel()
     @StateObject private var stateActionVM = StateActionRecommendationViewModel()
+    @StateObject private var journalTranslationStore = JournalTranslationStore()
 
     var body: some Scene {
         WindowGroup {
@@ -32,12 +33,17 @@ struct EirViewerApp: App {
                 .environmentObject(forYouVM)
                 .environmentObject(nextBestActionVM)
                 .environmentObject(stateActionVM)
+                .environmentObject(journalTranslationStore)
+                .environment(\.locale, settingsVM.interfaceLocale)
+                .environment(\.layoutDirection, settingsVM.interfaceLayoutDirection)
                 .task {
+                    guard !AppRuntimeContext.isRunningTests else { return }
                     await localModelManager.prewarmPreferredModelIfNeeded(
                         activeProviderType: settingsVM.activeProviderType
                     )
                 }
                 .onChange(of: settingsVM.activeProviderType) { _, providerType in
+                    guard !AppRuntimeContext.isRunningTests else { return }
                     Task {
                         await localModelManager.prewarmPreferredModelIfNeeded(
                             activeProviderType: providerType

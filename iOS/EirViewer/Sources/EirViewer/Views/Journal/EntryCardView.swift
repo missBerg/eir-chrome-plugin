@@ -3,6 +3,7 @@ import SwiftUI
 struct EntryCardView: View {
     let entry: EirEntry
     let isSelected: Bool
+    @EnvironmentObject private var translationStore: JournalTranslationStore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -28,7 +29,7 @@ struct EntryCardView: View {
                 }
             }
 
-            if let summary = entry.content?.summary {
+            if let summary = translationStore.summary(for: entry) {
                 Text(summary)
                     .font(.body)
                     .fontWeight(.medium)
@@ -36,7 +37,7 @@ struct EntryCardView: View {
                     .lineLimit(2)
             }
 
-            if let preview = entry.notePreviewText, !preview.isEmpty {
+            if let preview = displayedPreview, !preview.isEmpty {
                 Text(preview)
                     .font(.callout)
                     .foregroundColor(AppColors.textSecondary)
@@ -72,5 +73,13 @@ struct EntryCardView: View {
                 .stroke(isSelected ? AppColors.primary.opacity(0.3) : AppColors.border, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
+    }
+
+    private var displayedPreview: String? {
+        if let translatedNote = translationStore.notes(for: entry)?.first?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !translatedNote.isEmpty {
+            return translatedNote
+        }
+        return entry.notePreviewText
     }
 }

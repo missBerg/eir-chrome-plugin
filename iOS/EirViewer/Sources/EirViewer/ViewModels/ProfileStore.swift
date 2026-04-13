@@ -35,6 +35,57 @@ class ProfileStore: ObservableObject {
         saveToStore()
     }
 
+    func useRecordsInChat(for profileID: UUID) -> Bool {
+        profiles.first { $0.id == profileID }?.useRecordsInChat ?? true
+    }
+
+    func setUseRecordsInChat(_ enabled: Bool, for profileID: UUID) {
+        guard let index = profiles.firstIndex(where: { $0.id == profileID }) else { return }
+        profiles[index].useRecordsInChat = enabled
+        saveToStore()
+    }
+
+    func isRecordIncludedInChat(_ entryID: String, for profileID: UUID) -> Bool {
+        guard let profile = profiles.first(where: { $0.id == profileID }) else { return true }
+        return !profile.excludedChatRecordIDs.contains(entryID)
+    }
+
+    func selectedRecordCount(for profileID: UUID, document: EirDocument?) -> Int {
+        guard let document else { return 0 }
+        return document.entries.filter { isRecordIncludedInChat($0.id, for: profileID) }.count
+    }
+
+    func selectedRecordsDocument(for profileID: UUID, document: EirDocument?) -> EirDocument? {
+        guard let document else { return nil }
+        let entries = document.entries.filter { isRecordIncludedInChat($0.id, for: profileID) }
+        guard !entries.isEmpty else { return nil }
+        return EirDocument(metadata: document.metadata, entries: entries)
+    }
+
+    func setRecordIncludedInChat(_ included: Bool, entryID: String, for profileID: UUID) {
+        guard let index = profiles.firstIndex(where: { $0.id == profileID }) else { return }
+        var excluded = Set(profiles[index].excludedChatRecordIDs)
+        if included {
+            excluded.remove(entryID)
+        } else {
+            excluded.insert(entryID)
+        }
+        profiles[index].excludedChatRecordIDs = Array(excluded).sorted()
+        saveToStore()
+    }
+
+    func selectAllRecordsForChat(for profileID: UUID) {
+        guard let index = profiles.firstIndex(where: { $0.id == profileID }) else { return }
+        profiles[index].excludedChatRecordIDs = []
+        saveToStore()
+    }
+
+    func deselectAllRecordsForChat(for profileID: UUID, document: EirDocument?) {
+        guard let index = profiles.firstIndex(where: { $0.id == profileID }) else { return }
+        profiles[index].excludedChatRecordIDs = document?.entries.map(\.id) ?? []
+        saveToStore()
+    }
+
     @discardableResult
     func addProfile(displayName: String, fileURL: URL) -> PersonProfile? {
         errorMessage = nil
@@ -75,6 +126,7 @@ class ProfileStore: ObservableObject {
             personalNumber: patient?.personalNumber,
             birthDate: patient?.birthDate,
             totalEntries: doc.entries.count,
+            useRecordsInChat: true,
             addedAt: Date()
         )
 
@@ -140,6 +192,11 @@ class ProfileStore: ObservableObject {
                 personalNumber: doc.metadata.patient?.personalNumber ?? profile.personalNumber,
                 birthDate: doc.metadata.patient?.birthDate ?? profile.birthDate,
                 totalEntries: doc.entries.count,
+                showChatFollowUpSuggestions: profile.showChatFollowUpSuggestions,
+                useRecordsInChat: profile.useRecordsInChat,
+                excludedChatRecordIDs: profile.excludedChatRecordIDs.filter { excludedID in
+                    doc.entries.contains(where: { $0.id == excludedID })
+                },
                 addedAt: profile.addedAt
             )
             saveToStore()
@@ -213,6 +270,11 @@ class ProfileStore: ObservableObject {
                 personalNumber: sampleDocument.metadata.patient?.personalNumber ?? profile.personalNumber,
                 birthDate: sampleDocument.metadata.patient?.birthDate ?? profile.birthDate,
                 totalEntries: sampleDocument.entries.count,
+                showChatFollowUpSuggestions: profile.showChatFollowUpSuggestions,
+                useRecordsInChat: profile.useRecordsInChat,
+                excludedChatRecordIDs: profile.excludedChatRecordIDs.filter { excludedID in
+                    sampleDocument.entries.contains(where: { $0.id == excludedID })
+                },
                 addedAt: profile.addedAt
             )
         }
