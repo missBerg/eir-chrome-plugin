@@ -13,9 +13,11 @@
 		0C98B4762748F5324E697914 /* SelfReferralClinicCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB1D18AC057BB6BCF9BEF4D /* SelfReferralClinicCatalog.swift */; };
 		0DA3D95FFDE684207984BC04 /* OpenAIAccountAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 762EB84B6FB8DE94F964795A /* OpenAIAccountAuthService.swift */; };
 		0F79B172FFCD6FB1AE1FAD6B /* VoiceNoteComposerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FE6812C85D970222820AD6E /* VoiceNoteComposerSheet.swift */; };
+		10B066B5E8E775E96DA5CB7F /* PatientCaseWiki.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE50C15C0C2D09879CE011C4 /* PatientCaseWiki.swift */; };
 		11E91E4BE1C61D9D5807B161 /* VoiceNotePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E9B4EE3B86605F32741172D /* VoiceNotePlayer.swift */; };
 		1221031EA0219A3FA8B2A6B5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E267FFE9F575611F8CA1964E /* Assets.xcassets */; };
 		14615AA1C2F9F832CF337DD8 /* ChatThreadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDD79CD3F1023AEE60EFD1C /* ChatThreadStore.swift */; };
+		150AF8D5B89FEA1520D2875B /* CaseSourceCardBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F692E10BDF04CDE8D5046B5E /* CaseSourceCardBuilder.swift */; };
 		1A4FD6BA76079E193919115E /* ColorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B507DC2490C495A0990D7AA6 /* ColorExtension.swift */; };
 		1AE8EE2BF8A9B6751CBFB21E /* ChatBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66EE9E2EC4164E702159408C /* ChatBubbleView.swift */; };
 		1B5C8F81585AC3EBE6A931C8 /* FileShareViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2ED4BE5CB76FCA26A278E762 /* FileShareViews.swift */; };
@@ -55,6 +57,7 @@
 		6F9BCD153DA2D1924FB48108 /* health-assessments.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 59721252F48174ED5E8AA17E /* health-assessments.yaml */; };
 		722550FD89EE4EB0B6FA8A28 /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B998537AC99341CF1C2D0D19 /* JournalView.swift */; };
 		741F09AF3A22F20C773C903E /* VoiceNoteRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289D41DC298A152E56FD349A /* VoiceNoteRecorder.swift */; };
+		74D0E8E7E0F43A8CE874213A /* CaseWikiViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309D29E9C2CAFE38786CBE86 /* CaseWikiViewModel.swift */; };
 		75259EE3D558E83F7D83C6DC /* VoiceNoteTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE50C9BE181F2E693BE17FF0 /* VoiceNoteTranscriptionService.swift */; };
 		79495FD4216EE0E46C0E58AF /* AgentDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F85BD291BABC62454B4DBB /* AgentDefaults.swift */; };
 		7A4FDC33ADB27985B8A2E140 /* AssessmentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6179EFCCF40417D9B852E30D /* AssessmentsView.swift */; };
@@ -64,10 +67,13 @@
 		7E53316301704163DB0E6782 /* VoiceTranscriptionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6490E8AFF5A86033ABE9B3 /* VoiceTranscriptionCoordinator.swift */; };
 		817748AA612340524A3117FE /* FindCareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF55DA44EE3743AC4DB87DED /* FindCareView.swift */; };
 		82119577800F83BC85E9457E /* NextBestHealthActionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76D14D4702966D448A8CA8BE /* NextBestHealthActionViewModel.swift */; };
+		836F2E342382F5FB560C00E4 /* CaseWikiValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97204FAA545B7E163159DB3F /* CaseWikiValidator.swift */; };
 		85B604502C498F68DA68BAD7 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A7171AB56F25BA404CA5AB /* ChatMessage.swift */; };
 		896A8BD57D607DEAA95FCE55 /* ForYouCardGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */; };
+		8C6016DC7A9A7E5F48E7BF3E /* CaseWikiIngestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A35CB76286793EDC0C2D3E4 /* CaseWikiIngestService.swift */; };
 		913B76B784FD4CB55B6385C4 /* QRTransferFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBB538AFDEEB8FD799CEF6A /* QRTransferFlowTests.swift */; };
 		957EA466B04F1EAFCF3DB1E5 /* ActionVoiceLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E18FF2BCF455C0A49B038B /* ActionVoiceLabView.swift */; };
+		9CA6ED396A608D6603C8F81B /* CaseWikiOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC4B525C995F5B10DB2E5AE6 /* CaseWikiOverviewView.swift */; };
 		A0EA8D5C12FFA9E51C1CB385 /* HistoryTranslationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5C3451189FE2E65393FE76D /* HistoryTranslationSheet.swift */; };
 		A596E9A9FD380B1BA68FE2E4 /* DocumentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */; };
 		A5C90FF6130BCADCE0F364FB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2B5A2EB7786BFABF5D0B05 /* SettingsView.swift */; };
@@ -126,6 +132,7 @@
 /* Begin PBXFileReference section */
 		0642B699BCEB214F64366D9D /* EncryptedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptedStore.swift; sourceTree = "<group>"; };
 		06A7171AB56F25BA404CA5AB /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
+		0A35CB76286793EDC0C2D3E4 /* CaseWikiIngestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseWikiIngestService.swift; sourceTree = "<group>"; };
 		0AD13C19109D4F1D1F11EC1C /* SelfReferralClinicStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfReferralClinicStore.swift; sourceTree = "<group>"; };
 		0BB40951059FDE72D983CFB3 /* CategoryBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBadge.swift; sourceTree = "<group>"; };
 		0EE8893CD2539AA24E8E0F0A /* HealthKitToEirConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitToEirConverter.swift; sourceTree = "<group>"; };
@@ -143,6 +150,7 @@
 		2E9B4EE3B86605F32741172D /* VoiceNotePlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNotePlayer.swift; sourceTree = "<group>"; };
 		2ED4BE5CB76FCA26A278E762 /* FileShareViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileShareViews.swift; sourceTree = "<group>"; };
 		30379ADF3F1C36729F598DA8 /* StateActionLearningEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateActionLearningEngine.swift; sourceTree = "<group>"; };
+		309D29E9C2CAFE38786CBE86 /* CaseWikiViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseWikiViewModel.swift; sourceTree = "<group>"; };
 		30F85BD291BABC62454B4DBB /* AgentDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentDefaults.swift; sourceTree = "<group>"; };
 		340E673CE7624A453E343715 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3CC134672B103B1CAD5367E6 /* EirViewerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EirViewerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -182,6 +190,7 @@
 		8DE0A79A4CA679B89535E7FB /* HealthDataBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataBrowserView.swift; sourceTree = "<group>"; };
 		944AF87B420D187EAC8BA4FE /* pl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pl; path = pl.lproj/Localizable.strings; sourceTree = "<group>"; };
 		9648C3396E95DF705A8F727E /* HealthKitImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitImportView.swift; sourceTree = "<group>"; };
+		97204FAA545B7E163159DB3F /* CaseWikiValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseWikiValidator.swift; sourceTree = "<group>"; };
 		989386C8D86030A8B539D143 /* ActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsView.swift; sourceTree = "<group>"; };
 		9F90FD37A1F5782007EF4989 /* PromptVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptVersion.swift; sourceTree = "<group>"; };
 		A6373F07A21E313342DA7E71 /* sv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sv; path = sv.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -198,6 +207,7 @@
 		B836B5D91462233049438F30 /* HealthActionGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthActionGenerator.swift; sourceTree = "<group>"; };
 		B998537AC99341CF1C2D0D19 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
 		BB360D1D5BBF139F5A3AA997 /* LocalLLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLLMService.swift; sourceTree = "<group>"; };
+		BC4B525C995F5B10DB2E5AE6 /* CaseWikiOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseWikiOverviewView.swift; sourceTree = "<group>"; };
 		BEDD79CD3F1023AEE60EFD1C /* ChatThreadStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatThreadStore.swift; sourceTree = "<group>"; };
 		BF6490E8AFF5A86033ABE9B3 /* VoiceTranscriptionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTranscriptionCoordinator.swift; sourceTree = "<group>"; };
 		C19D96044A03BA979D89DCD8 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
@@ -223,11 +233,13 @@
 		EE3BFCA4C74FC9139915A4ED /* VoiceNoteAttachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteAttachment.swift; sourceTree = "<group>"; };
 		EE50C9BE181F2E693BE17FF0 /* VoiceNoteTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteTranscriptionService.swift; sourceTree = "<group>"; };
 		F5C3451189FE2E65393FE76D /* HistoryTranslationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryTranslationSheet.swift; sourceTree = "<group>"; };
+		F692E10BDF04CDE8D5046B5E /* CaseSourceCardBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaseSourceCardBuilder.swift; sourceTree = "<group>"; };
 		F69371C2EFD97FBA6D9E4176 /* SelfReferralClinicSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfReferralClinicSheet.swift; sourceTree = "<group>"; };
 		F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViewModel.swift; sourceTree = "<group>"; };
 		F6AA80107E445F21C5E14336 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		FCEF7290519C860F7514159C /* ActionSoundSessionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionSoundSessionEngine.swift; sourceTree = "<group>"; };
 		FD1B8732A5C0937046107C85 /* AppRuntimeContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntimeContext.swift; sourceTree = "<group>"; };
+		FE50C15C0C2D09879CE011C4 /* PatientCaseWiki.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientCaseWiki.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -265,6 +277,7 @@
 				60150BE0AF8CE3D99DB3C94E /* QRScannerView.swift */,
 				C4E40A4EAAF54FB04C1B750D /* WelcomeView.swift */,
 				8A4DB5E53AD8A29089EE4D10 /* Actions */,
+				C0447A5B01806E7D3D715223 /* Case */,
 				4C7F4C9FC9724C8CF13EFF2D /* Chat */,
 				7CB47C75174067A76460A05F /* Components */,
 				80D230ACD5CB4D424F3AAB5C /* FindCare */,
@@ -312,6 +325,9 @@
 				30F85BD291BABC62454B4DBB /* AgentDefaults.swift */,
 				19396AF3111F422DB55B2DB8 /* AppleSpeechTranscriptionService.swift */,
 				FD1B8732A5C0937046107C85 /* AppRuntimeContext.swift */,
+				F692E10BDF04CDE8D5046B5E /* CaseSourceCardBuilder.swift */,
+				0A35CB76286793EDC0C2D3E4 /* CaseWikiIngestService.swift */,
+				97204FAA545B7E163159DB3F /* CaseWikiValidator.swift */,
 				3F85A62C020F22694CB65B75 /* ClinicalNoteFHIRExtractor.swift */,
 				1C8DB22425D22521DA7FCCFD /* CodexNetworkDiagnosticsStore.swift */,
 				DDDD9A98A16DE81625130468 /* EirParser.swift */,
@@ -449,6 +465,7 @@
 				2A674C7371CB370B78831BBC /* ForYouCard.swift */,
 				B53967D56CF2AFBD216E1586 /* HealthAction.swift */,
 				C19D96044A03BA979D89DCD8 /* LLMProvider.swift */,
+				FE50C15C0C2D09879CE011C4 /* PatientCaseWiki.swift */,
 				D2F4115FBB641F7CF33A000B /* PersonProfile.swift */,
 				9F90FD37A1F5782007EF4989 /* PromptVersion.swift */,
 				DBAA95C2440DA6A917C26CB5 /* RecoveryActionOutcome.swift */,
@@ -472,6 +489,7 @@
 			children = (
 				54CBD79C71E9D27B6CC075B5 /* ActionsViewModel.swift */,
 				B46E484C23AF332B0D081CEF /* AgentMemoryStore.swift */,
+				309D29E9C2CAFE38786CBE86 /* CaseWikiViewModel.swift */,
 				BEDD79CD3F1023AEE60EFD1C /* ChatThreadStore.swift */,
 				C2420C4DEBEEE4DA345D5DBC /* ChatViewModel.swift */,
 				F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */,
@@ -503,6 +521,14 @@
 				921145A6F167E1A3E02D75CD /* Assessments */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		C0447A5B01806E7D3D715223 /* Case */ = {
+			isa = PBXGroup;
+			children = (
+				BC4B525C995F5B10DB2E5AE6 /* CaseWikiOverviewView.swift */,
+			);
+			path = Case;
 			sourceTree = "<group>";
 		};
 		C6CFA8519D519C2CEF2E3F80 /* Onboarding */ = {
@@ -665,6 +691,11 @@
 				FFD55003553E8EA8D29DC0A0 /* AppleSpeechTranscriptionService.swift in Sources */,
 				7A4FDC33ADB27985B8A2E140 /* AssessmentsView.swift in Sources */,
 				24A4D2946B8C9E8C527A8437 /* CareSuggestion.swift in Sources */,
+				150AF8D5B89FEA1520D2875B /* CaseSourceCardBuilder.swift in Sources */,
+				8C6016DC7A9A7E5F48E7BF3E /* CaseWikiIngestService.swift in Sources */,
+				9CA6ED396A608D6603C8F81B /* CaseWikiOverviewView.swift in Sources */,
+				836F2E342382F5FB560C00E4 /* CaseWikiValidator.swift in Sources */,
+				74D0E8E7E0F43A8CE874213A /* CaseWikiViewModel.swift in Sources */,
 				CC1B91744F3AD79993D57044 /* CategoryBadge.swift in Sources */,
 				1AE8EE2BF8A9B6751CBFB21E /* ChatBubbleView.swift in Sources */,
 				85B604502C498F68DA68BAD7 /* ChatMessage.swift in Sources */,
@@ -711,6 +742,7 @@
 				82119577800F83BC85E9457E /* NextBestHealthActionViewModel.swift in Sources */,
 				2674A9D3ACC4CD9FB87828E7 /* OnboardingView.swift in Sources */,
 				0DA3D95FFDE684207984BC04 /* OpenAIAccountAuthService.swift in Sources */,
+				10B066B5E8E775E96DA5CB7F /* PatientCaseWiki.swift in Sources */,
 				CDBAA28BDE6379C2029DDFB8 /* PersonProfile.swift in Sources */,
 				BFDDBE2A9C9EBDCA99D4FE42 /* PersonRow.swift in Sources */,
 				4BB23ECD3576FECFE19B1374 /* ProfileStore.swift in Sources */,
@@ -791,7 +823,7 @@
 				CODE_SIGN_ENTITLEMENTS = EirViewer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = YJ9A3JT299;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Eir uses the microphone so you can dictate questions and notes for AI assistance.";
@@ -800,7 +832,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.eir.viewer;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
@@ -952,7 +984,7 @@
 				CODE_SIGN_ENTITLEMENTS = EirViewer.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = YJ9A3JT299;
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Eir uses the microphone so you can dictate questions and notes for AI assistance.";
@@ -961,7 +993,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.eir.viewer;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;

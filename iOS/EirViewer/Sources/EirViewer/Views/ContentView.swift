@@ -30,6 +30,7 @@ struct ContentView: View {
     @EnvironmentObject var healthDataExtractor: HealthDataExtractor
 
     @State private var selectedTab: NavTab = .chat
+    @State private var journalNavigationTarget: JournalNavigationTarget?
 
     var body: some View {
         if profileStore.profiles.isEmpty {
@@ -51,7 +52,7 @@ struct ContentView: View {
                 .tag(NavTab.action)
 
                 NavigationStack {
-                    JournalView()
+                    JournalView(navigationTarget: $journalNavigationTarget)
                         .topLevelProfileToolbar()
                 }
                 .tabItem { Label("State", systemImage: "waveform.path.ecg") }
@@ -127,6 +128,22 @@ struct ContentView: View {
             .onReceive(NotificationCenter.default.publisher(for: .navigateToState)) { _ in
                 selectedTab = .state
             }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToAssessments)) { _ in
+                journalNavigationTarget = .assessments
+                selectedTab = .state
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToCheckIn)) { _ in
+                journalNavigationTarget = .checkIn
+                selectedTab = .state
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToDigital)) { _ in
+                journalNavigationTarget = .digital
+                selectedTab = .state
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openJournalImport)) { _ in
+                journalNavigationTarget = .importData
+                selectedTab = .state
+            }
             .onReceive(NotificationCenter.default.publisher(for: .navigateToAction)) { _ in
                 selectedTab = .action
             }
@@ -144,6 +161,9 @@ struct ContentView: View {
 extension Notification.Name {
     static let navigateToState = Notification.Name("navigateToState")
     static let navigateToAction = Notification.Name("navigateToAction")
+    static let navigateToAssessments = Notification.Name("navigateToAssessments")
+    static let navigateToCheckIn = Notification.Name("navigateToCheckIn")
+    static let navigateToDigital = Notification.Name("navigateToDigital")
 }
 
 struct ProfileSettingsSheet: View {

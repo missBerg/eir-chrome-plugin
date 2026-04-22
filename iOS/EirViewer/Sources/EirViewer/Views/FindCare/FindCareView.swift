@@ -55,9 +55,9 @@ struct FindCareView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
+                quickFilters
                 issueSearchSection
                 searchBar
-                layoutToggle
                 suggestionChips
 
                 if let loadError = clinicStore.loadError {
@@ -69,6 +69,8 @@ struct FindCareView: View {
                 } else if clinicStore.rankedResults.isEmpty {
                     emptyState
                 } else {
+                    resultsToolbar
+
                     if showsMap {
                         mapSection
                     }
@@ -140,15 +142,30 @@ struct FindCareView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if let careSuggestion {
-                Label("Soft Care Suggestion", systemImage: "cross.case.fill")
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Label("1177 verified", systemImage: "checkmark.seal.fill")
                     .font(.caption.weight(.bold))
-                    .tracking(0.8)
                     .foregroundStyle(AppColors.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(AppColors.primarySoft)
+                    .clipShape(Capsule())
 
-                Text("If this pattern keeps going, it may help to prepare for care.")
-                    .font(.title3.weight(.bold))
+                if !clinicStore.allClinics.isEmpty {
+                    Text("\(clinicStore.allClinics.count) clinics")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppColors.textSecondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(AppColors.backgroundMuted)
+                        .clipShape(Capsule())
+                }
+            }
+
+            if let careSuggestion {
+                Text("Prepare for care")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(AppColors.text)
 
                 Text(careSuggestion.triggerReason)
@@ -157,41 +174,57 @@ struct FindCareView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 detailBlock(
-                    title: "A good opening question",
+                    title: "Opening question",
                     text: careSuggestion.questionPrompt
                 )
             } else {
-                Label("Verified 1177 Clinics", systemImage: "checkmark.seal.fill")
-                    .font(.caption.weight(.bold))
-                    .tracking(0.8)
-                    .foregroundStyle(AppColors.primary)
-
-                Text("Move from self-management into the healthcare system.")
-                    .font(.title3.weight(.bold))
+                Text("Find the right first contact")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(AppColors.text)
 
-                Text("Browse verified clinics, search by municipality or county, and move straight into the clinic’s 1177 egenremiss flow when you need care.")
+                Text("Search verified clinics with egenremiss support, then open the 1177 page or form.")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(AppColors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            Link(destination: guideURL) {
-                HStack(spacing: 8) {
-                    Image(systemName: "sparkles.rectangle.stack")
-                    Text("Open Eir Guide")
-                        .fontWeight(.semibold)
-                    Spacer()
-                    Image(systemName: "arrow.up.right")
-                        .font(.caption.weight(.bold))
-                }
-                .foregroundStyle(AppColors.text)
-                .padding(14)
-                .background(AppColors.backgroundMuted)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
-            .buttonStyle(.plain)
         }
+    }
+
+    private var quickFilters: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            quickFilterButton(type: .primaryCare, title: "Primary care", symbol: "cross.case.fill")
+            quickFilterButton(type: .psychology, title: "Psychology", symbol: "brain.head.profile")
+            quickFilterButton(type: .psychiatry, title: "Psychiatry", symbol: "heart.text.square.fill")
+            quickFilterButton(type: .rehab, title: "Rehab", symbol: "figure.walk")
+        }
+    }
+
+    private func quickFilterButton(type: SuggestedClinicType, title: String, symbol: String) -> some View {
+        let isActive = clinicStore.selectedSuggestedTypes.contains(type)
+        return Button {
+            clinicStore.toggle(type)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: symbol)
+                    .font(.subheadline.weight(.bold))
+                    .frame(width: 22)
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(isActive ? .white : AppColors.text)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .background(isActive ? AppColors.primaryStrong : Color.white.opacity(0.92))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isActive ? AppColors.primaryStrong : AppColors.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var searchBar: some View {
@@ -200,7 +233,7 @@ struct FindCareView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(AppColors.textSecondary)
 
-                TextField("Search municipality, county, or clinic", text: $clinicStore.query)
+                TextField("City, county, specialty or clinic", text: $clinicStore.query)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .focused($focusedField, equals: .searchQuery)
@@ -238,11 +271,11 @@ struct FindCareView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Describe what you need help with")
+                    Text("What do you need help with?")
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(AppColors.text)
 
-                    Text("Eir can turn your description into a care-path suggestion, rank nearby options, and help you prepare for contact with care.")
+                    Text("Optional. Eir can match your words to a care type and draft text for 1177.")
                         .font(.subheadline)
                         .foregroundStyle(AppColors.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -269,11 +302,11 @@ struct FindCareView: View {
                     .scrollContentBackground(.hidden)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 10)
-                    .frame(minHeight: 116)
+                    .frame(minHeight: 92)
                     .focused($focusedField, equals: .issueDescription)
 
                 if issueDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text("Example: I keep waking up exhausted and stressed, and I want help finding the right clinic and what to say when I contact them.")
+                    Text("Example: exhausted every morning, stressed, unsure whether to start with primary care or mental health.")
                         .font(.subheadline)
                         .foregroundStyle(AppColors.textSecondary.opacity(0.9))
                         .padding(.horizontal, 16)
@@ -281,7 +314,7 @@ struct FindCareView: View {
                         .allowsHitTesting(false)
                 }
             }
-            .frame(minHeight: 116)
+            .frame(minHeight: 92)
 
             HStack(spacing: 10) {
                 Button {
@@ -317,7 +350,7 @@ struct FindCareView: View {
                         } else {
                             Image(systemName: "sparkles")
                         }
-                        Text(isAISearching ? "Searching..." : "AI Search")
+                        Text(isAISearching ? "Matching..." : "Match care")
                             .font(.subheadline.weight(.semibold))
                     }
                     .foregroundStyle(.white)
@@ -357,18 +390,18 @@ struct FindCareView: View {
                 aiSummaryCard(issueAnalysis)
             }
         }
-        .padding(18)
-        .background(AppColors.card)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(16)
+        .background(Color.white.opacity(0.92))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(AppColors.border, lineWidth: 1)
         )
     }
 
     private var suggestionChips: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Suggested care types")
+            Text("Care type")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(AppColors.textSecondary)
 
@@ -416,6 +449,25 @@ struct FindCareView: View {
         }
     }
 
+    private var resultsToolbar: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(resultsTitle)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(AppColors.text)
+                    Text(resultsScopeLine)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(AppColors.textSecondary)
+                }
+
+                Spacer()
+            }
+
+            layoutToggle
+        }
+    }
+
     private var loadingState: some View {
         HStack(spacing: 12) {
             ProgressView()
@@ -447,10 +499,6 @@ struct FindCareView: View {
 
     private var resultsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(resultsTitle)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(AppColors.textSecondary)
-
             ForEach(clinicStore.rankedResults) { match in
                 NavigationLink(value: match) {
                     FindCareClinicRow(match: match)
@@ -513,7 +561,14 @@ struct FindCareView: View {
         if clinicStore.hasScope {
             return "\(clinicStore.rankedResults.count) verified options"
         }
-        return "\(clinicStore.rankedResults.count) verified clinics to browse"
+        return "\(clinicStore.rankedResults.count) verified clinics"
+    }
+
+    private var resultsScopeLine: String {
+        if clinicStore.hasScope {
+            return "Sorted by match, access and distance when available."
+        }
+        return "Add a city, location or care type to narrow the list."
     }
 
     private func errorBanner(_ message: String) -> some View {
@@ -530,7 +585,7 @@ struct FindCareView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("AI match")
+                    Text("Matched care path")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(AppColors.primary)
 
@@ -567,13 +622,13 @@ struct FindCareView: View {
             }
 
             if !analysis.searchQuery.isEmpty {
-                Text("Search focus: \(analysis.searchQuery)")
+                Text("Search: \(analysis.searchQuery)")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(AppColors.textSecondary)
             }
 
             if !analysis.recommendedQuestion.isEmpty {
-                detailBlock(title: "Question to bring", text: analysis.recommendedQuestion)
+                detailBlock(title: "Question", text: analysis.recommendedQuestion)
             }
 
             if let topMatch = clinicStore.rankedResults.first {
@@ -589,7 +644,7 @@ struct FindCareView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Best match right now")
+                    Text("Best match")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(AppColors.primary)
 
@@ -625,7 +680,7 @@ struct FindCareView: View {
                 }
             }
 
-            Text("Open this clinic to review the 1177 page and use the draft in the egen vårdbegäran flow.")
+            Text("Open clinic, review 1177, and paste the draft when starting egen vårdbegäran.")
                 .font(.caption.weight(.medium))
                 .foregroundStyle(AppColors.textSecondary)
         }
@@ -649,10 +704,6 @@ struct FindCareView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppColors.backgroundMuted)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
-
-    private var guideURL: URL {
-        URL(string: "https://guide.eir.space")!
     }
 
     private var pendingCloudConsentMessage: String {
@@ -1033,8 +1084,17 @@ private struct FindCareClinicRow: View {
     let match: SelfReferralClinicMatch
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(AppColors.primarySoft)
+                        .frame(width: 42, height: 42)
+                    Image(systemName: iconName)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(AppColors.primary)
+                }
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(match.clinic.name)
                         .font(.headline.weight(.bold))
@@ -1048,25 +1108,44 @@ private struct FindCareClinicRow: View {
 
                 Spacer(minLength: 0)
 
-                VStack(alignment: .trailing, spacing: 6) {
-                    Text(match.clinic.type.title)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppColors.textSecondary)
+                    .padding(.top, 4)
+            }
+
+            HStack(spacing: 8) {
+                Text(match.clinic.type.title)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppColors.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(AppColors.primarySoft)
+                    .clipShape(Capsule())
+
+                if let distanceKm = match.distanceKm {
+                    Text(distanceLabel(distanceKm))
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(AppColors.primary)
+                        .foregroundStyle(AppColors.textSecondary)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 7)
-                        .background(AppColors.primarySoft)
+                        .background(AppColors.backgroundMuted)
                         .clipShape(Capsule())
+                }
 
-                    if let distanceKm = match.distanceKm {
-                        Text(distanceLabel(distanceKm))
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(AppColors.textSecondary)
-                    }
+                if match.clinic.selfReferral.verified {
+                    Label("Egenremiss", systemImage: "checkmark.seal.fill")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppColors.green)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(AppColors.green.opacity(0.12))
+                        .clipShape(Capsule())
                 }
             }
 
             if let firstAction = match.clinic.firstActionLabel {
-                Text(firstAction)
+                Label(firstAction, systemImage: "arrow.up.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(AppColors.green)
             }
@@ -1082,7 +1161,28 @@ private struct FindCareClinicRow: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.88))
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AppColors.border.opacity(0.7), lineWidth: 1)
+        )
+    }
+
+    private var iconName: String {
+        switch match.clinic.type {
+        case .primaryCare:
+            return "cross.case.fill"
+        case .mentalHealth:
+            return "brain.head.profile"
+        case .maternity:
+            return "figure.and.child.holdinghands"
+        case .hospital:
+            return "building.2.crop.circle.fill"
+        case .specialist:
+            return "stethoscope"
+        case .other:
+            return "mappin.and.ellipse"
+        }
     }
 
     private func distanceLabel(_ distanceKm: Double) -> String {
@@ -1106,26 +1206,27 @@ private struct FindCareClinicDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 titleBlock
-                flowBlock
                 actionBlock
-                evidenceBlock
+                flowBlock
 
                 if !match.clinic.summary.isEmpty {
-                    infoBlock(title: "About this clinic", text: match.clinic.summary)
+                    infoBlock(title: "Clinic summary", text: match.clinic.summary)
                 }
 
                 if let careSuggestion {
-                    infoBlock(title: "Question to bring", text: careSuggestion.questionPrompt)
+                    infoBlock(title: "Question", text: careSuggestion.questionPrompt)
                 }
 
                 if let issueAnalysis {
                     aiDraftBlock(issueAnalysis)
                 }
+
+                evidenceBlock
             }
             .padding(20)
         }
         .background(AppColors.background)
-        .navigationTitle("Clinic Details")
+        .navigationTitle("Clinic")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $inAppSafariDestination) { destination in
             InAppSafariView(url: destination.url)
@@ -1134,7 +1235,27 @@ private struct FindCareClinicDetailView: View {
     }
 
     private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Text(match.clinic.type.title)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppColors.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(AppColors.primarySoft)
+                    .clipShape(Capsule())
+
+                if let distanceKm = match.distanceKm {
+                    Text(distanceLabel(distanceKm))
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppColors.textSecondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(AppColors.backgroundMuted)
+                        .clipShape(Capsule())
+                }
+            }
+
             Text(match.clinic.name)
                 .font(.title3.weight(.bold))
                 .foregroundStyle(AppColors.text)
@@ -1153,13 +1274,13 @@ private struct FindCareClinicDetailView: View {
 
     private var flowBlock: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Egenremiss flow")
+            Text("Next steps")
                 .font(.headline)
                 .foregroundStyle(AppColors.text)
 
-            flowStep(number: 1, title: "Open the clinic on 1177", text: "Read the clinic page and confirm that it matches the type of care you need.")
-            flowStep(number: 2, title: match.clinic.selfReferralButtonTitle, text: "Start the clinic’s verified egenremiss or egen vårdbegäran flow directly on 1177.")
-            flowStep(number: 3, title: "Use Eir Guide if you want help writing it", text: "guide.eir.space can help you prepare the wording before you send the request.")
+            flowStep(number: 1, title: "Confirm fit", text: "Open the 1177 clinic page and check the scope.")
+            flowStep(number: 2, title: "Start request", text: "Use the verified egenremiss or egen vårdbegäran action.")
+            flowStep(number: 3, title: "Send concise details", text: "Paste the draft if you used AI matching, then edit before sending.")
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1183,7 +1304,7 @@ private struct FindCareClinicDetailView: View {
             }
 
             actionButton(
-                title: "Open 1177 clinic page",
+                title: "Open clinic page",
                 symbol: "safari.fill"
             ) {
                 openURL(URL(string: match.clinic.links.profile1177)!)
@@ -1215,12 +1336,12 @@ private struct FindCareClinicDetailView: View {
 
     private var evidenceBlock: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Verified 1177 evidence")
+            Text("1177 evidence")
                 .font(.headline)
                 .foregroundStyle(AppColors.text)
 
             if match.clinic.selfReferral.evidence.isEmpty {
-                Text("This clinic has verified 1177 self-referral support.")
+                Text("Verified self-referral support.")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(AppColors.textSecondary)
             } else {
@@ -1266,7 +1387,7 @@ private struct FindCareClinicDetailView: View {
 
     private func aiDraftBlock(_ analysis: FindCareIssueAnalysis) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("AI draft for egen vårdbegäran")
+            Text("Draft for 1177")
                 .font(.headline)
                 .foregroundStyle(AppColors.text)
 
@@ -1333,6 +1454,13 @@ private struct FindCareClinicDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    private func distanceLabel(_ distanceKm: Double) -> String {
+        if distanceKm < 1 {
+            return "\(Int(distanceKm * 1000)) m"
+        }
+        return String(format: "%.1f km", distanceKm)
     }
 
     private func telephoneURL(_ phone: String?) -> URL? {

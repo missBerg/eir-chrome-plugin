@@ -9,6 +9,7 @@ struct ChatView: View {
     @EnvironmentObject var profileStore: ProfileStore
     @EnvironmentObject var agentMemoryStore: AgentMemoryStore
     @EnvironmentObject var localModelManager: LocalModelManager
+    @EnvironmentObject var caseWikiVM: CaseWikiViewModel
 
     @State private var showOnboarding = false
     @State private var showConversations = false
@@ -314,6 +315,17 @@ struct ChatView: View {
         return profileStore.selectedRecordsDocument(for: profileID, document: documentVM.document)
     }
 
+    private var chatCaseWiki: PatientCaseWiki? {
+        guard recordsEnabled,
+              let document = chatDocument,
+              let wiki = caseWikiVM.wiki,
+              CaseSourceCardBuilder.documentSignature(for: document) == wiki.documentSignature
+        else {
+            return nil
+        }
+        return wiki
+    }
+
     private var dataSourceSubtitle: String {
         if recordsEnabled {
             let name = displayProfileName
@@ -480,6 +492,7 @@ struct ChatView: View {
         let includeFollowUpQuestions = profileStore.showChatFollowUpSuggestions(for: profileID)
         chatVM.sendMessage(
             document: chatDocument,
+            caseWiki: chatCaseWiki,
             settingsVM: settingsVM,
             chatThreadStore: chatThreadStore,
             profileID: profileID,
@@ -500,6 +513,7 @@ struct ChatView: View {
         await chatVM.sendVoiceNote(
             draft,
             document: chatDocument,
+            caseWiki: chatCaseWiki,
             settingsVM: settingsVM,
             chatThreadStore: chatThreadStore,
             profileID: profileID,

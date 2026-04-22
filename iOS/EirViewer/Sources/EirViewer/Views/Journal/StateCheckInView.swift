@@ -1,6 +1,10 @@
 import Charts
 import SwiftUI
 
+extension Notification.Name {
+    static let stateCheckInDidSave = Notification.Name("stateCheckInDidSave")
+}
+
 enum StateDimensionGroup: String, CaseIterable, Identifiable {
     case body = "Body"
     case mind = "Mind"
@@ -2201,7 +2205,9 @@ final class StateCheckInStore: ObservableObject {
         EncryptedStore.save(records, forKey: storageKey(for: profileID))
         StateActionLearningEngine.resolvePendingInterventions(profileID: profileID, with: record)
         load(for: profileID)
-        return records.first(where: { $0.id == record.id }) ?? record
+        let savedRecord = records.first(where: { $0.id == record.id }) ?? record
+        NotificationCenter.default.post(name: .stateCheckInDidSave, object: savedRecord)
+        return savedRecord
     }
 
     private func storageKey(for profileID: UUID) -> String {

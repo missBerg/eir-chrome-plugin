@@ -227,6 +227,8 @@ enum StateActionLearningEngine {
             value = (0.40 * lowMotivation) + (0.26 * lowMental) + (0.18 * highStress) + (0.16 * lowMood)
         case .nutrition:
             value = (0.38 * lowPhysical) + (0.22 * lowMood) + (0.20 * highStress) + (0.20 * lowMental)
+        case .social:
+            value = (0.30 * lowMood) + (0.24 * highStress) + (0.22 * lowMotivation) + (0.16 * lowMental) + (0.08 * lowComfort)
         }
 
         return min(max(value, 0), 1)
@@ -288,6 +290,10 @@ enum StateActionLearningEngine {
         case .hydration, .nutrition:
             if context.isNight { return -0.04 }
             return 0.02
+        case .social:
+            if context.isDay || context.isEvening { return 0.12 }
+            if context.isNight { return -0.12 }
+            return 0.03
         }
     }
 
@@ -353,6 +359,14 @@ enum StateActionLearningEngine {
                 return "You checked in feeling \(title), so the recommendation starts with basic support before intensity."
             } else {
                 return "You checked in with enough room for a simple supportive action right now."
+            }
+        case .social:
+            if level <= 3 {
+                return "You checked in feeling \(title), so this keeps connection small and easy to start."
+            } else if level <= 6 {
+                return "You checked in around the middle, so this adds a small moment of connection without much setup."
+            } else {
+                return "You checked in with more available energy, so this channels some of it into connection."
             }
         }
     }

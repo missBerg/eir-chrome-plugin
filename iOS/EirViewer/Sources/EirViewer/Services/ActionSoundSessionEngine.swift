@@ -189,6 +189,13 @@ enum ActionSoundLibrary {
             ]
         )
     ]
+
+    static func collection(id: String?) -> ActionSoundCollection? {
+        guard let id else {
+            return collections.first
+        }
+        return collections.first { $0.id == id }
+    }
 }
 
 @MainActor

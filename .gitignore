@@ -14,3 +14,6 @@ data/
 eir-stories/node_modules/
 eir-stories/storage/
 eir-stories/rust-backend/target/
+Android/**/.gradle/
+Android/**/build/
+Android/**/local.properties

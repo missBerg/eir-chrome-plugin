@@ -9,8 +9,11 @@ struct ForYouView: View {
     @EnvironmentObject var forYouVM: ForYouViewModel
     @EnvironmentObject var settingsVM: SettingsViewModel
     @EnvironmentObject var localModelManager: LocalModelManager
+    @EnvironmentObject var assessmentStore: AssessmentHistoryStore
+    @EnvironmentObject var stateStore: StateCheckInStore
 
     @State private var selectedCard: ForYouCard?
+    @StateObject private var actionProgressStore = ActionLibraryProgressStore()
 
     var body: some View {
         ScrollView {
@@ -43,10 +46,14 @@ struct ForYouView: View {
             ForYouSheet(card: card)
                 .environmentObject(actionsVM)
                 .environmentObject(forYouVM)
+                .environmentObject(actionProgressStore)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
         .task {
+            assessmentStore.load(for: profileStore.selectedProfileID)
+            stateStore.load(for: profileStore.selectedProfileID)
+            actionProgressStore.sync(profileID: profileStore.selectedProfileID)
             syncFeed()
         }
         .alert(
@@ -71,6 +78,9 @@ struct ForYouView: View {
             Text("Your records will be sent to \(forYouVM.pendingCloudConsent?.displayName ?? "the selected provider") to generate more cards for For You. This data may include health information. On-device models keep everything on your phone.")
         }
         .onChange(of: profileStore.selectedProfileID) {
+            assessmentStore.load(for: profileStore.selectedProfileID)
+            stateStore.load(for: profileStore.selectedProfileID)
+            actionProgressStore.sync(profileID: profileStore.selectedProfileID)
             syncFeed()
         }
         .onChange(of: documentSignature) {
@@ -78,6 +88,16 @@ struct ForYouView: View {
         }
         .onChange(of: actionsSignature) {
             syncFeed()
+        }
+        .onReceive(assessmentStore.$records) { _ in
+            syncFeed()
+        }
+        .onReceive(stateStore.$records) { _ in
+            syncFeed(force: true)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .stateCheckInDidSave)) { _ in
+            stateStore.load(for: profileStore.selectedProfileID)
+            syncFeed(force: true)
         }
     }
 
@@ -198,12 +218,15 @@ struct ForYouView: View {
         actionsVM.actions.map(\.id).joined(separator: "|")
     }
 
-    private func syncFeed() {
+    private func syncFeed(force: Bool = false) {
         actionsVM.sync(profileID: profileStore.selectedProfileID, document: documentVM.document)
         forYouVM.sync(
             profileID: profileStore.selectedProfileID,
             document: documentVM.document,
-            actions: actionsVM.actions
+            actions: actionsVM.actions,
+            assessmentRecords: assessmentStore.records,
+            stateRecords: stateStore.records,
+            force: force
         )
     }
 
@@ -436,7 +459,189 @@ private struct ForYouSheet: View {
             ReflectionCardSheet(card: card)
                 .environmentObject(forYouVM)
         case .soundscape:
-            ReadingCardSheet(card: card)
+            SoundscapeCardSheet(card: card)
+        case .trainer:
+            TrainerCardSheet(card: card)
+        case .assessment:
+            AssessmentLauncherSheet(card: card)
+        case .checkIn:
+            CheckInLauncherSheet(card: card)
+        case .digital:
+            DigitalLauncherSheet(card: card)
+        }
+    }
+}
+
+private struct SoundscapeCardSheet: View {
+    let card: ForYouCard
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        if let collection = ActionSoundLibrary.collection(id: card.soundCollectionID) {
+            NavigationStack {
+                ActionSoundCollectionView(collection: collection)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") { dismiss() }
+                        }
+                    }
+            }
+        } else {
+            FeedLauncherFallbackSheet(card: card, title: "Sound unavailable")
+        }
+    }
+}
+
+private struct TrainerCardSheet: View {
+    let card: ForYouCard
+    @EnvironmentObject private var progressStore: ActionLibraryProgressStore
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        if let trainer = ActionLibraryCatalog.trainer(id: card.trainerID) {
+            NavigationStack {
+                SpatialWorkingMemoryTrainerView(definition: trainer)
+                    .environmentObject(progressStore)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") { dismiss() }
+                        }
+                    }
+            }
+        } else {
+            FeedLauncherFallbackSheet(card: card, title: "Trainer unavailable")
+        }
+    }
+}
+
+private struct AssessmentLauncherSheet: View {
+    let card: ForYouCard
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        FeedLauncherSheet(
+            card: card,
+            title: "Structured check",
+            bodyText: "Open Assessments to take or retake a guided self-check. The result is saved into State and can shape future For You cards.",
+            buttonTitle: card.callToAction ?? "Open assessments",
+            buttonSystemImage: "checklist"
+        ) {
+            dismiss()
+            NotificationCenter.default.post(name: .navigateToAssessments, object: card.assessmentID)
+        }
+    }
+}
+
+private struct CheckInLauncherSheet: View {
+    let card: ForYouCard
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        FeedLauncherSheet(
+            card: card,
+            title: "State check-in",
+            bodyText: "Capture a quick snapshot of how you feel. Even one honest check-in gives Eir a better signal for the next action.",
+            buttonTitle: card.callToAction ?? "Check in",
+            buttonSystemImage: "waveform.path.ecg"
+        ) {
+            dismiss()
+            NotificationCenter.default.post(name: .navigateToCheckIn, object: nil)
+        }
+    }
+}
+
+private struct DigitalLauncherSheet: View {
+    let card: ForYouCard
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        FeedLauncherSheet(
+            card: card,
+            title: "Doing Nothing",
+            bodyText: "Open Digital to start a quiet session. Five full minutes earns a Nothing Point and becomes a recovery signal for State.",
+            buttonTitle: card.callToAction ?? "Open Digital",
+            buttonSystemImage: "sparkles.rectangle.stack"
+        ) {
+            dismiss()
+            NotificationCenter.default.post(name: .navigateToDigital, object: nil)
+        }
+    }
+}
+
+private struct FeedLauncherFallbackSheet: View {
+    let card: ForYouCard
+    let title: String
+
+    var body: some View {
+        FeedLauncherSheet(
+            card: card,
+            title: title,
+            bodyText: "This experience is not available right now.",
+            buttonTitle: "Done",
+            buttonSystemImage: "checkmark"
+        ) {}
+    }
+}
+
+private struct FeedLauncherSheet: View {
+    let card: ForYouCard
+    let title: String
+    let bodyText: String
+    let buttonTitle: String
+    let buttonSystemImage: String
+    let action: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    SheetHero(
+                        eyebrow: card.eyebrow,
+                        title: card.title,
+                        summary: card.summary,
+                        accent: card.theme.accent,
+                        durationLabel: card.durationLabel,
+                        symbolName: card.symbolName,
+                        gradient: card.theme.gradient
+                    )
+
+                    FloatingSheetSection(theme: card.theme) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text(title)
+                                .font(.headline)
+                                .foregroundStyle(AppColors.text)
+
+                            Text(bodyText)
+                                .font(.subheadline)
+                                .foregroundStyle(AppColors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            Button {
+                                action()
+                            } label: {
+                                Label(buttonTitle, systemImage: buttonSystemImage)
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(card.theme.deepTone)
+                                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(20)
+            }
+            .background(sheetBackground(theme: card.theme))
+            .navigationTitle(card.kind.label)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
         }
     }
 }
@@ -493,6 +698,7 @@ private struct ActionDetailSheet: View {
     let onSchedule: () -> Void
     let onClearSchedule: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var showSocialComposer = false
 
     var body: some View {
         NavigationStack {
@@ -562,6 +768,15 @@ private struct ActionDetailSheet: View {
                             foreground: AppColors.text,
                             action: onTogglePin
                         )
+                        if action.category == .social {
+                            actionButton(
+                                title: "Edit & share message",
+                                systemImage: "square.and.pencil",
+                                fill: Color.white,
+                                foreground: AppColors.text,
+                                action: { showSocialComposer = true }
+                            )
+                        }
                         if state.schedule != nil {
                             actionButton(
                                 title: "Remove schedule",
@@ -584,6 +799,11 @@ private struct ActionDetailSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showSocialComposer) {
+                SocialMessageComposerSheet(theme: theme, action: action)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
         }
     }
 
@@ -602,6 +822,226 @@ private struct ActionDetailSheet: View {
                 )
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct SocialMessageComposerSheet: View {
+    let theme: ForYouCardTheme
+    let action: HealthAction
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedVariantID = ""
+    @State private var draft = ""
+    @State private var showShareSheet = false
+
+    private var variants: [SocialMessageVariant] {
+        SocialMessageVariant.variants(for: action)
+    }
+
+    private var isDraftEmpty: Bool {
+        draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                content
+            }
+            .background(sheetBackground(theme: theme))
+            .navigationTitle("Message")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .onAppear {
+                guard draft.isEmpty, let first = variants.first else { return }
+                selectedVariantID = first.id
+                draft = first.message
+            }
+            .sheet(isPresented: $showShareSheet) {
+                ActivityView(activityItems: [draft])
+            }
+        }
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            SheetHero(
+                eyebrow: "Social",
+                title: "Send a kind note",
+                summary: "Pick a message, make it yours, and send it when it feels right.",
+                accent: theme.accent,
+                durationLabel: nil,
+                symbolName: "heart.text.square.fill",
+                gradient: theme.gradient
+            )
+
+            toneSection
+            messageSection
+        }
+        .padding(20)
+    }
+
+    private var toneSection: some View {
+        FloatingSheetSection(theme: theme) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Tone")
+                    .font(.headline)
+                    .foregroundStyle(AppColors.text)
+
+                VStack(spacing: 10) {
+                    ForEach(variants) { variant in
+                        SocialMessageVariantButton(
+                            variant: variant,
+                            isSelected: selectedVariantID == variant.id,
+                            theme: theme
+                        ) {
+                            selectedVariantID = variant.id
+                            draft = variant.message
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var messageSection: some View {
+        FloatingSheetSection(theme: theme) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Message")
+                    .font(.headline)
+                    .foregroundStyle(AppColors.text)
+
+                TextEditor(text: $draft)
+                    .scrollContentBackground(.hidden)
+                    .font(.body)
+                    .foregroundStyle(AppColors.text)
+                    .padding(14)
+                    .frame(minHeight: 170)
+                    .background(theme.accent.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(theme.accent.opacity(0.2), lineWidth: 1)
+                    )
+
+                shareButton
+            }
+        }
+    }
+
+    private var shareButton: some View {
+        Button {
+            showShareSheet = true
+        } label: {
+            Label("Share message", systemImage: "square.and.arrow.up")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(isDraftEmpty ? AppColors.textSecondary.opacity(0.45) : theme.deepTone)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(isDraftEmpty)
+    }
+}
+
+private struct SocialMessageVariantButton: View {
+    let variant: SocialMessageVariant
+    let isSelected: Bool
+    let theme: ForYouCardTheme
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(isSelected ? theme.deepTone : AppColors.textSecondary)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(variant.title)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(AppColors.text)
+                    Text(variant.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(AppColors.textSecondary)
+                }
+
+                Spacer()
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(isSelected ? theme.accent.opacity(0.12) : AppColors.backgroundMuted)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(isSelected ? theme.accent.opacity(0.28) : AppColors.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct SocialMessageVariant: Identifiable {
+    let id: String
+    let title: String
+    let subtitle: String
+    let message: String
+
+    static func variants(for action: HealthAction) -> [SocialMessageVariant] {
+        switch action.id {
+        case "records-kind-message":
+            return [
+                SocialMessageVariant(
+                    id: "thinking",
+                    title: "Thinking of you",
+                    subtitle: "Warm and low-pressure",
+                    message: "Hey, I have been trying to stay connected in small ways. No pressure to reply quickly, but I wanted to check in and say I am thinking of you."
+                ),
+                SocialMessageVariant(
+                    id: "invite",
+                    title: "Small invite",
+                    subtitle: "Opens the door gently",
+                    message: "Hey, I was thinking it could be nice to catch up sometime soon. No pressure, but if you have a little time this week I would love that."
+                ),
+                SocialMessageVariant(
+                    id: "honest",
+                    title: "Honest check-in",
+                    subtitle: "A little more personal",
+                    message: "Hey, I have been a bit in my head lately and wanted to reach out instead of disappearing. Hope you are doing okay."
+                )
+            ]
+        default:
+            return [
+                SocialMessageVariant(
+                    id: "appreciation",
+                    title: "Appreciation",
+                    subtitle: "Kind and simple",
+                    message: "Hey, I thought of you today. No need to reply fast, just wanted to say I appreciate you."
+                ),
+                SocialMessageVariant(
+                    id: "check-in",
+                    title: "Gentle check-in",
+                    subtitle: "Easy to receive",
+                    message: "Hey, just checking in. I hope your day has had at least one good moment in it."
+                ),
+                SocialMessageVariant(
+                    id: "encouragement",
+                    title: "Encouragement",
+                    subtitle: "Supportive and direct",
+                    message: "Hey, I know things can be a lot sometimes. Just wanted to say I am rooting for you."
+                ),
+                SocialMessageVariant(
+                    id: "invite",
+                    title: "Tiny plan",
+                    subtitle: "Suggests connection",
+                    message: "Hey, want to grab a coffee or take a walk sometime soon? No rush, just thought it would be nice to see you."
+                )
+            ]
+        }
     }
 }
 
@@ -1416,6 +1856,7 @@ struct ActionLibraryView: View {
             ForYouSheet(card: card)
                 .environmentObject(actionsVM)
                 .environmentObject(forYouVM)
+                .environmentObject(progressStore)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
@@ -2162,6 +2603,7 @@ private struct LibraryActionDetailSheet: View {
         case .sleep: return .velvet
         case .planning: return .ember
         case .nutrition: return .meadow
+        case .social: return .coral
         }
     }
 }
@@ -3259,6 +3701,11 @@ private enum ActionLibraryCatalog {
             maximumLevel: 8
         )
     ]
+
+    static func trainer(id: String?) -> ActionLibraryTrainer? {
+        guard let id else { return nil }
+        return trainers.first { $0.id == id }
+    }
 
     static let programs: [ActionLibraryProgram] = [
         ActionLibraryProgram(

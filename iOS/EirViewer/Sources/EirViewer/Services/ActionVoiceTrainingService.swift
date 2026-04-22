@@ -98,6 +98,7 @@ final class ActionVoiceTrainingService: ObservableObject {
     }
 
     @Published private(set) var isCapturing = false
+    @Published private(set) var isStartingCapture = false
     @Published private(set) var mode: CaptureMode?
     @Published private(set) var currentFrequency: Int = 0
     @Published private(set) var currentVolume: Int = 0
@@ -113,6 +114,8 @@ final class ActionVoiceTrainingService: ObservableObject {
     private var meterTimer: Timer?
     private var startedAt: Date?
     private var tonePlayer: ActionVoiceTonePlayer?
+    private var captureToken = UUID()
+    private var hasInputTap = false
 
     nonisolated static var captureEnvironmentNote: String? {
 #if targetEnvironment(simulator)
@@ -147,6 +150,11 @@ final class ActionVoiceTrainingService: ObservableObject {
         stopCapture()
     }
 
+    func stopAllCapture() {
+        stopCapture()
+        stopTonePlayback()
+    }
+
     func playTargetNote(_ note: String) {
         let frequency = Self.noteToFrequency(note)
         tonePlayer?.stop()
@@ -160,7 +168,12 @@ final class ActionVoiceTrainingService: ObservableObject {
     }
 
     private func startCapture(mode: CaptureMode) async {
-        stopCapture(resetLiveMetricsOnly: true)
+        guard !isStartingCapture else { return }
+
+        stopCapture(resetLiveMetricsOnly: true, invalidatesPendingStart: false)
+        let token = UUID()
+        captureToken = token
+        isStartingCapture = true
         errorMessage = nil
         lastAnalysisSummary = nil
         lastPitchMatchSummary = nil
@@ -168,10 +181,15 @@ final class ActionVoiceTrainingService: ObservableObject {
 
         do {
             try await requestMicrophonePermission()
+            guard captureToken == token else { return }
 
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers])
             try session.setActive(true, options: .notifyOthersOnDeactivation)
+            guard captureToken == token else {
+                try? session.setActive(false, options: .notifyOthersOnDeactivation)
+                return
+            }
             guard session.isInputAvailable else {
                 throw RecorderError.inputRouteUnavailable
             }
@@ -189,7 +207,7 @@ final class ActionVoiceTrainingService: ObservableObject {
             let accumulator = VoiceCaptureAccumulator(mode: mode)
             captureAccumulator = accumulator
 
-            inputNode.removeTap(onBus: 0)
+            removeInputTapIfNeeded(from: inputNode)
             inputNode.installTap(onBus: 0, bufferSize: 2048, format: nil) { [weak self] buffer, _ in
                 guard let self else { return }
                 guard let channelData = buffer.floatChannelData?[0] else { return }
@@ -200,32 +218,43 @@ final class ActionVoiceTrainingService: ObservableObject {
                 let liveMetrics = accumulator.ingest(samples: samples, sampleRate: sampleRate)
 
                 Task { @MainActor [weak self] in
-                    guard let self else { return }
+                    guard let self, self.captureToken == token else { return }
                     self.currentFrequency = liveMetrics.frequency
                     self.currentVolume = liveMetrics.volume
                     self.currentNoteName = liveMetrics.noteName
                 }
             }
+            hasInputTap = true
 
             captureEngine.prepare()
             try captureEngine.start()
+            guard captureToken == token else {
+                stopCapture(resetLiveMetricsOnly: true, invalidatesPendingStart: false)
+                return
+            }
 
             self.mode = mode
             isCapturing = true
+            isStartingCapture = false
             startedAt = Date()
             durationSeconds = 0
             startTimer()
         } catch {
+            guard captureToken == token else { return }
             errorMessage = error.localizedDescription
-            stopCapture(resetLiveMetricsOnly: true)
+            stopCapture(resetLiveMetricsOnly: true, invalidatesPendingStart: false)
         }
     }
 
-    private func stopCapture(resetLiveMetricsOnly: Bool = false) {
+    private func stopCapture(resetLiveMetricsOnly: Bool = false, invalidatesPendingStart: Bool = true) {
+        if invalidatesPendingStart {
+            captureToken = UUID()
+        }
+
         meterTimer?.invalidate()
         meterTimer = nil
 
-        captureEngine.inputNode.removeTap(onBus: 0)
+        removeInputTapIfNeeded(from: captureEngine.inputNode)
         captureEngine.stop()
         captureEngine.reset()
 
@@ -243,6 +272,7 @@ final class ActionVoiceTrainingService: ObservableObject {
 
         captureAccumulator = nil
         isCapturing = false
+        isStartingCapture = false
         mode = nil
         startedAt = nil
 
@@ -254,6 +284,12 @@ final class ActionVoiceTrainingService: ObservableObject {
         }
 
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    private func removeInputTapIfNeeded(from inputNode: AVAudioInputNode) {
+        guard hasInputTap else { return }
+        inputNode.removeTap(onBus: 0)
+        hasInputTap = false
     }
 
     private func startTimer() {

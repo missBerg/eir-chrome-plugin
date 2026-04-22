@@ -13,23 +13,44 @@ final class ForYouViewModel: ObservableObject {
     private var currentSignature: String?
     private var currentDocument: EirDocument?
     private var currentActions: [HealthAction] = []
+    private var currentAssessmentRecords: [AssessmentRecord] = []
+    private var currentStateRecords: [StateCheckInRecord] = []
 
-    func sync(profileID: UUID?, document: EirDocument?, actions: [HealthAction]) {
-        let signature = feedSignature(document: document, actions: actions)
+    func sync(
+        profileID: UUID?,
+        document: EirDocument?,
+        actions: [HealthAction],
+        assessmentRecords: [AssessmentRecord] = [],
+        stateRecords: [StateCheckInRecord] = [],
+        force: Bool = false
+    ) {
+        let signature = feedSignature(
+            document: document,
+            actions: actions,
+            assessmentRecords: assessmentRecords,
+            stateRecords: stateRecords
+        )
         currentDocument = document
         currentActions = actions
+        currentAssessmentRecords = assessmentRecords
+        currentStateRecords = stateRecords
         if currentProfileID != profileID {
             currentProfileID = profileID
             loadState()
             currentSignature = nil
         }
 
-        if currentSignature == signature, !cards.isEmpty {
+        if !force, currentSignature == signature, !cards.isEmpty {
             return
         }
 
         currentSignature = signature
-        cards = ForYouCardGenerator.generate(document: document, actions: actions)
+        cards = ForYouCardGenerator.generate(
+            document: document,
+            actions: actions,
+            assessmentRecords: assessmentRecords,
+            stateRecords: stateRecords
+        )
         loadMoreError = nil
         sortCards()
     }
@@ -213,7 +234,7 @@ final class ForYouViewModel: ObservableObject {
               "eyebrow": "2-4 words",
               "summary": "one short sentence",
               "durationMinutes": 1-10,
-              "actionCategory": "movement|breath|recovery|hydration|focus|sleep|planning|nutrition",
+              "actionCategory": "movement|breath|recovery|hydration|focus|sleep|planning|nutrition|social",
               "insight": "short rationale",
               "benefits": ["benefit", "benefit"],
               "steps": ["step", "step", "step"],
@@ -238,6 +259,8 @@ final class ForYouViewModel: ObservableObject {
         - Avoid diagnosis, alarmist language, and generic wellness filler.
         - Keep the language calm, specific, elegant, and useful.
         - Make the batch varied. Prefer a mix of action, meditation, quiz, reading, and reflection.
+        - Titles must be user-facing, 2-6 words, and never JSON/schema labels like cards, title, summary, or kind.
+        - Do not use one-word generic titles such as Grounding, Breathing, Reflection, or Reset.
         - For action cards include 2-3 benefits and 2-4 steps.
         - For quiz cards include exactly 3 options and exactly 1 correct answer.
         - For reading cards include 2-3 short paragraphs.
@@ -304,10 +327,10 @@ final class ForYouViewModel: ObservableObject {
     ) -> ForYouCard? {
         let kind = ForYouCardKind(rawValue: spec.kind.lowercased()) ?? .action
         let theme = ForYouCardTheme.generatedTheme(for: kind, offset: offset + sortOrder)
-        let cleanTitle = spec.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let cleanTitle = usableGeneratedTitle(spec.title) else { return nil }
         let cleanSummary = spec.summary.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !cleanTitle.isEmpty, !cleanSummary.isEmpty else { return nil }
+        guard !cleanSummary.isEmpty else { return nil }
 
         let durationMinutes = min(max(spec.durationMinutes ?? 3, 1), 10)
         let eyebrow = (spec.eyebrow?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
@@ -456,7 +479,9 @@ final class ForYouViewModel: ObservableObject {
                 breathing: nil
             )
 
-        case .soundscape:
+        case .soundscape, .digital:
+            return nil
+        case .trainer, .assessment, .checkIn:
             return nil
         }
     }
@@ -477,6 +502,14 @@ final class ForYouViewModel: ObservableObject {
         let actionLines = currentActions.prefix(5).map {
             "- Action: \($0.title) (\($0.durationLabel)) — \($0.summary)"
         }
+        let assessmentLines = currentAssessmentRecords.prefix(4).map { record in
+            let result = record.overall.map { " — \($0.band.label)" } ?? ""
+            return "- Assessment: \(record.assessmentID)\(result)"
+        }
+        let stateLines = currentStateRecords.prefix(3).map { record in
+            let level = stateFeelingLevel(for: record.scores)
+            return "- State check-in: \(level)/10\(record.note.isEmpty ? "" : " — \(record.note.prefix(80))")"
+        }
         let entryLines: [String] = currentDocument?.entries.prefix(6).compactMap { entry in
             let summary = [
                 entry.category,
@@ -490,7 +523,7 @@ final class ForYouViewModel: ObservableObject {
             return summary.isEmpty ? nil : "- Record: \(summary.prefix(180))"
         } ?? []
 
-        let combined = Array((actionLines + entryLines).prefix(10))
+        let combined = Array((stateLines + actionLines + assessmentLines + entryLines).prefix(10))
         if combined.isEmpty {
             return "- No personal health records are available. Generate universally useful cards."
         }
@@ -515,6 +548,14 @@ final class ForYouViewModel: ObservableObject {
             return "square.and.pencil"
         case .soundscape:
             return "waveform"
+        case .trainer:
+            return "square.grid.3x3.fill"
+        case .assessment:
+            return "checklist"
+        case .checkIn:
+            return "waveform.path.ecg"
+        case .digital:
+            return "sparkles.rectangle.stack"
         }
     }
 
@@ -526,6 +567,10 @@ final class ForYouViewModel: ObservableObject {
         case .reading: return "Short read"
         case .reflection: return "Writing prompt"
         case .soundscape: return "Soundscape"
+        case .trainer: return "Brain training"
+        case .assessment: return "Self-check"
+        case .checkIn: return "Check-in"
+        case .digital: return "Digital"
         }
     }
 
@@ -596,10 +641,10 @@ final class ForYouViewModel: ObservableObject {
 
     private func normalizeCardSpec(_ raw: [String: Any]) -> ForYouGeneratedCardSpec? {
         let kind = stringValue(raw["kind"]) ?? stringValue(raw["type"]) ?? "action"
-        let title = stringValue(raw["title"]) ?? stringValue(raw["name"]) ?? ""
+        let title = usableGeneratedTitle(stringValue(raw["title"]) ?? stringValue(raw["name"]))
         let summary = stringValue(raw["summary"]) ?? stringValue(raw["description"]) ?? stringValue(raw["subtitle"]) ?? ""
 
-        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+        guard let title,
               !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -635,7 +680,7 @@ final class ForYouViewModel: ObservableObject {
 
         let titles = lines
             .map { $0.replacingOccurrences(of: #"^[-*\d\.\)\s]+"#, with: "", options: .regularExpression) }
-            .filter { $0.count > 6 }
+            .compactMap(usableGeneratedTitle)
 
         guard !titles.isEmpty else { return nil }
 
@@ -670,6 +715,63 @@ final class ForYouViewModel: ObservableObject {
             return trimmed.isEmpty ? nil : trimmed
         }
         return nil
+    }
+
+    private func usableGeneratedTitle(_ value: String?) -> String? {
+        guard var title = value?.trimmingCharacters(in: .whitespacesAndNewlines) else { return nil }
+        title = title.trimmingCharacters(in: CharacterSet(charactersIn: "\"'`"))
+        title = title.replacingOccurrences(
+            of: #"^title\s*[:=]\s*"#,
+            with: "",
+            options: [.regularExpression, .caseInsensitive]
+        )
+        title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !title.isEmpty,
+              title.count >= 8,
+              title.count <= 64,
+              !title.contains("{"),
+              !title.contains("}"),
+              !title.contains("["),
+              !title.contains("]") else {
+            return nil
+        }
+
+        let blockedTitles: Set<String> = [
+            "card",
+            "cards",
+            "item",
+            "items",
+            "title",
+            "kind",
+            "type",
+            "summary",
+            "description",
+            "subtitle",
+            "eyebrow",
+            "label",
+            "actioncategory",
+            "benefits",
+            "steps",
+            "instructions",
+            "quizquestion",
+            "quizoptions",
+            "readingparagraphs",
+            "reflectionprompt",
+            "breathing",
+            "grounding",
+            "reflection",
+            "reset",
+            "mindfulness"
+        ]
+        guard !blockedTitles.contains(normalizedTitle(title)) else { return nil }
+
+        let words = title
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+        guard words.count >= 2 else { return nil }
+
+        return title
     }
 
     private func intValue(_ value: Any?) -> Int? {
@@ -753,10 +855,34 @@ final class ForYouViewModel: ObservableObject {
         return "eir_for_you_state_global"
     }
 
-    private func feedSignature(document: EirDocument?, actions: [HealthAction]) -> String {
+    private func feedSignature(
+        document: EirDocument?,
+        actions: [HealthAction],
+        assessmentRecords: [AssessmentRecord],
+        stateRecords: [StateCheckInRecord]
+    ) -> String {
         let actionIDs = actions.map(\.id).joined(separator: "|")
         let entryHead = document?.entries.prefix(6).map(\.id).joined(separator: "|") ?? "none"
-        return "\(document?.entries.count ?? 0)|\(entryHead)|\(actionIDs)"
+        let assessmentHead = assessmentRecords.prefix(6).map { "\($0.id.uuidString):\($0.completedAt.timeIntervalSince1970)" }.joined(separator: "|")
+        let stateHead = stateRecords.prefix(6).map { "\($0.id.uuidString):\($0.createdAt.timeIntervalSince1970)" }.joined(separator: "|")
+        let dayStamp = Self.dayStamp(for: Date())
+        return "\(document?.entries.count ?? 0)|\(entryHead)|\(actionIDs)|\(assessmentRecords.count)|\(assessmentHead)|\(stateRecords.count)|\(stateHead)|\(dayStamp)"
+    }
+
+    private func stateFeelingLevel(for scores: [String: Double]) -> Int {
+        let positiveIDs = ["physical_energy", "mental_energy", "mood", "motivation", "body_comfort"]
+        let positiveAverage = positiveIDs
+            .map { scores[$0] ?? 0.5 }
+            .reduce(0, +) / Double(positiveIDs.count)
+        let stressEase = 1 - (scores["stress_load"] ?? 0.5)
+        return Int(round(((positiveAverage + stressEase) / 2) * 10))
+    }
+
+    private static func dayStamp(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "yyyy-MM-dd-HH"
+        return formatter.string(from: date)
     }
 }
 

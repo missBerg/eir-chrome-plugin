@@ -118,6 +118,27 @@ enum HealthActionGenerator {
             )
         }
 
+        if containsAny(in: corpus, keywords: ["ensam", "alone", "social", "stöd", "support", "stress", "oro", "ångest"]) {
+            actions.append(
+                HealthAction(
+                    id: "records-kind-message",
+                    title: "Send one kind message",
+                    summary: "Reach out with one low-pressure line to someone you trust or appreciate.",
+                    insight: "Connection is easier to act on when the message is small, specific, and ready to edit.",
+                    category: .social,
+                    durationMinutes: 3,
+                    benefits: ["Creates a small moment of connection", "Can lower the friction of asking for support later"],
+                    steps: [
+                        "Choose one person who feels safe or easy to contact.",
+                        "Use or edit the suggested message.",
+                        "Send it without turning it into a long conversation unless you want to."
+                    ],
+                    source: .records,
+                    linkedEntryIDs: recordIDs
+                )
+            )
+        }
+
         var unique = uniqued(actions + starter)
         if unique.count > 8 {
             unique = Array(unique.prefix(8))
@@ -184,6 +205,22 @@ enum HealthActionGenerator {
                 durationMinutes: 5,
                 benefits: ["Supports better sleep onset", "Lowers late-evening stimulation"],
                 steps: ["Lower the brightness on your phone.", "Turn off one unnecessary light.", "Put tomorrow’s first task on paper.", "Leave the phone out of reach for five minutes."],
+                source: .starter,
+                linkedEntryIDs: []
+            ),
+            HealthAction(
+                id: "starter-kind-message",
+                title: "Send a kind note",
+                summary: "Share one warm, specific sentence with someone who came to mind.",
+                insight: "Prosocial actions can improve mood and connection without needing a big conversation.",
+                category: .social,
+                durationMinutes: 3,
+                benefits: ["Builds connection", "Turns appreciation into a concrete action"],
+                steps: [
+                    "Think of one person you appreciate.",
+                    "Write one sentence that is specific and low-pressure.",
+                    "Send it now or save it for later."
+                ],
                 source: .starter,
                 linkedEntryIDs: []
             )

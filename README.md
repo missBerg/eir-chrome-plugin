@@ -6,6 +6,15 @@ Open-source tools for accessing, viewing, and understanding your Swedish medical
 
 ## Apps
 
+### [Android — Eir Viewer](Android/EirViewer/)
+
+An early native Android app (Kotlin/Jetpack Compose) based on the iOS viewer.
+
+- **EIR import** — open `.eir`, `.yaml`, and `.yml` files from the Android file picker
+- **Local profiles** — imported records are copied into app storage and remembered across launches
+- **Journal viewer** — timeline browsing with search, provider filters, category filters, and entry detail
+- **Action + Find Care screens** — generated actionable next steps and verified clinic search flow with issue analysis and type filters
+
 ### [Desktop — Eir Viewer](Desktop/EirViewer/)
 
 A native macOS app (Swift/SwiftUI) for viewing `.eir` medical record files with AI-powered health insights.
@@ -57,6 +66,8 @@ A Chrome extension that downloads your medical records from 1177.se into portabl
 ## Repository Structure
 
 ```
+├── Android/              # Android app
+│   └── EirViewer/        # Kotlin/Jetpack Compose Android project
 ├── Desktop/              # macOS desktop app
 │   └── EirViewer/        # Swift/SwiftUI app with AI agent, tools, and memory
 ├── iOS/                  # iOS app
@@ -104,6 +115,17 @@ entries:
 See [eir-format-specification.md](eir-format-specification.md) for the full specification.
 
 ## Quick Start
+
+### Android App
+
+Open the Android project in Android Studio:
+
+```bash
+cd Android/EirViewer
+./gradlew tasks
+```
+
+If this is your first Android setup on the Mac, Android Studio may first prompt you to install a JDK, Android SDK components, or emulator images.
 
 ### Desktop App
 

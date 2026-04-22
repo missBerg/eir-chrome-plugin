@@ -6,6 +6,7 @@ enum SystemPrompt {
     static func build(
         memory: AgentMemory,
         document: EirDocument?,
+        caseWiki: PatientCaseWiki? = nil,
         includeToolInstructions: Bool = true,
         allowFollowUpQuestions: Bool = false,
         responseLanguagePreference: ResponseLanguagePreference = .automatic,
@@ -13,6 +14,7 @@ enum SystemPrompt {
     ) -> String {
         var sections: [String] = []
         let hasRecords = !(document?.entries.isEmpty ?? true)
+        let activeCaseWiki = currentCaseWiki(caseWiki, for: document)
 
         // 1. Identity (SOUL.md)
         sections.append(memory.soul)
@@ -32,6 +34,7 @@ enum SystemPrompt {
             # Tool Usage
 
             You have access to tools that let you search records, retrieve details, and update your memory. \
+            Prefer the Patient Case Wiki as the compact map of the user's record history when it is available. \
             When a user asks about specific conditions, dates, or entries, use `search_records` to find relevant data. \
             Use `get_record_detail` when you need the full content of a specific entry. \
             Use `update_memory` to remember important facts for future conversations. \
@@ -50,7 +53,9 @@ enum SystemPrompt {
         }
 
         // 6. Medical Records Context
-        if let doc = document, hasRecords {
+        if let wiki = activeCaseWiki {
+            sections.append(buildCaseWikiContext(from: wiki, detailed: true))
+        } else if let doc = document, hasRecords {
             sections.append(buildRecordsContext(from: doc))
         }
 
@@ -123,6 +128,7 @@ enum SystemPrompt {
         return build(
             memory: defaultMemory,
             document: document,
+            caseWiki: nil,
             includeToolInstructions: false,
             allowFollowUpQuestions: false,
             responseLanguagePreference: .automatic,
@@ -133,6 +139,7 @@ enum SystemPrompt {
     /// Compact system prompt for on-device models — much shorter to reduce prefill time
     static func buildLocal(
         document: EirDocument?,
+        caseWiki: PatientCaseWiki? = nil,
         userName: String? = nil,
         promptVersion: PromptVersion? = nil,
         allowFollowUpQuestions: Bool = false,
@@ -155,7 +162,11 @@ enum SystemPrompt {
             prompt += "\n\n<user>\nName: \(name)\n</user>"
         }
 
-        if let doc = document, hasRecords {
+        if let wiki = currentCaseWiki(caseWiki, for: document) {
+            prompt += "\n\n<case_wiki>\n"
+            prompt += buildCaseWikiContext(from: wiki, detailed: false)
+            prompt += "\n</case_wiki>"
+        } else if let doc = document, hasRecords {
             prompt += "\n\n<records>"
             if let patient = doc.metadata.patient {
                 prompt += "\nPatient: \(patient.name ?? "Unknown")"
@@ -302,6 +313,90 @@ enum SystemPrompt {
         guard cleaned.count > limit else { return cleaned }
         let endIndex = cleaned.index(cleaned.startIndex, offsetBy: limit)
         return cleaned[..<endIndex].trimmingCharacters(in: .whitespacesAndNewlines) + "..."
+    }
+
+    private static func currentCaseWiki(
+        _ caseWiki: PatientCaseWiki?,
+        for document: EirDocument?
+    ) -> PatientCaseWiki? {
+        guard let caseWiki else { return nil }
+        guard let document else { return caseWiki }
+        return CaseSourceCardBuilder.documentSignature(for: document) == caseWiki.documentSignature ? caseWiki : nil
+    }
+
+    private static func buildCaseWikiContext(from wiki: PatientCaseWiki, detailed: Bool) -> String {
+        var context = "# Patient Case Wiki\n\n"
+        context += "This is a compact, source-cited synthesis generated from the user's imported health records. "
+        context += "Use it as the primary map of the case, and use record tools when a specific detail needs verification.\n\n"
+        context += "**Pages**: \(wiki.pages.count)\n"
+        context += "**Sources covered**: \(wiki.index.sourceCoverage.coveredSourceCount) of \(wiki.index.sourceCoverage.totalSourceCount)\n"
+        context += "**Generated**: \(wiki.generatedAt.formatted(date: .abbreviated, time: .shortened))\n"
+
+        let orderedPages = wiki.pages.sorted { lhs, rhs in
+            let lhsRank = pageRank(lhs.kind)
+            let rhsRank = pageRank(rhs.kind)
+            if lhsRank == rhsRank { return lhs.title < rhs.title }
+            return lhsRank < rhsRank
+        }
+        let pageLimit = detailed ? 10 : 5
+
+        for page in orderedPages.prefix(pageLimit) {
+            context += "\n## \(page.title)\n"
+            context += "Kind: \(page.kind.displayName)\n"
+            if !page.summary.isEmpty {
+                context += "Summary: \(truncated(page.summary, limit: detailed ? 700 : 360))\n"
+            }
+
+            let claims = page.claims
+                .filter { !$0.sourceRefs.isEmpty }
+                .prefix(detailed ? 8 : 4)
+            if !claims.isEmpty {
+                context += "Claims:\n"
+                for claim in claims {
+                    context += "- \(truncated(claim.text, limit: detailed ? 360 : 220))"
+                    if claim.confidence != CaseClaimConfidence.unknown {
+                        context += " [\(claim.confidence.rawValue)]"
+                    }
+                    context += " \(citationList(for: claim.sourceRefs))\n"
+                }
+            }
+
+            if detailed {
+                let body = truncated(page.bodyMarkdown, limit: 1400)
+                if !body.isEmpty {
+                    context += "Body excerpt:\n\(body)\n"
+                }
+            }
+        }
+
+        if orderedPages.count > pageLimit {
+            context += "\n(\(orderedPages.count - pageLimit) additional wiki pages are available in the Helhetsbild view.)\n"
+        }
+
+        return context
+    }
+
+    private static func pageRank(_ kind: CaseWikiPageKind) -> Int {
+        switch kind {
+        case .overview: return 0
+        case .visitBrief: return 1
+        case .patientProfile: return 2
+        case .timeline: return 3
+        case .unresolvedIssue: return 4
+        case .labTrend: return 5
+        case .hypothesis: return 6
+        case .diagnosisClaim: return 7
+        case .symptomThread: return 8
+        case .referralThread: return 9
+        case .medicationThread: return 10
+        case .sourceSummary: return 11
+        }
+    }
+
+    private static func citationList(for refs: [CaseSourceRef]) -> String {
+        refs.prefix(4)
+            .map { "<JOURNAL_ENTRY id=\"\($0.entryID)\"/>" }
+            .joined(separator: " ")
     }
 
     // MARK: - Records Context

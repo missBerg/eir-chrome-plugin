@@ -1,0 +1,115 @@
+metadata:
+  format_version: "1.0"
+  created_at: "2025-01-16T17:17:03Z"
+  source: "1177.se Journal"
+  patient:
+    name: "Anna Lindgren"
+    birth_date: "1990-05-15"
+    personal_number: "19900515-1234"
+  export_info:
+    total_entries: 4
+    date_range:
+      start: "2021-11-02"
+      end: "2025-03-17"
+    healthcare_providers:
+      - "Östervåla vårdcentral"
+      - "Folktandvården Östervåla"
+      - "Apple Health"
+
+entries:
+  - id: "entry_001"
+    date: "2025-03-17"
+    time: "10:52"
+    category: "Vaccinationer"
+    type: "FSME-IMMUN Vuxen"
+    provider:
+      name: "Östervåla vårdcentral"
+      region: "Region Uppsala"
+      location: "Östervåla vårdcentral"
+    status: "Nytt"
+    responsible_person:
+      name: "Eriksson, Maria"
+      role: "Sjuksköterska"
+    content:
+      summary: "TBE-vaccination utförd"
+      details: "FSME-IMMUN Vuxen 2025-03-17"
+      notes:
+        - "Dos: 0.5 ml, intramuskulär"
+        - "Tillverkare: Pfizer Innovations AB (batch KC8559)"
+    attachments: []
+    tags: ["vaccination", "TBE", "FSME-IMMUN"]
+
+  - id: "entry_002"
+    date: "2024-06-11"
+    time: "09:01"
+    category: "Anteckningar"
+    type: "Åtgärd/behandling"
+    provider:
+      name: "Folktandvården Östervåla"
+      region: "Region Uppsala"
+      location: "Östervåla"
+    status: "Nytt"
+    responsible_person:
+      name: "Johan Svensson"
+      role: "Tandläkare"
+    content:
+      summary: "Tandvårdsbehandling"
+      details: "Åtgärd/behandling 2024-06-11 09:01"
+      notes:
+        - "Allmänt tandvårdsbidrag: Utförd"
+        - "Kompletterande undersökning eller utredning, enstaka tand: Utförd"
+    attachments: []
+    tags: ["tandvård", "behandling"]
+
+  - id: "entry_003"
+    date: "2025-03-12"
+    time: "08:14"
+    category: "Anteckningar"
+    type: "Klinisk anteckning"
+    provider:
+      name: "Apple Health"
+      region: null
+      location: null
+    status: "Importerad"
+    responsible_person:
+      name: "Apple Health"
+      role: "Clinical Note Record"
+    content:
+      summary: "Utskrivningsanteckning efter närakutbesök"
+      details: |-
+        Importerad från Apple Health
+        FHIR-resurs: DocumentReference
+        FHIR-ID: note-acute-20250312
+      notes:
+        - |-
+          Sammanfattning
+
+          Patienten sökte för tilltagande halsont och feber sedan tre dagar.
+        - |-
+          Plan
+
+          Råd om vätska, vila, egenvård och återkontakt vid försämring.
+    attachments: []
+    tags: ["apple-health", "clinical-note", "documentreference"]
+
+  - id: "entry_004"
+    date: "2021-11-02"
+    time: "21:37"
+    category: "Diagnoser"
+    type: "Luxation"
+    provider:
+      name: "SLSO- Närakut Danderyd"
+      region: "Stockholm"
+      location: "Danderyd"
+    status: "Osignerad"
+    responsible_person:
+      name: "Erik Bergström"
+      role: "Läkare"
+    content:
+      summary: "Tåskada - luxation"
+      details: "Oplanerat mottagningsbesök efter olycksfall."
+      notes:
+        - "Bedömning: DIP-led subluxation lateralt."
+        - "Ingen misstanke om fraktur."
+    attachments: []
+    tags: ["akut", "ortopedi", "tåskada"]

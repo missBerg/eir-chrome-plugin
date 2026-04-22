@@ -10,6 +10,7 @@ enum HealthActionCategory: String, Codable, CaseIterable, Identifiable {
     case sleep
     case planning
     case nutrition
+    case social
 
     var id: String { rawValue }
 
@@ -23,6 +24,7 @@ enum HealthActionCategory: String, Codable, CaseIterable, Identifiable {
         case .sleep: return "Sleep"
         case .planning: return "Planning"
         case .nutrition: return "Nutrition"
+        case .social: return "Social"
         }
     }
 
@@ -36,6 +38,7 @@ enum HealthActionCategory: String, Codable, CaseIterable, Identifiable {
         case .sleep: return "moon.stars.fill"
         case .planning: return "calendar.badge.clock"
         case .nutrition: return "leaf.fill"
+        case .social: return "heart.text.square.fill"
         }
     }
 
@@ -49,6 +52,7 @@ enum HealthActionCategory: String, Codable, CaseIterable, Identifiable {
         case .sleep: return Color(hex: "355070")
         case .planning: return Color(hex: "8D6A9F")
         case .nutrition: return Color(hex: "5F8D4E")
+        case .social: return Color(hex: "B4536A")
         }
     }
 

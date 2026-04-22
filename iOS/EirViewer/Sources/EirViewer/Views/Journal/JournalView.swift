@@ -8,6 +8,7 @@ extension Notification.Name {
 
 private enum JournalMode: String, CaseIterable, Identifiable {
     case overview = "State"
+    case caseFile = "Helhetsbild"
     case entries = "History"
     case digital = "Digital"
     case state = "Check-in"
@@ -24,6 +25,8 @@ private enum JournalMode: String, CaseIterable, Identifiable {
         switch self {
         case .overview:
             return "waveform.path.ecg"
+        case .caseFile:
+            return "sparkles.rectangle.stack"
         case .entries:
             return "doc.text"
         case .digital:
@@ -38,23 +41,43 @@ private enum JournalMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum JournalNavigationTarget: Equatable {
+    case importData
+    case checkIn
+    case assessments
+    case digital
+}
+
 struct JournalView: View {
     @EnvironmentObject var documentVM: DocumentViewModel
     @EnvironmentObject var profileStore: ProfileStore
     @EnvironmentObject var settingsVM: SettingsViewModel
     @EnvironmentObject var localModelManager: LocalModelManager
     @EnvironmentObject var translationStore: JournalTranslationStore
+    @EnvironmentObject var caseWikiVM: CaseWikiViewModel
+    @EnvironmentObject var assessmentStore: AssessmentHistoryStore
+    @EnvironmentObject var stateStore: StateCheckInStore
+    @EnvironmentObject var chatThreadStore: ChatThreadStore
+
+    @Binding private var navigationTarget: JournalNavigationTarget?
 
     @State private var mode: JournalMode = .overview
-    @StateObject private var assessmentStore = AssessmentHistoryStore()
-    @StateObject private var stateStore = StateCheckInStore()
     @State private var showingHealthKitImport = false
     @State private var showingTranslationSheet = false
     @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
     @State private var qrExportURL: URL?
     @State private var selectedJournalEntryID: String?
+    @State private var healthAnalysisResult: StateHealthAnalysis?
+    @State private var healthAnalysisSignature: String?
+    @State private var healthAnalysisError: String?
+    @State private var isBuildingHealthAnalysis = false
+    @State private var pendingHealthAnalysisConsent: LLMProviderType?
     @StateObject private var digitalTracker = DigitalWellbeingTracker()
+
+    init(navigationTarget: Binding<JournalNavigationTarget?> = .constant(nil)) {
+        self._navigationTarget = navigationTarget
+    }
 
     var body: some View {
         journalRoot
@@ -87,11 +110,30 @@ struct JournalView: View {
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .openJournalImport)) { _ in
-                mode = .importData
+                openNavigationTarget(.importData)
             }
             .onReceive(NotificationCenter.default.publisher(for: .navigateToJournalEntry)) { notification in
                 if let entryID = notification.object as? String {
                     openJournalEntry(entryID)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToAssessments)) { _ in
+                openNavigationTarget(.assessments)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToCheckIn)) { _ in
+                openNavigationTarget(.checkIn)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToDigital)) { _ in
+                openNavigationTarget(.digital)
+            }
+            .onAppear {
+                if let navigationTarget {
+                    openNavigationTarget(navigationTarget)
+                }
+            }
+            .onChange(of: navigationTarget) {
+                if let navigationTarget {
+                    openNavigationTarget(navigationTarget)
                 }
             }
             .onChange(of: documentVM.selectedEntryID) {
@@ -101,6 +143,73 @@ struct JournalView: View {
                 assessmentStore.load(for: profileStore.selectedProfileID)
                 stateStore.load(for: profileStore.selectedProfileID)
                 translationStore.load(for: profileStore.selectedProfileID)
+            }
+            .task(id: caseWikiSyncID) {
+                caseWikiVM.loadAndSync(
+                    profileID: profileStore.selectedProfileID,
+                    document: documentVM.document
+                )
+                await caseWikiVM.autoBuildIfAllowed(
+                    profileID: profileStore.selectedProfileID,
+                    document: documentVM.document,
+                    settingsVM: settingsVM,
+                    localModelManager: localModelManager
+                )
+            }
+            .task(id: healthAnalysisInputSignature) {
+                healthAnalysisResult = nil
+                healthAnalysisError = nil
+                guard hasStateInputs else { return }
+                guard let provider = settingsVM.activeProvider else { return }
+                if provider.type.isLocal || ChatViewModel.hasCloudConsent(for: provider.type) {
+                    await buildHealthAnalysis(requestConsentIfNeeded: false)
+                }
+            }
+            .alert(
+                "Share Data with \(caseWikiVM.pendingCloudConsent?.displayName ?? "Cloud Provider")?",
+                isPresented: Binding(
+                    get: { caseWikiVM.pendingCloudConsent != nil },
+                    set: { if !$0 { caseWikiVM.denyConsent() } }
+                )
+            ) {
+                Button("Cancel", role: .cancel) {
+                    caseWikiVM.denyConsent()
+                }
+                Button("I Agree") {
+                    Task {
+                        await caseWikiVM.grantConsentAndBuild(
+                            profileID: profileStore.selectedProfileID,
+                            document: documentVM.document,
+                            settingsVM: settingsVM,
+                            localModelManager: localModelManager
+                        )
+                    }
+                }
+            } message: {
+                Text("Eir will send compact, source-linked summaries of your imported records to the selected AI provider to build your Patient Case Wiki. Raw records stay stored locally in Eir.")
+            }
+            .alert(
+                "Share Data with \(pendingHealthAnalysisConsent?.displayName ?? "Cloud Provider")?",
+                isPresented: Binding(
+                    get: { pendingHealthAnalysisConsent != nil },
+                    set: { if !$0 { pendingHealthAnalysisConsent = nil } }
+                )
+            ) {
+                Button("Cancel", role: .cancel) {
+                    pendingHealthAnalysisConsent = nil
+                }
+                Button("I Agree") {
+                    Task {
+                        let provider = pendingHealthAnalysisConsent
+                        pendingHealthAnalysisConsent = nil
+                        if let provider {
+                            ChatViewModel.grantCloudConsent(for: provider)
+                        }
+                        await buildHealthAnalysis(requestConsentIfNeeded: false)
+                    }
+                }
+            } message: {
+                Text("Eir will send a compact summary of your EHR, assessments, current chat, and check-ins to generate the Health Analysis score. On-device models keep this on your phone.")
             }
             .safeAreaInset(edge: .top) {
                 if translationStore.isTranslating {
@@ -116,6 +225,8 @@ struct JournalView: View {
         switch mode {
         case .overview:
             return AnyView(stateOverviewScreen)
+        case .caseFile:
+            return AnyView(caseWikiScreen)
         case .entries:
             return AnyView(
                 journalTimeline
@@ -310,6 +421,7 @@ struct JournalView: View {
                 stateOverviewHero
 
                 if hasStateInputs {
+                    stateHealthAnalysisSection
                     stateCurrentSection
                     stateSignalsSection
                     statePatternSection
@@ -381,6 +493,25 @@ struct JournalView: View {
             .environmentObject(localModelManager)
     }
 
+    private var caseWikiScreen: some View {
+        CaseWikiOverviewView(
+            wiki: caseWikiVM.wiki,
+            isBuilding: caseWikiVM.isBuilding,
+            progress: caseWikiVM.progress,
+            statusMessage: caseWikiVM.statusMessage,
+            errorMessage: caseWikiVM.errorMessage,
+            needsRebuild: caseWikiVM.needsRebuild,
+            onBuild: {
+                Task {
+                    await buildCaseWiki()
+                }
+            },
+            onOpenEntry: { entryID in
+                NotificationCenter.default.post(name: .navigateToJournalEntry, object: entryID)
+            }
+        )
+    }
+
     private var digitalScreen: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -423,6 +554,61 @@ struct JournalView: View {
         }
     }
 
+    private var caseWikiSyncID: String {
+        let profilePart = profileStore.selectedProfileID?.uuidString ?? "none"
+        let documentPart = documentVM.document.map { CaseSourceCardBuilder.documentSignature(for: $0) } ?? "none"
+        let providerPart = settingsVM.activeProviderType.rawValue
+        return "\(profilePart)-\(documentPart)-\(providerPart)"
+    }
+
+    private func buildCaseWiki() async {
+        await caseWikiVM.build(
+            profileID: profileStore.selectedProfileID,
+            document: documentVM.document,
+            settingsVM: settingsVM,
+            localModelManager: localModelManager
+        )
+    }
+
+    private func buildHealthAnalysis(requestConsentIfNeeded: Bool) async {
+        guard hasStateInputs else {
+            healthAnalysisError = "Add a check-in, assessment, chat, or health record before running analysis."
+            return
+        }
+        guard let provider = settingsVM.activeProvider else {
+            healthAnalysisError = "Choose an AI provider in Settings before running Health Analysis."
+            return
+        }
+        if !provider.type.isLocal && !ChatViewModel.hasCloudConsent(for: provider.type) {
+            if requestConsentIfNeeded {
+                pendingHealthAnalysisConsent = provider.type
+            }
+            return
+        }
+        if isBuildingHealthAnalysis { return }
+
+        isBuildingHealthAnalysis = true
+        healthAnalysisError = nil
+        let signature = healthAnalysisInputSignature
+
+        do {
+            let analysis = try await StateHealthAnalysisEngine.generate(
+                document: documentVM.document,
+                assessmentRecords: assessmentStore.records,
+                stateRecords: stateStore.records,
+                chatMessages: chatThreadStore.messages,
+                settingsVM: settingsVM,
+                localModelManager: localModelManager
+            )
+            healthAnalysisResult = analysis
+            healthAnalysisSignature = signature
+        } catch {
+            healthAnalysisError = error.localizedDescription
+        }
+
+        isBuildingHealthAnalysis = false
+    }
+
     private func openJournalEntry(_ entryID: String?) {
         guard let entryID,
               documentVM.document?.entries.contains(where: { $0.id == entryID }) == true
@@ -433,6 +619,23 @@ struct JournalView: View {
 
         if documentVM.selectedEntryID != nil {
             documentVM.selectedEntryID = nil
+        }
+    }
+
+    private func openNavigationTarget(_ target: JournalNavigationTarget) {
+        switch target {
+        case .importData:
+            mode = .importData
+        case .checkIn:
+            mode = .state
+        case .assessments:
+            mode = .assessments
+        case .digital:
+            mode = .digital
+        }
+
+        if navigationTarget == target {
+            navigationTarget = nil
         }
     }
 
@@ -552,6 +755,7 @@ struct JournalView: View {
             || !assessmentStore.records.isEmpty
             || hasEntries
             || appleHealthSummary != nil
+            || chatThreadStore.messages.contains { $0.role == .user && !$0.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
             || digitalTracker.sessionCount > 0
             || digitalTracker.doingNothingMinutes > 0
     }
@@ -561,11 +765,31 @@ struct JournalView: View {
             latestStateRecord != nil,
             !assessmentStore.records.isEmpty,
             hasEntries,
+            chatThreadStore.messages.contains { $0.role == .user && !$0.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
             appleHealthSummary != nil,
             digitalTracker.sessionCount > 0 || digitalTracker.doingNothingMinutes > 0
         ]
         .filter { $0 }
         .count
+    }
+
+    private var healthAnalysis: StateHealthAnalysis {
+        healthAnalysisResult ?? StateHealthAnalysisEngine.ready(
+            document: documentVM.document,
+            assessmentRecords: assessmentStore.records,
+            stateRecords: stateStore.records,
+            chatMessages: chatThreadStore.messages
+        )
+    }
+
+    private var healthAnalysisInputSignature: String {
+        StateHealthAnalysisEngine.signature(
+            document: documentVM.document,
+            assessmentRecords: assessmentStore.records,
+            stateRecords: stateStore.records,
+            chatMessages: chatThreadStore.messages,
+            providerType: settingsVM.activeProviderType
+        )
     }
 
     private var stateOverviewHero: some View {
@@ -608,6 +832,175 @@ struct JournalView: View {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(AppColors.border, lineWidth: 1)
         )
+    }
+
+    private var stateHealthAnalysisSection: some View {
+        let analysis = healthAnalysis
+
+        return VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .center, spacing: 16) {
+                healthScoreDial(score: analysis.score)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text("Health Analysis")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(AppColors.text)
+
+                        if analysis.isLLMGenerated {
+                            Image(systemName: "sparkles")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(AppColors.primary)
+                        }
+                    }
+
+                    Text(analysis.label)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(analysis.tint)
+
+                    Text(analysis.summary)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(AppColors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            if isBuildingHealthAnalysis {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .tint(AppColors.primary)
+                    Text("LLM is scoring your state")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppColors.textSecondary)
+                }
+            }
+
+            if let healthAnalysisError {
+                Text(healthAnalysisError)
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(AppColors.pink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10)
+                ],
+                spacing: 10
+            ) {
+                ForEach(analysis.sources) { source in
+                    healthSourceChip(source)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(analysis.reasons, id: \.self) { reason in
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(AppColors.primary)
+                            .frame(width: 20, height: 20)
+                        Text(reason)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(AppColors.text)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    Task {
+                        await buildHealthAnalysis(requestConsentIfNeeded: true)
+                    }
+                } label: {
+                    Label(analysis.isLLMGenerated ? "Refresh Analysis" : "Run Analysis", systemImage: "sparkles")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(isBuildingHealthAnalysis ? AppColors.textSecondary : AppColors.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(isBuildingHealthAnalysis)
+
+                stateShortcutButton(title: "Update Check-In", systemImage: "waveform.path.ecg", mode: .state, fill: AppColors.teal)
+            }
+        }
+        .padding(20)
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(AppColors.border, lineWidth: 1)
+        )
+    }
+
+    private func healthScoreDial(score: Int?) -> some View {
+        let progress = score.map { Double($0) / 100 } ?? 0
+
+        return ZStack {
+            Circle()
+                .stroke(AppColors.backgroundMuted, lineWidth: 10)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(
+                    healthScoreTint(score: score ?? 0),
+                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+
+            VStack(spacing: 0) {
+                Text(score.map(String.init) ?? "--")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(AppColors.text)
+                Text("/100")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+        }
+        .frame(width: 86, height: 86)
+        .accessibilityLabel(score.map { "Health analysis score \($0) out of 100" } ?? "Health analysis score not generated yet")
+    }
+
+    private func healthSourceChip(_ source: StateHealthAnalysisSource) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: source.systemImage)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(source.isActive ? AppColors.primary : AppColors.textSecondary)
+                .frame(width: 24, height: 24)
+                .background((source.isActive ? AppColors.primarySoft : AppColors.backgroundMuted).opacity(0.9))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(source.title)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppColors.text)
+                Text(source.detail)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(AppColors.textSecondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(AppColors.backgroundMuted.opacity(source.isActive ? 0.7 : 0.45))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func healthScoreTint(score: Int) -> Color {
+        switch score {
+        case ..<45:
+            return AppColors.pink
+        case ..<65:
+            return AppColors.orange
+        case ..<80:
+            return AppColors.teal
+        default:
+            return AppColors.primary
+        }
     }
 
     private var stateCurrentSection: some View {
@@ -674,11 +1067,19 @@ struct JournalView: View {
 
             VStack(spacing: 12) {
                 stateSignalRow(
-                    title: "History",
+                    title: "EHR",
                     value: "\(documentVM.document?.entries.count ?? 0) entries",
-                    summary: hasEntries ? "Imported records are available for trend spotting and context." : "No imported record history yet.",
+                    summary: hasEntries ? "Imported records are available for context and trend spotting." : "No imported record history yet.",
                     systemImage: "doc.text",
                     targetMode: .entries
+                )
+
+                stateSignalRow(
+                    title: "Helhetsbild",
+                    value: caseWikiVM.wiki == nil ? "Not built" : "\(caseWikiVM.wiki?.pages.count ?? 0) pages",
+                    summary: caseWikiVM.wiki == nil ? "Compile records into a source-cited patient case wiki." : "A maintained case wiki is ready for chat and visit preparation.",
+                    systemImage: "sparkles.rectangle.stack",
+                    targetMode: .caseFile
                 )
 
                 stateSignalRow(
@@ -687,6 +1088,14 @@ struct JournalView: View {
                     summary: assessmentStore.records.isEmpty ? "Structured self-checks can help bootstrap your state." : "Assessment results are ready to compare over time.",
                     systemImage: "checklist",
                     targetMode: .assessments
+                )
+
+                stateSignalRow(
+                    title: "Chat",
+                    value: "\(chatThreadStore.messages.filter { $0.role == .user }.count) notes",
+                    summary: chatThreadStore.messages.contains { $0.role == .user } ? "Recent chat context is included in the health analysis." : "Talk with Eir to add conversational context.",
+                    systemImage: "bubble.left.and.bubble.right",
+                    targetMode: .overview
                 )
 
                 stateSignalRow(
@@ -1489,6 +1898,377 @@ private final class DigitalWellbeingTracker: ObservableObject {
         formatter.unitsStyle = .positional
         formatter.zeroFormattingBehavior = [.pad]
         return formatter.string(from: max(1, seconds)) ?? "00:00"
+    }
+}
+
+private struct StateHealthAnalysis {
+    let score: Int?
+    let label: String
+    let summary: String
+    let reasons: [String]
+    let sources: [StateHealthAnalysisSource]
+    let isLLMGenerated: Bool
+
+    var tint: Color {
+        guard let score else { return AppColors.textSecondary }
+        switch score {
+        case ..<45:
+            return AppColors.pink
+        case ..<65:
+            return AppColors.orange
+        case ..<80:
+            return AppColors.teal
+        default:
+            return AppColors.primary
+        }
+    }
+}
+
+private struct StateHealthAnalysisSource: Identifiable {
+    let id: String
+    let title: String
+    let detail: String
+    let systemImage: String
+    let isActive: Bool
+}
+
+private enum StateHealthAnalysisEngine {
+    static func ready(
+        document: EirDocument?,
+        assessmentRecords: [AssessmentRecord],
+        stateRecords: [StateCheckInRecord],
+        chatMessages: [ChatMessage]
+    ) -> StateHealthAnalysis {
+        StateHealthAnalysis(
+            score: nil,
+            label: "Ready for LLM scoring",
+            summary: "Run analysis to let the selected model score your current health signal from the available sources.",
+            reasons: [
+                "The score is generated by the LLM from a compact source summary, not by a fixed local formula.",
+                "More recent check-ins and varied assessments make the analysis more useful."
+            ],
+            sources: sources(
+                document: document,
+                assessmentRecords: assessmentRecords,
+                stateRecords: stateRecords,
+                chatMessages: chatMessages
+            ),
+            isLLMGenerated: false
+        )
+    }
+
+    @MainActor
+    static func generate(
+        document: EirDocument?,
+        assessmentRecords: [AssessmentRecord],
+        stateRecords: [StateCheckInRecord],
+        chatMessages: [ChatMessage],
+        settingsVM: SettingsViewModel,
+        localModelManager: LocalModelManager
+    ) async throws -> StateHealthAnalysis {
+        let raw = try await complete(
+            systemPrompt: systemPrompt,
+            userPrompt: buildPrompt(
+                document: document,
+                assessmentRecords: assessmentRecords,
+                stateRecords: stateRecords,
+                chatMessages: chatMessages
+            ),
+            settingsVM: settingsVM,
+            localModelManager: localModelManager
+        )
+
+        let decoded = try decode(raw)
+        return StateHealthAnalysis(
+            score: decoded.score,
+            label: decoded.label.isEmpty ? label(for: decoded.score) : decoded.label,
+            summary: decoded.summary.isEmpty ? "The LLM scored your current health signal from the sources shown below." : decoded.summary,
+            reasons: decoded.reasons.isEmpty ? ["LLM analysis completed from the available State sources."] : Array(decoded.reasons.prefix(4)),
+            sources: sources(
+                document: document,
+                assessmentRecords: assessmentRecords,
+                stateRecords: stateRecords,
+                chatMessages: chatMessages
+            ),
+            isLLMGenerated: true
+        )
+    }
+
+    static func signature(
+        document: EirDocument?,
+        assessmentRecords: [AssessmentRecord],
+        stateRecords: [StateCheckInRecord],
+        chatMessages: [ChatMessage],
+        providerType: LLMProviderType
+    ) -> String {
+        let entryHead = document?.entries.prefix(8).map(\.id).joined(separator: "|") ?? "none"
+        let assessmentHead = assessmentRecords.prefix(8).map { "\($0.id.uuidString):\($0.completedAt.timeIntervalSince1970)" }.joined(separator: "|")
+        let stateHead = stateRecords.prefix(8).map { "\($0.id.uuidString):\($0.createdAt.timeIntervalSince1970)" }.joined(separator: "|")
+        let chatHead = chatMessages.suffix(8).map { "\($0.id.uuidString):\($0.timestamp.timeIntervalSince1970):\($0.content.count)" }.joined(separator: "|")
+        return "\(providerType.rawValue)|\(document?.entries.count ?? 0)|\(entryHead)|\(assessmentRecords.count)|\(assessmentHead)|\(stateRecords.count)|\(stateHead)|\(chatHead)"
+    }
+
+    private static var systemPrompt: String {
+        """
+        You are Eir's Health Analysis model.
+        Score the user's current health signal from 0 to 100 using only the supplied source summaries: EHR, assessments, chat, and check-ins.
+        The score should reflect current overall wellbeing and health stability, not moral worth and not a diagnosis.
+        Be calibrated: sparse or old data should lower confidence and avoid extreme scores.
+        Explain the score with concise evidence-based reasons.
+        Return only JSON with this exact shape:
+        {
+          "score": 0,
+          "label": "short status label",
+          "summary": "one sentence motivation",
+          "reasons": ["reason one", "reason two", "reason three"]
+        }
+        """
+    }
+
+    @MainActor
+    private static func complete(
+        systemPrompt: String,
+        userPrompt: String,
+        settingsVM: SettingsViewModel,
+        localModelManager: LocalModelManager
+    ) async throws -> String {
+        guard let config = settingsVM.activeProvider else {
+            throw LLMError.noProvider
+        }
+
+        if config.type.isLocal {
+            try await localModelManager.ensurePreferredModelLoaded()
+            return try await localModelManager.service.completeDetachedResponse(
+                userMessage: userPrompt,
+                systemPrompt: systemPrompt
+            )
+        }
+
+        let credential = try await settingsVM.resolvedCredential(for: config)
+        let service = LLMService(config: config, apiKey: credential)
+        return try await service.completeChat(messages: [
+            (role: "system", content: systemPrompt),
+            (role: "user", content: userPrompt)
+        ])
+    }
+
+    private static func buildPrompt(
+        document: EirDocument?,
+        assessmentRecords: [AssessmentRecord],
+        stateRecords: [StateCheckInRecord],
+        chatMessages: [ChatMessage]
+    ) -> String {
+        """
+        Source coverage:
+        \(sources(document: document, assessmentRecords: assessmentRecords, stateRecords: stateRecords, chatMessages: chatMessages).map { "- \($0.title): \($0.detail)" }.joined(separator: "\n"))
+
+        EHR summary:
+        \(ehrSummary(document))
+
+        Assessment summary:
+        \(assessmentSummary(assessmentRecords))
+
+        Check-In summary:
+        \(stateSummary(stateRecords))
+
+        Chat summary:
+        \(chatSummary(chatMessages))
+
+        Generate the 0-100 Health Analysis score now. Mention uncertainty when the available sources are thin, old, or one-sided.
+        """
+    }
+
+    private static func sources(
+        document: EirDocument?,
+        assessmentRecords: [AssessmentRecord],
+        stateRecords: [StateCheckInRecord],
+        chatMessages: [ChatMessage]
+    ) -> [StateHealthAnalysisSource] {
+        let userChatCount = chatMessages.filter { $0.role == .user && !$0.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
+        return [
+            StateHealthAnalysisSource(
+                id: "ehr",
+                title: "EHR",
+                detail: document.map { "\($0.entries.count) entries" } ?? "Not connected",
+                systemImage: "doc.text",
+                isActive: !(document?.entries.isEmpty ?? true)
+            ),
+            StateHealthAnalysisSource(
+                id: "assessments",
+                title: "Assessments",
+                detail: assessmentRecords.isEmpty ? "No saved results" : "\(assessmentRecords.count) saved",
+                systemImage: "checklist",
+                isActive: !assessmentRecords.isEmpty
+            ),
+            StateHealthAnalysisSource(
+                id: "chat",
+                title: "Chat",
+                detail: userChatCount == 0 ? "No recent notes" : "\(userChatCount) user notes",
+                systemImage: "bubble.left.and.bubble.right",
+                isActive: userChatCount > 0
+            ),
+            StateHealthAnalysisSource(
+                id: "check_in",
+                title: "Check-In",
+                detail: stateRecords.isEmpty ? "No snapshots" : "\(stateRecords.count) snapshots",
+                systemImage: "waveform.path.ecg",
+                isActive: !stateRecords.isEmpty
+            )
+        ]
+    }
+
+    private static func ehrSummary(_ document: EirDocument?) -> String {
+        guard let document, !document.entries.isEmpty else { return "No EHR entries supplied." }
+
+        let entries = document.entries
+            .sorted { lhs, rhs in
+                if lhs.date == rhs.date { return (lhs.time ?? "") > (rhs.time ?? "") }
+                return (lhs.date ?? "") > (rhs.date ?? "")
+            }
+            .prefix(12)
+            .map { entry in
+                let text = [
+                    entry.content?.summary,
+                    entry.content?.details,
+                    entry.content?.notes?.joined(separator: " ")
+                ]
+                .compactMap { $0 }
+                .joined(separator: " ")
+                return "- \(entry.date ?? "Unknown date") \(entry.category ?? entry.type ?? "Entry"): \(truncate(text, limit: 260))"
+            }
+            .joined(separator: "\n")
+
+        return "Total entries: \(document.entries.count)\nRecent entries:\n\(entries)"
+    }
+
+    private static func assessmentSummary(_ records: [AssessmentRecord]) -> String {
+        guard !records.isEmpty else { return "No assessment results supplied." }
+
+        return records
+            .sorted { $0.completedAt > $1.completedAt }
+            .prefix(8)
+            .map { record in
+                let overall = record.overall.map { "\($0.label): \($0.band.label), score \($0.formattedScore). \($0.band.resolvedDescription)" } ?? "No overall score."
+                let dimensions = record.dimensions
+                    .prefix(4)
+                    .map { "\($0.label) \($0.band.label)" }
+                    .joined(separator: ", ")
+                return "- \(record.completedAt.formatted(date: .abbreviated, time: .shortened)) \(assessmentName(record.assessmentID)): \(overall) Dimensions: \(dimensions)"
+            }
+            .joined(separator: "\n")
+    }
+
+    private static func stateSummary(_ records: [StateCheckInRecord]) -> String {
+        guard !records.isEmpty else { return "No check-ins supplied." }
+
+        return records
+            .sorted { $0.createdAt > $1.createdAt }
+            .prefix(6)
+            .map { record in
+                let level = stateLevel(scores: record.scores)
+                let highlights = record.topHighlights.joined(separator: ", ")
+                let note = record.note.isEmpty ? record.reflection : record.note
+                return "- \(record.createdAt.formatted(date: .abbreviated, time: .shortened)): \(level)/10; highlights: \(highlights). Note: \(truncate(note, limit: 220))"
+            }
+            .joined(separator: "\n")
+    }
+
+    private static func chatSummary(_ messages: [ChatMessage]) -> String {
+        let userMessages = messages
+            .filter { $0.role == .user && !$0.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .suffix(8)
+
+        guard !userMessages.isEmpty else { return "No current chat messages supplied." }
+
+        return userMessages
+            .map { "- \($0.timestamp.formatted(date: .abbreviated, time: .shortened)): \(truncate($0.content, limit: 220))" }
+            .joined(separator: "\n")
+    }
+
+    private static func decode(_ raw: String) throws -> DecodedAnalysis {
+        let candidate = extractJSONObject(from: raw)
+        guard let data = candidate.data(using: .utf8) else {
+            throw LLMError.invalidResponse
+        }
+
+        do {
+            let payload = try JSONDecoder().decode(AnalysisPayload.self, from: data)
+            return DecodedAnalysis(
+                score: max(0, min(100, payload.score)),
+                label: payload.label.trimmingCharacters(in: .whitespacesAndNewlines),
+                summary: payload.summary.trimmingCharacters(in: .whitespacesAndNewlines),
+                reasons: payload.reasons
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+            )
+        } catch {
+            throw LLMError.requestFailed("The Health Analysis response was not readable. Try again or switch models.")
+        }
+    }
+
+    private static func extractJSONObject(from raw: String) -> String {
+        let withoutCodeFences = raw
+            .replacingOccurrences(of: "```json", with: "")
+            .replacingOccurrences(of: "```", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let start = withoutCodeFences.firstIndex(of: "{"),
+           let end = withoutCodeFences.lastIndex(of: "}") {
+            return String(withoutCodeFences[start...end])
+        }
+        return withoutCodeFences
+    }
+
+    private static func label(for score: Int) -> String {
+        switch score {
+        case ..<45:
+            return "Needs attention"
+        case ..<65:
+            return "Mixed signal"
+        case ..<80:
+            return "Fairly steady"
+        default:
+            return "Strong signal"
+        }
+    }
+
+    private static func stateLevel(scores: [String: Double]) -> Int {
+        let contributions = StateDimensionDefinition.catalog.map { dimension in
+            let score = scores[dimension.id] ?? 0.5
+            return dimension.highIsPositive ? score : (1 - score)
+        }
+        let average = contributions.reduce(0, +) / Double(contributions.count)
+        return Int(round(average * 10))
+    }
+
+    private static func assessmentName(_ id: String) -> String {
+        id
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+    }
+
+    private static func truncate(_ text: String, limit: Int) -> String {
+        let trimmed = text
+            .replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > limit else { return trimmed.isEmpty ? "No text." : trimmed }
+        let end = trimmed.index(trimmed.startIndex, offsetBy: limit)
+        return String(trimmed[..<end]) + "..."
+    }
+
+    private struct AnalysisPayload: Decodable {
+        let score: Int
+        let label: String
+        let summary: String
+        let reasons: [String]
+    }
+
+    private struct DecodedAnalysis {
+        let score: Int
+        let label: String
+        let summary: String
+        let reasons: [String]
     }
 }
 

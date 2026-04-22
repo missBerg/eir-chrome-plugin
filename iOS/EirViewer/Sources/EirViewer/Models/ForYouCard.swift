@@ -8,6 +8,10 @@ enum ForYouCardKind: String, Hashable {
     case reading
     case reflection
     case soundscape
+    case trainer
+    case assessment
+    case checkIn
+    case digital
 
     var label: String {
         switch self {
@@ -17,6 +21,10 @@ enum ForYouCardKind: String, Hashable {
         case .reading: return "Read"
         case .reflection: return "Reflect"
         case .soundscape: return "Soundscape"
+        case .trainer: return "Train"
+        case .assessment: return "Assess"
+        case .checkIn: return "Check-in"
+        case .digital: return "Digital"
         }
     }
 }
@@ -85,6 +93,14 @@ enum ForYouCardTheme: String, CaseIterable, Hashable {
             palette = [.coral, .ember, .velvet]
         case .reflection:
             palette = [.velvet, .aurora, .tide]
+        case .trainer:
+            palette = [.tide, .aurora, .meadow]
+        case .assessment:
+            palette = [.coral, .aurora, .ember]
+        case .checkIn:
+            palette = [.meadow, .tide, .coral]
+        case .digital:
+            palette = [.tide, .meadow, .aurora]
         }
         return palette[offset % palette.count]
     }
@@ -138,4 +154,48 @@ struct ForYouCard: Identifiable, Hashable {
     let reading: ForYouReading?
     let reflection: ForYouReflection?
     let breathing: ForYouBreathing?
+    let trainerID: String?
+    let soundCollectionID: String?
+    let assessmentID: String?
+    let callToAction: String?
+
+    init(
+        id: String,
+        sortOrder: Int,
+        kind: ForYouCardKind,
+        theme: ForYouCardTheme,
+        eyebrow: String,
+        title: String,
+        summary: String,
+        durationLabel: String?,
+        symbolName: String,
+        action: HealthAction?,
+        quiz: ForYouQuiz?,
+        reading: ForYouReading?,
+        reflection: ForYouReflection?,
+        breathing: ForYouBreathing?,
+        trainerID: String? = nil,
+        soundCollectionID: String? = nil,
+        assessmentID: String? = nil,
+        callToAction: String? = nil
+    ) {
+        self.id = id
+        self.sortOrder = sortOrder
+        self.kind = kind
+        self.theme = theme
+        self.eyebrow = eyebrow
+        self.title = title
+        self.summary = summary
+        self.durationLabel = durationLabel
+        self.symbolName = symbolName
+        self.action = action
+        self.quiz = quiz
+        self.reading = reading
+        self.reflection = reflection
+        self.breathing = breathing
+        self.trainerID = trainerID
+        self.soundCollectionID = soundCollectionID
+        self.assessmentID = assessmentID
+        self.callToAction = callToAction
+    }
 }

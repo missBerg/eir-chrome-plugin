@@ -13,8 +13,32 @@ class ChatViewModel: ObservableObject {
     private let maxToolIterations = 5
 
     // Pending message state for consent flow
-    private var pendingSendArgs: (EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?, Bool, SupportedChatLanguage?)?
-    private var pendingVoiceNoteArgs: (RecordedVoiceNoteDraft, EirDocument?, SettingsViewModel, ChatThreadStore, UUID, AgentMemoryStore, LocalModelManager?, Bool)?
+    private struct PendingSendArgs {
+        let document: EirDocument?
+        let caseWiki: PatientCaseWiki?
+        let settingsVM: SettingsViewModel
+        let chatThreadStore: ChatThreadStore
+        let profileID: UUID
+        let agentMemoryStore: AgentMemoryStore
+        let localModelManager: LocalModelManager?
+        let includeFollowUpQuestions: Bool
+        let sourceLanguageHint: SupportedChatLanguage?
+    }
+
+    private struct PendingVoiceNoteArgs {
+        let draft: RecordedVoiceNoteDraft
+        let document: EirDocument?
+        let caseWiki: PatientCaseWiki?
+        let settingsVM: SettingsViewModel
+        let chatThreadStore: ChatThreadStore
+        let profileID: UUID
+        let agentMemoryStore: AgentMemoryStore
+        let localModelManager: LocalModelManager?
+        let includeFollowUpQuestions: Bool
+    }
+
+    private var pendingSendArgs: PendingSendArgs?
+    private var pendingVoiceNoteArgs: PendingVoiceNoteArgs?
 
     static func hasCloudConsent(for provider: LLMProviderType) -> Bool {
         UserDefaults.standard.bool(forKey: "cloudConsent_\(provider.rawValue)")
@@ -33,19 +57,20 @@ class ChatViewModel: ObservableObject {
             Task {
                 do {
                     if provider.usesManagedTrialAccess,
-                       let config = args.1.providers.first(where: { $0.type == provider }) {
-                        _ = try await args.1.provisionManagedAccess(for: config)
+                       let config = args.settingsVM.providers.first(where: { $0.type == provider }) {
+                        _ = try await args.settingsVM.provisionManagedAccess(for: config)
                     }
 
                     sendMessage(
-                        document: args.0,
-                        settingsVM: args.1,
-                        chatThreadStore: args.2,
-                        profileID: args.3,
-                        agentMemoryStore: args.4,
-                        localModelManager: args.5,
-                        includeFollowUpQuestions: args.6,
-                        sourceLanguageHint: args.7
+                        document: args.document,
+                        caseWiki: args.caseWiki,
+                        settingsVM: args.settingsVM,
+                        chatThreadStore: args.chatThreadStore,
+                        profileID: args.profileID,
+                        agentMemoryStore: args.agentMemoryStore,
+                        localModelManager: args.localModelManager,
+                        includeFollowUpQuestions: args.includeFollowUpQuestions,
+                        sourceLanguageHint: args.sourceLanguageHint
                     )
                 } catch {
                     errorMessage = error.localizedDescription
@@ -56,19 +81,20 @@ class ChatViewModel: ObservableObject {
             Task {
                 do {
                     if provider.usesManagedTrialAccess,
-                       let config = args.2.providers.first(where: { $0.type == provider }) {
-                        _ = try await args.2.provisionManagedAccess(for: config)
+                       let config = args.settingsVM.providers.first(where: { $0.type == provider }) {
+                        _ = try await args.settingsVM.provisionManagedAccess(for: config)
                     }
 
                     await sendVoiceNote(
-                        args.0,
-                        document: args.1,
-                        settingsVM: args.2,
-                        chatThreadStore: args.3,
-                        profileID: args.4,
-                        agentMemoryStore: args.5,
-                        localModelManager: args.6,
-                        includeFollowUpQuestions: args.7
+                        args.draft,
+                        document: args.document,
+                        caseWiki: args.caseWiki,
+                        settingsVM: args.settingsVM,
+                        chatThreadStore: args.chatThreadStore,
+                        profileID: args.profileID,
+                        agentMemoryStore: args.agentMemoryStore,
+                        localModelManager: args.localModelManager,
+                        includeFollowUpQuestions: args.includeFollowUpQuestions
                     )
                 } catch {
                     errorMessage = error.localizedDescription
@@ -85,6 +111,7 @@ class ChatViewModel: ObservableObject {
 
     func sendMessage(
         document: EirDocument?,
+        caseWiki: PatientCaseWiki? = nil,
         settingsVM: SettingsViewModel,
         chatThreadStore: ChatThreadStore,
         profileID: UUID,
@@ -103,15 +130,16 @@ class ChatViewModel: ObservableObject {
 
         // Check cloud consent before sending data to third-party providers
         if !config.type.isLocal && !Self.hasCloudConsent(for: config.type) {
-            pendingSendArgs = (
-                document,
-                settingsVM,
-                chatThreadStore,
-                profileID,
-                agentMemoryStore,
-                localModelManager,
-                includeFollowUpQuestions,
-                sourceLanguageHint
+            pendingSendArgs = PendingSendArgs(
+                document: document,
+                caseWiki: caseWiki,
+                settingsVM: settingsVM,
+                chatThreadStore: chatThreadStore,
+                profileID: profileID,
+                agentMemoryStore: agentMemoryStore,
+                localModelManager: localModelManager,
+                includeFollowUpQuestions: includeFollowUpQuestions,
+                sourceLanguageHint: sourceLanguageHint
             )
             pendingCloudConsent = config.type
             return
@@ -156,6 +184,7 @@ class ChatViewModel: ObservableObject {
         let systemPrompt = SystemPrompt.build(
             memory: agentMemoryStore.memory,
             document: document,
+            caseWiki: caseWiki,
             includeToolInstructions: !config.type.isLocal,
             allowFollowUpQuestions: includeFollowUpQuestions,
             responseLanguagePreference: settingsVM.responseLanguagePreference,
@@ -193,6 +222,7 @@ class ChatViewModel: ObservableObject {
             let activeVersion = settingsVM.activePromptVersion
             let localPrompt = SystemPrompt.buildLocal(
                 document: document,
+                caseWiki: caseWiki,
                 userName: userName,
                 promptVersion: activeVersion,
                 allowFollowUpQuestions: includeFollowUpQuestions,
@@ -371,6 +401,7 @@ class ChatViewModel: ObservableObject {
     func sendVoiceNote(
         _ draft: RecordedVoiceNoteDraft,
         document: EirDocument?,
+        caseWiki: PatientCaseWiki? = nil,
         settingsVM: SettingsViewModel,
         chatThreadStore: ChatThreadStore,
         profileID: UUID,
@@ -386,7 +417,17 @@ class ChatViewModel: ObservableObject {
 
         // Check cloud consent before sending transcript text to third-party providers
         if !config.type.isLocal && !Self.hasCloudConsent(for: config.type) {
-            pendingVoiceNoteArgs = (draft, document, settingsVM, chatThreadStore, profileID, agentMemoryStore, localModelManager, includeFollowUpQuestions)
+            pendingVoiceNoteArgs = PendingVoiceNoteArgs(
+                draft: draft,
+                document: document,
+                caseWiki: caseWiki,
+                settingsVM: settingsVM,
+                chatThreadStore: chatThreadStore,
+                profileID: profileID,
+                agentMemoryStore: agentMemoryStore,
+                localModelManager: localModelManager,
+                includeFollowUpQuestions: includeFollowUpQuestions
+            )
             pendingCloudConsent = config.type
             return
         }
@@ -430,6 +471,7 @@ class ChatViewModel: ObservableObject {
             inputText = transcript
             sendMessage(
                 document: document,
+                caseWiki: caseWiki,
                 settingsVM: settingsVM,
                 chatThreadStore: chatThreadStore,
                 profileID: profileID,

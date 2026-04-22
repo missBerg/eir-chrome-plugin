@@ -16,6 +16,9 @@ struct EirViewerApp: App {
     @StateObject private var nextBestActionVM = NextBestHealthActionViewModel()
     @StateObject private var stateActionVM = StateActionRecommendationViewModel()
     @StateObject private var journalTranslationStore = JournalTranslationStore()
+    @StateObject private var caseWikiVM = CaseWikiViewModel()
+    @StateObject private var assessmentStore = AssessmentHistoryStore()
+    @StateObject private var stateCheckInStore = StateCheckInStore()
 
     var body: some Scene {
         WindowGroup {
@@ -34,6 +37,9 @@ struct EirViewerApp: App {
                 .environmentObject(nextBestActionVM)
                 .environmentObject(stateActionVM)
                 .environmentObject(journalTranslationStore)
+                .environmentObject(caseWikiVM)
+                .environmentObject(assessmentStore)
+                .environmentObject(stateCheckInStore)
                 .environment(\.locale, settingsVM.interfaceLocale)
                 .environment(\.layoutDirection, settingsVM.interfaceLayoutDirection)
                 .task {

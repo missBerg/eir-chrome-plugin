@@ -279,10 +279,7 @@ struct ActionVoiceLabView: View {
         .navigationTitle("Voice Lab")
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear {
-            service.stopAnalysis()
-            service.stopPitchMatch()
-            service.stopReadingPractice()
-            service.stopTonePlayback()
+            service.stopAllCapture()
         }
     }
 
