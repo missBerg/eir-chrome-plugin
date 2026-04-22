@@ -2,6 +2,7 @@
 *.log
 .build/
 Desktop/EirViewer/.build/
+Desktop/EirViewer/*.ipa
 iOS/EirViewer/.swiftpm/
 iOS/EirViewer/build/
 iOS/EirViewer/EirViewer.xcodeproj/project.xcworkspace/
