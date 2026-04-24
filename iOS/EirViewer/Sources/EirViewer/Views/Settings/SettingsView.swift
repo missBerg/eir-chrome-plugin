@@ -17,6 +17,16 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            // MARK: - Eir Account
+            Section("Eir Account") {
+                NavigationLink {
+                    EirAccountView()
+                        .navigationTitle("Eir Account")
+                } label: {
+                    EirAccountRow()
+                }
+            }
+
             // MARK: - People
             Section("People") {
                 ForEach(profileStore.profiles) { profile in

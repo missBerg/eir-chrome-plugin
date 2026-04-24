@@ -1,7 +1,12 @@
+import GoogleSignIn
 import SwiftUI
 
 @main
 struct EirViewerApp: App {
+    init() {
+        _ = EirAuthService.shared
+    }
+
     @StateObject private var documentVM = DocumentViewModel()
     @StateObject private var chatVM = ChatViewModel()
     @StateObject private var settingsVM = SettingsViewModel()
@@ -57,6 +62,7 @@ struct EirViewerApp: App {
                     }
                 }
                 .onOpenURL { url in
+                    if GIDSignIn.sharedInstance.handle(url) { return }
                     let ext = url.pathExtension.lowercased()
                     guard ext == "eir" || ext == "yaml" || ext == "yml" else { return }
                     if let profile = profileStore.addProfile(displayName: "", fileURL: url) {

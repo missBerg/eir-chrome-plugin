@@ -116,6 +116,22 @@
 				<string>eir</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.eir.viewer.googlesignin.dev</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.117555618026-3q1b9ekivqikts3fqmssggntgdu03dg6</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.eir.viewer.googlesignin.prod</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.7391652176-std0i6fv5hui0fgbeg2u7pmh8h6jfgdi</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

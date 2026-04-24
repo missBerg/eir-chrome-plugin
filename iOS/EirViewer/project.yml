@@ -22,6 +22,12 @@ packages:
   swift-transformers:
     url: https://github.com/huggingface/swift-transformers
     branch: main
+  firebase-ios-sdk:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: "11.0.0"
+  GoogleSignIn-iOS:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "8.0.0"
 
 targets:
   EirViewer:
@@ -56,8 +62,15 @@ targets:
         product: HuggingFace
       - package: swift-transformers
         product: Tokenizers
+      - package: firebase-ios-sdk
+        product: FirebaseAuth
+      - package: GoogleSignIn-iOS
+        product: GoogleSignIn
+      - package: GoogleSignIn-iOS
+        product: GoogleSignInSwift
       - sdk: HealthKit.framework
       - sdk: Speech.framework
+      - sdk: AuthenticationServices.framework
 
   EirViewerTests:
     type: bundle.unit-test
