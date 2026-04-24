@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0729414753A53850AB7E656C /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60150BE0AF8CE3D99DB3C94E /* QRScannerView.swift */; };
+		09447A1C2BA3F7A2FA5845ED /* EirAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F602E0ECD642DEA6623FB7 /* EirAuthService.swift */; };
 		0A921E664BEFF0AABDAE9454 /* ActionSoundSessionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCEF7290519C860F7514159C /* ActionSoundSessionEngine.swift */; };
 		0AF12654226D885EE528520F /* CodexNetworkDiagnosticsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C8DB22425D22521DA7FCCFD /* CodexNetworkDiagnosticsStore.swift */; };
 		0C98B4762748F5324E697914 /* SelfReferralClinicCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB1D18AC057BB6BCF9BEF4D /* SelfReferralClinicCatalog.swift */; };
@@ -19,6 +20,7 @@
 		14615AA1C2F9F832CF337DD8 /* ChatThreadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDD79CD3F1023AEE60EFD1C /* ChatThreadStore.swift */; };
 		150AF8D5B89FEA1520D2875B /* CaseSourceCardBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F692E10BDF04CDE8D5046B5E /* CaseSourceCardBuilder.swift */; };
 		1A4FD6BA76079E193919115E /* ColorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B507DC2490C495A0990D7AA6 /* ColorExtension.swift */; };
+		1A5AF3A4AA89DCFCCDF1453F /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 23B123CF1ED1866C85C82417 /* GoogleSignInSwift */; };
 		1AE8EE2BF8A9B6751CBFB21E /* ChatBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66EE9E2EC4164E702159408C /* ChatBubbleView.swift */; };
 		1B5C8F81585AC3EBE6A931C8 /* FileShareViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2ED4BE5CB76FCA26A278E762 /* FileShareViews.swift */; };
 		1EC862E14D1E890C5D178B72 /* AppRuntimeContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD1B8732A5C0937046107C85 /* AppRuntimeContext.swift */; };
@@ -26,8 +28,10 @@
 		2393589910298083AE0E1802 /* ConversationListSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1747584B59A65BEDE4A45CCD /* ConversationListSheet.swift */; };
 		249025EB0CF80922B535973B /* SelfReferralClinicSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F69371C2EFD97FBA6D9E4176 /* SelfReferralClinicSheet.swift */; };
 		24A4D2946B8C9E8C527A8437 /* CareSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D2235C2F4DCCC22A5119DAD /* CareSuggestion.swift */; };
+		24C41EEB7E1B9682E8CB5F65 /* GoogleService-Info-prod.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7F647DECBD4546E728C10C46 /* GoogleService-Info-prod.plist */; };
 		2674A9D3ACC4CD9FB87828E7 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B2FB926C253E2C0C6EEC1 /* OnboardingView.swift */; };
 		2DCC2FCEA199132399686983 /* ToolDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852E21C0DB4109191EEFD187 /* ToolDefinition.swift */; };
+		2DD6AA5F8312B2A11D6E7110 /* GoogleService-Info-dev.plist in Resources */ = {isa = PBXBuildFile; fileRef = B2949F85901E9A00DCBA4450 /* GoogleService-Info-dev.plist */; };
 		3E2D05F86A0E4E06282AFD27 /* SystemPromptEvalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B5224AC43701680F835B69 /* SystemPromptEvalTests.swift */; };
 		3FF23216CD5FDD5C7639C22E /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2420C4DEBEEE4DA345D5DBC /* ChatViewModel.swift */; };
 		3FF47E8B50B02EE8841909DF /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8150635BB2A535271C6E9DF6 /* HealthKitService.swift */; };
@@ -47,7 +51,9 @@
 		61894AFDA01B8EB911E173B8 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = BBA73EAFCA7F8D248F80F1C0 /* Yams */; };
 		626524B46041F197D22A4FC4 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E40A4EAAF54FB04C1B750D /* WelcomeView.swift */; };
 		643F5195244E6ED2119F2079 /* EirDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8434B44AEFD4017D0F72594F /* EirDocument.swift */; };
+		66900F4F033094566B5AFA5F /* EirAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 886DB8A9902C7924F606522D /* EirAPIClient.swift */; };
 		694DDE62F042C5C273B391D6 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19D96044A03BA979D89DCD8 /* LLMProvider.swift */; };
+		698974774913CA3BABB367DD /* EirAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0890FAB8301FCBD713E252 /* EirAccountView.swift */; };
 		69B1E8CECA7ABE10058AEF5C /* self-referral-clinics-sweden.json in Resources */ = {isa = PBXBuildFile; fileRef = 859B60323E11A5E910BF961A /* self-referral-clinics-sweden.json */; };
 		6A68ECEDDDD1BF98820A64B1 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = 034BC3C922F5543C5E63B4C6 /* MLX */; };
 		6CA3F6F906A6F95E7A3C2FD2 /* LocalLLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB360D1D5BBF139F5A3AA997 /* LocalLLMService.swift */; };
@@ -71,14 +77,17 @@
 		85B604502C498F68DA68BAD7 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A7171AB56F25BA404CA5AB /* ChatMessage.swift */; };
 		896A8BD57D607DEAA95FCE55 /* ForYouCardGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */; };
 		8C6016DC7A9A7E5F48E7BF3E /* CaseWikiIngestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A35CB76286793EDC0C2D3E4 /* CaseWikiIngestService.swift */; };
+		8E48EB72F2725CB769F4B39F /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BE8D25F2DF219D9A0B74ABCA /* FirebaseAuth */; };
 		913B76B784FD4CB55B6385C4 /* QRTransferFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBB538AFDEEB8FD799CEF6A /* QRTransferFlowTests.swift */; };
 		957EA466B04F1EAFCF3DB1E5 /* ActionVoiceLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E18FF2BCF455C0A49B038B /* ActionVoiceLabView.swift */; };
 		9CA6ED396A608D6603C8F81B /* CaseWikiOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC4B525C995F5B10DB2E5AE6 /* CaseWikiOverviewView.swift */; };
 		A0EA8D5C12FFA9E51C1CB385 /* HistoryTranslationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5C3451189FE2E65393FE76D /* HistoryTranslationSheet.swift */; };
+		A433984DF39B5C5266D2B8BB /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 5C2B57F0F69B84C2601806A0 /* GoogleSignIn */; };
 		A596E9A9FD380B1BA68FE2E4 /* DocumentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */; };
 		A5C90FF6130BCADCE0F364FB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2B5A2EB7786BFABF5D0B05 /* SettingsView.swift */; };
 		A7A9AEED063D717DA279760F /* ActionVoiceTrainingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA43867A7EA5302BF2DFD82E /* ActionVoiceTrainingService.swift */; };
 		A8DF34CBEA259B33B5D5C236 /* SelfReferralClinic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEF9FA0F2C843319C2D3F52 /* SelfReferralClinic.swift */; };
+		AAA8128C1ABDFED0513119E4 /* EirAccountRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B9EB5469920261E1DB0E26 /* EirAccountRow.swift */; };
 		ADD0986EC7DAC34E846FE7DB /* HealthActionScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F8FE8E9C075F8448EE3869 /* HealthActionScheduler.swift */; };
 		B12F24DE6232CED1EEAFF0C7 /* HealthDataExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BDAF9E392CFDC5898D1AA7 /* HealthDataExtractor.swift */; };
 		B1BF7912C6D4709B03E6D203 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = ADA19A73E5F4591556183B40 /* HuggingFace */; };
@@ -90,6 +99,7 @@
 		C0E4A3FFCEB5DE03B98BAA34 /* HealthDataBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE0A79A4CA679B89535E7FB /* HealthDataBrowserView.swift */; };
 		C2ED3900D2B6C9E3238E39DE /* ClinicalNoteFHIRExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F85A62C020F22694CB65B75 /* ClinicalNoteFHIRExtractor.swift */; };
 		C4C9B9DE4F960FB63B8940A8 /* RecoveryActionOutcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBAA95C2440DA6A917C26CB5 /* RecoveryActionOutcome.swift */; };
+		C789CF9AFD4104AB95E4794C /* AuthenticationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0B12FD801F8E8BFEB4A2DDC /* AuthenticationServices.framework */; };
 		CA1DD31769DC693D62E28C34 /* SelfReferralClinicStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD13C19109D4F1D1F11EC1C /* SelfReferralClinicStore.swift */; };
 		CC1B91744F3AD79993D57044 /* CategoryBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB40951059FDE72D983CFB3 /* CategoryBadge.swift */; };
 		CDBAA28BDE6379C2029DDFB8 /* PersonProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F4115FBB641F7CF33A000B /* PersonProfile.swift */; };
@@ -167,11 +177,13 @@
 		60150BE0AF8CE3D99DB3C94E /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
 		6179EFCCF40417D9B852E30D /* AssessmentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentsView.swift; sourceTree = "<group>"; };
 		61A06AED6D22705FE8E8B891 /* SelfReferralClinicMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfReferralClinicMatcher.swift; sourceTree = "<group>"; };
+		61B9EB5469920261E1DB0E26 /* EirAccountRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EirAccountRow.swift; sourceTree = "<group>"; };
 		66EE9E2EC4164E702159408C /* ChatBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatBubbleView.swift; sourceTree = "<group>"; };
 		68173D5B1D09C80059F229F7 /* HealthKitImportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitImportViewModel.swift; sourceTree = "<group>"; };
 		6E796F28ECD9E094B95A4535 /* ClinicalNoteImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClinicalNoteImportTests.swift; sourceTree = "<group>"; };
 		6FBB538AFDEEB8FD799CEF6A /* QRTransferFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRTransferFlowTests.swift; sourceTree = "<group>"; };
 		6FE6812C85D970222820AD6E /* VoiceNoteComposerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteComposerSheet.swift; sourceTree = "<group>"; };
+		70F602E0ECD642DEA6623FB7 /* EirAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EirAuthService.swift; sourceTree = "<group>"; };
 		717B9133FB8214A39A67219B /* StateCheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateCheckInView.swift; sourceTree = "<group>"; };
 		72F39BB86C578A67730DA2E3 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		7533EFA7AB708D1A74C75160 /* ToolRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolRegistry.swift; sourceTree = "<group>"; };
@@ -179,12 +191,14 @@
 		76D14D4702966D448A8CA8BE /* NextBestHealthActionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextBestHealthActionViewModel.swift; sourceTree = "<group>"; };
 		78FD527F24390E7AC05D10D1 /* LocalModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalModelManager.swift; sourceTree = "<group>"; };
 		7BB1D18AC057BB6BCF9BEF4D /* SelfReferralClinicCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfReferralClinicCatalog.swift; sourceTree = "<group>"; };
+		7F647DECBD4546E728C10C46 /* GoogleService-Info-prod.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info-prod.plist"; sourceTree = "<group>"; };
 		7F71B2A5A3FAF63301FBD32E /* ar */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ar; path = ar.lproj/Localizable.strings; sourceTree = "<group>"; };
 		8150635BB2A535271C6E9DF6 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		8434B44AEFD4017D0F72594F /* EirDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EirDocument.swift; sourceTree = "<group>"; };
 		852E21C0DB4109191EEFD187 /* ToolDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolDefinition.swift; sourceTree = "<group>"; };
 		859B60323E11A5E910BF961A /* self-referral-clinics-sweden.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "self-referral-clinics-sweden.json"; sourceTree = "<group>"; };
 		87961881B4A1E3B1327AD44D /* ForYouViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYouViewModel.swift; sourceTree = "<group>"; };
+		886DB8A9902C7924F606522D /* EirAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EirAPIClient.swift; sourceTree = "<group>"; };
 		8A67A5A760AEC759E2D04BE2 /* AgentMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentMemory.swift; sourceTree = "<group>"; };
 		8ACFF29B2C5132B668726FEC /* EntryCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryCardView.swift; sourceTree = "<group>"; };
 		8DE0A79A4CA679B89535E7FB /* HealthDataBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataBrowserView.swift; sourceTree = "<group>"; };
@@ -199,6 +213,7 @@
 		AE5CCD5E136F8474222C4DC6 /* ChatThread.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatThread.swift; sourceTree = "<group>"; };
 		AF55DA44EE3743AC4DB87DED /* FindCareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindCareView.swift; sourceTree = "<group>"; };
 		B1CA8FE68F0C0F09A232BE32 /* AddPersonSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPersonSheet.swift; sourceTree = "<group>"; };
+		B2949F85901E9A00DCBA4450 /* GoogleService-Info-dev.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info-dev.plist"; sourceTree = "<group>"; };
 		B33B9625F99E6780A6CC9B21 /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
 		B46E484C23AF332B0D081CEF /* AgentMemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentMemoryStore.swift; sourceTree = "<group>"; };
 		B507DC2490C495A0990D7AA6 /* ColorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtension.swift; sourceTree = "<group>"; };
@@ -216,6 +231,7 @@
 		C6DD4EDB51A55954B5EF5034 /* JournalTranslationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalTranslationStore.swift; sourceTree = "<group>"; };
 		C841F863C754F6E65C76D14C /* EirViewer.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = EirViewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCED288BFC7AEA4BC087A84E /* AgentConfigCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentConfigCard.swift; sourceTree = "<group>"; };
+		D0B12FD801F8E8BFEB4A2DDC /* AuthenticationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AuthenticationServices.framework; path = System/Library/Frameworks/AuthenticationServices.framework; sourceTree = SDKROOT; };
 		D2F4115FBB641F7CF33A000B /* PersonProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonProfile.swift; sourceTree = "<group>"; };
 		D52095FCCD63578C3345DDEE /* sample-data.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "sample-data.yaml"; sourceTree = "<group>"; };
 		D52174202074B6F98FF6185A /* EntryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryDetailView.swift; sourceTree = "<group>"; };
@@ -237,6 +253,7 @@
 		F69371C2EFD97FBA6D9E4176 /* SelfReferralClinicSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfReferralClinicSheet.swift; sourceTree = "<group>"; };
 		F6A9F93311267A69E0084BD6 /* DocumentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViewModel.swift; sourceTree = "<group>"; };
 		F6AA80107E445F21C5E14336 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
+		FA0890FAB8301FCBD713E252 /* EirAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EirAccountView.swift; sourceTree = "<group>"; };
 		FCEF7290519C860F7514159C /* ActionSoundSessionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionSoundSessionEngine.swift; sourceTree = "<group>"; };
 		FD1B8732A5C0937046107C85 /* AppRuntimeContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntimeContext.swift; sourceTree = "<group>"; };
 		FE50C15C0C2D09879CE011C4 /* PatientCaseWiki.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatientCaseWiki.swift; sourceTree = "<group>"; };
@@ -261,8 +278,12 @@
 				6A68ECEDDDD1BF98820A64B1 /* MLX in Frameworks */,
 				B1BF7912C6D4709B03E6D203 /* HuggingFace in Frameworks */,
 				442F40C9C5ABFE2D7FBE514A /* Tokenizers in Frameworks */,
+				8E48EB72F2725CB769F4B39F /* FirebaseAuth in Frameworks */,
+				A433984DF39B5C5266D2B8BB /* GoogleSignIn in Frameworks */,
+				1A5AF3A4AA89DCFCCDF1453F /* GoogleSignInSwift in Frameworks */,
 				6F2963E5566D72046E6C9E8C /* HealthKit.framework in Frameworks */,
 				D5DB5FBC04E93591FB6EFC41 /* Speech.framework in Frameworks */,
+				C789CF9AFD4104AB95E4794C /* AuthenticationServices.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,6 +295,8 @@
 			children = (
 				B1CA8FE68F0C0F09A232BE32 /* AddPersonSheet.swift */,
 				340E673CE7624A453E343715 /* ContentView.swift */,
+				61B9EB5469920261E1DB0E26 /* EirAccountRow.swift */,
+				FA0890FAB8301FCBD713E252 /* EirAccountView.swift */,
 				60150BE0AF8CE3D99DB3C94E /* QRScannerView.swift */,
 				C4E40A4EAAF54FB04C1B750D /* WelcomeView.swift */,
 				8A4DB5E53AD8A29089EE4D10 /* Actions */,
@@ -293,6 +316,7 @@
 		235C4E3941AAF11339A3FFC9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D0B12FD801F8E8BFEB4A2DDC /* AuthenticationServices.framework */,
 				50DB1027E7C1FA9DD4B4165A /* HealthKit.framework */,
 				F6AA80107E445F21C5E14336 /* Speech.framework */,
 			);
@@ -330,6 +354,8 @@
 				97204FAA545B7E163159DB3F /* CaseWikiValidator.swift */,
 				3F85A62C020F22694CB65B75 /* ClinicalNoteFHIRExtractor.swift */,
 				1C8DB22425D22521DA7FCCFD /* CodexNetworkDiagnosticsStore.swift */,
+				886DB8A9902C7924F606522D /* EirAPIClient.swift */,
+				70F602E0ECD642DEA6623FB7 /* EirAuthService.swift */,
 				DDDD9A98A16DE81625130468 /* EirParser.swift */,
 				0642B699BCEB214F64366D9D /* EncryptedStore.swift */,
 				1506D53FEF543C5971628144 /* ForYouCardGenerator.swift */,
@@ -516,9 +542,11 @@
 		B5F2CF033B52BEBFE273568F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				00296FEA926778BB9200ED3C /* Localizable.strings */,
+				B2949F85901E9A00DCBA4450 /* GoogleService-Info-dev.plist */,
+				7F647DECBD4546E728C10C46 /* GoogleService-Info-prod.plist */,
 				859B60323E11A5E910BF961A /* self-referral-clinics-sweden.json */,
 				921145A6F167E1A3E02D75CD /* Assessments */,
+				00296FEA926778BB9200ED3C /* Localizable.strings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -573,6 +601,9 @@
 				034BC3C922F5543C5E63B4C6 /* MLX */,
 				ADA19A73E5F4591556183B40 /* HuggingFace */,
 				7022EFB9AAF98BDEEDBBF706 /* Tokenizers */,
+				BE8D25F2DF219D9A0B74ABCA /* FirebaseAuth */,
+				5C2B57F0F69B84C2601806A0 /* GoogleSignIn */,
+				23B123CF1ED1866C85C82417 /* GoogleSignInSwift */,
 			);
 			productName = EirViewer;
 			productReference = C841F863C754F6E65C76D14C /* EirViewer.app */;
@@ -614,7 +645,6 @@
 				};
 			};
 			buildConfigurationList = 39E720AC1FF264EF4133F12F /* Build configuration list for PBXProject "EirViewer" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -629,13 +659,16 @@
 			mainGroup = F03CC8E902A92BE6E1537AF0;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				277B3FDB84A7B5FBFC4B494A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				6B71FA9CFB22B9E8525BB5BF /* XCRemoteSwiftPackageReference "Yams" */,
+				39B5481DFF9FEDD5D5763259 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				4A0CF45F71A711C8E89CBDCF /* XCRemoteSwiftPackageReference "mlx-swift" */,
 				F026A5B780777D9C4858F479 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
 				0068D7EB5516E2F219EB9352 /* XCRemoteSwiftPackageReference "swift-huggingface" */,
 				8C0C3A5028DD9AA984815299 /* XCRemoteSwiftPackageReference "swift-transformers" */,
 			);
 			preferredProjectObjectVersion = 77;
+			productRefGroup = 79BF8E4173F6F50C36CF10F9 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -651,6 +684,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1221031EA0219A3FA8B2A6B5 /* Assets.xcassets in Resources */,
+				2DD6AA5F8312B2A11D6E7110 /* GoogleService-Info-dev.plist in Resources */,
+				24C41EEB7E1B9682E8CB5F65 /* GoogleService-Info-prod.plist in Resources */,
 				F16AB2EFA9CAD0410B6087F6 /* Localizable.strings in Resources */,
 				6F9BCD153DA2D1924FB48108 /* health-assessments.yaml in Resources */,
 				5BB9A1AA0662BAADD8318593 /* sample-data.yaml in Resources */,
@@ -709,6 +744,10 @@
 				1FD98DC080579097543C0268 /* ContentView.swift in Sources */,
 				2393589910298083AE0E1802 /* ConversationListSheet.swift in Sources */,
 				A596E9A9FD380B1BA68FE2E4 /* DocumentViewModel.swift in Sources */,
+				66900F4F033094566B5AFA5F /* EirAPIClient.swift in Sources */,
+				AAA8128C1ABDFED0513119E4 /* EirAccountRow.swift in Sources */,
+				698974774913CA3BABB367DD /* EirAccountView.swift in Sources */,
+				09447A1C2BA3F7A2FA5845ED /* EirAuthService.swift in Sources */,
 				643F5195244E6ED2119F2079 /* EirDocument.swift in Sources */,
 				E64000690918BE4CB3D434B1 /* EirParser.swift in Sources */,
 				ECB4318B162C32AE0D5516C9 /* EirViewerApp.swift in Sources */,
@@ -1042,6 +1081,22 @@
 				kind = branch;
 			};
 		};
+		277B3FDB84A7B5FBFC4B494A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+		39B5481DFF9FEDD5D5763259 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
 		4A0CF45F71A711C8E89CBDCF /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ml-explore/mlx-swift";
@@ -1082,6 +1137,16 @@
 			package = 4A0CF45F71A711C8E89CBDCF /* XCRemoteSwiftPackageReference "mlx-swift" */;
 			productName = MLX;
 		};
+		23B123CF1ED1866C85C82417 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 277B3FDB84A7B5FBFC4B494A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		5C2B57F0F69B84C2601806A0 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 277B3FDB84A7B5FBFC4B494A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
 		7022EFB9AAF98BDEEDBBF706 /* Tokenizers */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8C0C3A5028DD9AA984815299 /* XCRemoteSwiftPackageReference "swift-transformers" */;
@@ -1101,6 +1166,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6B71FA9CFB22B9E8525BB5BF /* XCRemoteSwiftPackageReference "Yams" */;
 			productName = Yams;
+		};
+		BE8D25F2DF219D9A0B74ABCA /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 39B5481DFF9FEDD5D5763259 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
 		};
 		C87CDCC4773E86F931FCFE2A /* MLXLLM */ = {
 			isa = XCSwiftPackageProductDependency;

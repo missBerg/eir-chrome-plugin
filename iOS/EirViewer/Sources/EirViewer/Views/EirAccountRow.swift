@@ -8,7 +8,7 @@ struct EirAccountRow: View {
         HStack(spacing: 12) {
             Image(systemName: auth.user == nil ? "person.crop.circle.badge.questionmark" : "person.crop.circle.fill.badge.checkmark")
                 .font(.title2)
-                .foregroundStyle(auth.user == nil ? .secondary : .green)
+                .foregroundStyle(auth.user == nil ? Color.secondary : Color.green)
             VStack(alignment: .leading, spacing: 2) {
                 Text(auth.user == nil ? "Not signed in" : "Signed in")
                     .font(.body)
